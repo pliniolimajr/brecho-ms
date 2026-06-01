@@ -33,7 +33,7 @@ const About: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[80vh]">
         <div className="order-2 lg:order-1 relative h-[500px] lg:h-auto overflow-hidden group">
            <img 
-             src="https://images.unsplash.com/photo-1489987707023-afc152b5d66c?auto=format&fit=crop&q=80&w=1200" 
+             src="https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=1200" 
              alt="Tecidos e Texturas" 
              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
            />
