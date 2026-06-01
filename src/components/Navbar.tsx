@@ -40,8 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, cartCount, onOpenCart }) =>
       onOpenCart();
   }
 
-  const isLightText = !scrolled && !mobileMenuOpen;
-  const textColorClass = isLightText ? 'text-[#FDF6F0]' : 'text-[#1A332B]';
+  const textColorClass = mobileMenuOpen ? 'text-[#1A332B]' : (scrolled ? 'text-[#1A332B]' : 'text-[#423226]');
 
   return (
     <>
