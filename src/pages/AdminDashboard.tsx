@@ -4,7 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import type { Product } from '../types';
 
 export function AdminDashboard() {
-  const { products, fetchProducts, isLoadingProducts } = useStore();
+  const { fetchProducts } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
 
@@ -40,7 +40,7 @@ export function AdminDashboard() {
 
   const fetchAdminOrders = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('orders')
       .select('*, order_items(price, products(name, size))')
       .order('created_at', { ascending: false });
@@ -241,7 +241,7 @@ export function AdminDashboard() {
                     </td>
                     <td className="p-4 flex gap-2">
                       <button onClick={() => { setEditingProduct(p); setIsEditing(true); }} className="text-xs text-blue-600 underline">Editar</button>
-                      <button onClick={() => handleMarkAsSold(p.id, p.isSold)} className="text-xs text-orange-600 underline">
+                      <button onClick={() => handleMarkAsSold(p.id, !!p.isSold)} className="text-xs text-orange-600 underline">
                         {p.isSold ? 'Desmarcar Venda' : 'Marcar Vendido'}
                       </button>
                       <button onClick={() => handleDelete(p.id)} className="text-xs text-red-600 underline">Excluir</button>

@@ -8,7 +8,7 @@ export const PRODUCTS: Product[] = [
     description: 'Tecido de algodão leve e confortável. Modelagem regular, ideal para dias quentes.',
     longDescription: 'Peça única. Bermuda masculina cinza em excelente estado de conservação (Ótimo). Possui bolsos frontais e traseiros, proporcionando um visual casual e super versátil. Uma escolha com propósito para o seu consumo consciente.',
     price: 29.99,
-    category: 'Roupas',
+    category: 'Calças',
     imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=1000',
     gallery: [
       'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&q=80&w=1000'
@@ -22,7 +22,7 @@ export const PRODUCTS: Product[] = [
     description: 'Estampa exclusiva Nilits. Tecido leve e de secagem rápida.',
     longDescription: 'Peça única. Bermuda estampada masculina da marca Nilits. Tamanho 44. Confeccionada em poliéster, ideal para praia, piscina e lazer. Cós com cadarço ajustável. Estado de conservação ótimo. Valorize o que é bom!',
     price: 19.99,
-    category: 'Roupas',
+    category: 'Calças',
     imageUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1000',
     gallery: [
         'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1000'
@@ -36,7 +36,7 @@ export const PRODUCTS: Product[] = [
     description: 'Camisa de flanela vintage, autêntica dos anos 90.',
     longDescription: 'Uma verdadeira relíquia. Camisa xadrez flanelada, perfeita para sobreposições. Garimpo exclusivo em perfeito estado. Consumo consciente é colocar você em primeiro lugar enquanto ajuda o planeta.',
     price: 45.00,
-    category: 'Roupas',
+    category: 'Camisetas',
     imageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e32f85e23?auto=format&fit=crop&q=80&w=1000',
     gallery: [
         'https://images.unsplash.com/photo-1596755094514-f87e32f85e23?auto=format&fit=crop&q=80&w=1000'
@@ -50,7 +50,7 @@ export const PRODUCTS: Product[] = [
     description: 'O clássico que nunca morre. Jeans encorpado com lavagem clara.',
     longDescription: 'Jaqueta Jeans unissex com modelagem oversized. Peça curinga para qualquer guarda-roupa. Botões originais e sem nenhuma avaria. Escolhas com propósito começam por peças duráveis.',
     price: 89.90,
-    category: 'Roupas',
+    category: 'Casacos',
     imageUrl: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&q=80&w=1000',
     gallery: [
         'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&q=80&w=1000'

@@ -10,7 +10,7 @@ interface CheckoutProps {
 }
 
 const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
-  const { session, user } = useAuth();
+  const { user } = useAuth();
   const { clearCart } = useStore();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

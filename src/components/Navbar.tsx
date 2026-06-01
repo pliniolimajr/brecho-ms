@@ -40,10 +40,8 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, cartCount, onOpenCart }) =>
       onOpenCart();
   }
 
-  // Determine text color based on state
   const isLightText = !scrolled && !mobileMenuOpen;
   const textColorClass = isLightText ? 'text-[#FDF6F0]' : 'text-[#1A332B]';
-  const logoColorClass = isLightText ? 'text-[#FDF6F0]' : 'text-[#C06A35]';
 
   return (
     <>

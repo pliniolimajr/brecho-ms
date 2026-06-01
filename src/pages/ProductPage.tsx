@@ -1,8 +1,6 @@
-import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductDetail from '../components/ProductDetail';
 import { useStore } from '../store/useStore';
-import type { Product } from '../types';
 
 export function ProductPage() {
   const { id } = useParams();

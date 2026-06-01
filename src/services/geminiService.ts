@@ -53,7 +53,7 @@ export const sendMessageToGemini = async (history: {role: string, text: string}[
     });
 
     const result = await chat.sendMessage({ message: newMessage });
-    return result.text;
+    return result.text || "I apologize, but I seem to be having trouble reaching our archives at the moment.";
 
   } catch (error) {
     console.error("Gemini API Error:", error);

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React from 'react';
+
 
 export interface Product {
   id: string;
@@ -36,9 +36,4 @@ export interface ChatMessage {
   timestamp: number;
 }
 
-export enum LoadingState {
-  IDLE = 'IDLE',
-  LOADING = 'LOADING',
-  ERROR = 'ERROR',
-  SUCCESS = 'SUCCESS'
-}
+export type LoadingState = 'IDLE' | 'LOADING' | 'ERROR' | 'SUCCESS';

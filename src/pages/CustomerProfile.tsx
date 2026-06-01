@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import { Navigate, useNavigate } from 'react-router-dom';
-import type { Order } from '../types';
 
 export function CustomerProfile() {
   const { session, user, loading, supabase: sb } = useAuth();
@@ -19,7 +18,7 @@ export function CustomerProfile() {
 
   const fetchOrders = async () => {
     setLoadingOrders(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('orders')
       .select('*, order_items(price, products(name, image_url, size))')
       .eq('user_id', user!.id)

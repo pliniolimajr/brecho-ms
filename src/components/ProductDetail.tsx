@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { Product } from '../types';
 
 interface ProductDetailProps {
@@ -8,11 +8,7 @@ interface ProductDetailProps {
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  
-  // Como é um brechó, os tamanhos variam de peça para peça. 
-  // No futuro, isso pode vir do `product.features`.
-  const showSizes = false; 
+
 
   return (
     <div className="pt-24 min-h-screen bg-[#FDF6F0] animate-fade-in-up">

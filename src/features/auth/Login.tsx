@@ -11,7 +11,7 @@ export function Login() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleOAuthLogin = async (provider: 'google' | 'microsoft') => {
+  const handleOAuthLogin = async (provider: 'google' | 'azure') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -115,7 +115,7 @@ export function Login() {
               Google
             </button>
             <button 
-              onClick={() => handleOAuthLogin('microsoft')}
+              onClick={() => handleOAuthLogin('azure')}
               className="w-full flex items-center justify-center gap-2 border border-[#C06A35]/50 p-3 rounded text-sm text-[#1A332B] hover:bg-white transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
