@@ -77,14 +77,14 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, cartCount, onOpenCart }) =>
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#C06A35] transition-all group-hover:w-full"></span>
             </a>
             {session ? (
-              <a href="/minha-conta" onClick={(e) => { e.preventDefault(); handleLinkClick(e, 'minha-conta'); window.location.href = '/minha-conta'; }} className="hover:text-[#C06A35] transition-colors relative group">
+              <a href="/minha-conta" onClick={(e) => { handleLinkClick(e, 'minha-conta'); }} className="hover:text-[#C06A35] transition-colors relative group">
                 {session.user?.user_metadata?.full_name 
                   ? `Olá, ${session.user.user_metadata.full_name.split(' ')[0]}`
                   : 'Minha Conta'}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#C06A35] transition-all group-hover:w-full"></span>
               </a>
             ) : (
-              <a href="/login" onClick={(e) => { e.preventDefault(); handleLinkClick(e, 'login'); window.location.href = '/login'; }} className="hover:text-[#C06A35] transition-colors relative group">
+              <a href="/login" onClick={(e) => { handleLinkClick(e, 'login'); }} className="hover:text-[#C06A35] transition-colors relative group">
                 Login
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#C06A35] transition-all group-hover:w-full"></span>
               </a>
@@ -132,9 +132,9 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, cartCount, onOpenCart }) =>
             <a href="#products" onClick={(e) => handleLinkClick(e, 'products')} className="hover:opacity-60 transition-opacity">Loja</a>
             <a href="#about" onClick={(e) => handleLinkClick(e, 'about')} className="hover:opacity-60 transition-opacity">Sobre</a>
             {session ? (
-              <a href="/minha-conta" onClick={(e) => { e.preventDefault(); handleLinkClick(e, 'minha-conta'); window.location.href = '/minha-conta'; }} className="hover:opacity-60 transition-opacity">Minha Conta</a>
+              <a href="/minha-conta" onClick={(e) => { handleLinkClick(e, 'minha-conta'); }} className="hover:opacity-60 transition-opacity">Minha Conta</a>
             ) : (
-              <a href="/login" onClick={(e) => { e.preventDefault(); handleLinkClick(e, 'login'); window.location.href = '/login'; }} className="hover:opacity-60 transition-opacity">Login</a>
+              <a href="/login" onClick={(e) => { handleLinkClick(e, 'login'); }} className="hover:opacity-60 transition-opacity">Login</a>
             )}
             <button 
                 onClick={handleCartClick} 

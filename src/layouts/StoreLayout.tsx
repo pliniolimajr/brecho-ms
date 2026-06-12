@@ -21,6 +21,14 @@ export function StoreLayout() {
       navigate('/catalogo');
       return;
     }
+    if (targetId === 'login') {
+      navigate('/login');
+      return;
+    }
+    if (targetId === 'minha-conta') {
+      navigate('/minha-conta');
+      return;
+    }
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => scrollToSection(targetId), 100);
