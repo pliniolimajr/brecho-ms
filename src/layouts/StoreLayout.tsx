@@ -15,6 +15,10 @@ export function StoreLayout() {
     fetchProducts();
   }, [fetchProducts]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     if (targetId === 'products') {

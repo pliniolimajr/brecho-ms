@@ -13,18 +13,18 @@ const About: React.FC = () => {
         </div>
         <div className="md:w-2/3 max-w-2xl">
           <p className="text-lg md:text-xl text-[#423226] font-light leading-relaxed mb-8">
-            O Brechó MS nasceu com um propósito simples e transformador: acreditamos que a moda sustentável não é apenas uma tendência, mas uma necessidade. Nossa curadoria resgata peças com histórias, qualidade e muito estilo.
+            A Little Palm Co. nasceu com um propósito simples e transformador: acreditamos que a moda sustentável não é apenas uma tendência, mas uma necessidade. Nossa curadoria foca em roupas com estilo, qualidade e durabilidade.
           </p>
           <p className="text-lg md:text-xl text-[#423226] font-light leading-relaxed mb-8">
-            Nós valorizamos tecidos que resistem ao tempo e modelagens que contam histórias. Garimpar é um ato de consciência e exclusividade. O nosso objetivo é conectar você a essas escolhas autênticas.
+            Nós valorizamos tecidos que resistem ao tempo e modelagens que contam histórias. Vestir-se bem é um ato de consciência e exclusividade. O nosso objetivo é conectar você a essas escolhas autênticas.
           </p>
           <img 
             src="https://images.unsplash.com/photo-1540221652346-e5dd6b50f3e7?auto=format&fit=crop&q=80&w=1200" 
-            alt="Interior do Brechó" 
+            alt="Interior da Loja" 
             className="w-full h-[400px] object-cover grayscale contrast-[0.9] brightness-110 mt-12"
           />
           <p className="text-sm font-medium uppercase tracking-widest text-[#A8A29E] mt-4">
-            Curadoria Brechó MS
+            Curadoria Little Palm Co.
           </p>
         </div>
       </div>
@@ -41,10 +41,10 @@ const About: React.FC = () => {
         <div className="order-1 lg:order-2 flex flex-col justify-center p-12 lg:p-24 bg-[#C06A35]">
            <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#423226] mb-6">Qualidade</span>
            <h3 className="text-4xl md:text-5xl font-serif mb-8 text-[#1A332B] leading-tight">
-             Peças únicas<br/>e duradouras.
+             Roupas incríveis<br/>e duradouras.
            </h3>
            <p className="text-lg text-[#423226] font-light leading-relaxed mb-12 max-w-md">
-             Rejeitamos o descartável. Cada peça do Brechó MS passa por um controle rigoroso de qualidade. Focamos em algodão, linho, jeans encorpados e tecidos que envelhecem com graça, mantendo o seu charme intacto.
+             Rejeitamos o descartável. Cada produto da Little Palm Co. passa por um controle rigoroso de qualidade. Focamos em algodão, linho, jeans encorpados e tecidos que duram mais, mantendo o seu charme intacto.
            </p>
         </div>
       </div>

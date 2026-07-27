@@ -45,7 +45,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, cartCount, onOpenCart }) =>
   return (
     <>
       <div className="bg-[#C06A35] text-[#FDF6F0] text-center text-xs tracking-widest py-2 px-4 uppercase font-medium">
-        Peças únicas e exclusivas. Reserve online, retire na nossa loja física.
+        Novidades toda semana. Compre online e retire na nossa loja física.
       </div>
       <nav 
         className={`sticky top-0 z-50 transition-all duration-300 ease-in-out border-b ${

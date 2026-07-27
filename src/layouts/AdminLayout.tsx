@@ -25,7 +25,7 @@ export function AdminLayout() {
     <div className="flex min-h-screen bg-[#FDF6F0] text-[#423226] font-sans">
       <aside className="w-64 bg-[#F4E4D4] p-6 flex flex-col border-r border-[#C06A35]/30">
         <div className="text-2xl font-serif font-bold text-[#1A332B] mb-12">
-          Brechó Admin
+          Admin Little Palm Co.
         </div>
         
         <nav className="flex-1 flex flex-col gap-2">

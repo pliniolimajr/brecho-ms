@@ -4,20 +4,49 @@ import ProductCard from '../components/ProductCard';
 import { useNavigate } from 'react-router-dom';
 
 const CATEGORIES = ['Todos', 'Vestidos', 'Calças', 'Saias', 'Camisetas', 'Casacos', 'Acessórios', 'Calçados', 'Outros'];
-const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'ÚNICO'];
+const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'ÚNICO', '34', '36', '38', '40', '42', '44', '46', '48'];
 
 export function Catalog() {
   const { products, isLoadingProducts } = useStore();
   const navigate = useNavigate();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState<string>('Todos');
   const [size, setSize] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<number>(1000);
   const [sortOrder, setSortOrder] = useState<'recent' | 'price_asc' | 'price_desc'>('recent');
 
+  const [selectedBrand, setSelectedBrand] = useState('Todos');
+  const [selectedColor, setSelectedColor] = useState('Todos');
+  const [selectedMaterial, setSelectedMaterial] = useState('Todos');
+
+  const uniqueBrands = useMemo(() => {
+    const list = products.map(p => p.brand).filter(Boolean) as string[];
+    return ['Todos', ...Array.from(new Set(list))];
+  }, [products]);
+
+  const uniqueColors = useMemo(() => {
+    const list = products.flatMap(p => p.color || []).filter(Boolean) as string[];
+    return ['Todos', ...Array.from(new Set(list))];
+  }, [products]);
+
+  const uniqueMaterials = useMemo(() => {
+    const list = products.map(p => p.material).filter(Boolean) as string[];
+    return ['Todos', ...Array.from(new Set(list))];
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(q) || 
+        p.description.toLowerCase().includes(q) ||
+        p.brand?.toLowerCase().includes(q)
+      );
+    }
 
     if (category !== 'Todos') {
       result = result.filter(p => p.category === category);
@@ -27,6 +56,18 @@ export function Catalog() {
       result = result.filter(p => p.size === size);
     }
     
+    if (selectedBrand !== 'Todos') {
+      result = result.filter(p => p.brand === selectedBrand);
+    }
+
+    if (selectedColor !== 'Todos') {
+      result = result.filter(p => p.color?.includes(selectedColor));
+    }
+
+    if (selectedMaterial !== 'Todos') {
+      result = result.filter(p => p.material === selectedMaterial);
+    }
+
     result = result.filter(p => p.price <= maxPrice);
 
     if (sortOrder === 'price_asc') {
@@ -38,14 +79,29 @@ export function Catalog() {
     // or just array order)
 
     return result;
-  }, [products, category, size, maxPrice, sortOrder]);
+  }, [products, category, size, maxPrice, sortOrder, searchQuery, selectedBrand, selectedColor, selectedMaterial]);
 
   return (
     <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
       <div className="max-w-[1800px] mx-auto px-6 md:px-12">
         
         <h1 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-4">Catálogo Completo</h1>
-        <p className="text-[#423226] mb-12">Filtre por tamanho, preço e categoria para encontrar seu próximo garimpo.</p>
+        <p className="text-[#423226] mb-8">Filtre por tamanho, preço e categoria para encontrar seu próximo produto favorito.</p>
+
+        <div className="mb-8 max-w-2xl">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Buscar por nome, descrição ou marca..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-[#C06A35]/30 py-3 pl-4 pr-12 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 absolute right-4 top-3.5 text-[#A8A29E]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </div>
+        </div>
 
         <div className="md:hidden mb-6">
           <button 
@@ -100,6 +156,57 @@ export function Catalog() {
               </div>
             </div>
 
+            {uniqueBrands.length > 1 && (
+              <div>
+                <h3 className="font-serif text-xl text-[#1A332B] mb-4 border-b border-[#C06A35]/30 pb-2">Marca</h3>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueBrands.map(b => (
+                    <button 
+                      key={b}
+                      onClick={() => setSelectedBrand(b)}
+                      className={`px-3 py-1 text-xs border ${selectedBrand === b ? 'bg-[#1A332B] text-white' : 'border-[#C06A35]/50 text-[#423226] hover:border-[#1A332B]'}`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {uniqueColors.length > 1 && (
+              <div>
+                <h3 className="font-serif text-xl text-[#1A332B] mb-4 border-b border-[#C06A35]/30 pb-2">Cor</h3>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueColors.map(c => (
+                    <button 
+                      key={c}
+                      onClick={() => setSelectedColor(c)}
+                      className={`px-3 py-1 text-xs border ${selectedColor === c ? 'bg-[#1A332B] text-white' : 'border-[#C06A35]/50 text-[#423226] hover:border-[#1A332B]'}`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {uniqueMaterials.length > 1 && (
+              <div>
+                <h3 className="font-serif text-xl text-[#1A332B] mb-4 border-b border-[#C06A35]/30 pb-2">Material</h3>
+                <div className="flex flex-wrap gap-2">
+                  {uniqueMaterials.map(m => (
+                    <button 
+                      key={m}
+                      onClick={() => setSelectedMaterial(m)}
+                      className={`px-3 py-1 text-xs border ${selectedMaterial === m ? 'bg-[#1A332B] text-white' : 'border-[#C06A35]/50 text-[#423226] hover:border-[#1A332B]'}`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
           <div>
             <h3 className="font-serif text-xl text-[#1A332B] mb-4 border-b border-[#C06A35]/30 pb-2">Preço Máximo: R$ {maxPrice}</h3>
             <input 
@@ -131,14 +238,14 @@ export function Catalog() {
         <main className="flex-1">
           <header className="mb-8 flex justify-between items-end">
             <h1 className="text-4xl font-serif text-[#1A332B]">{category === 'Todos' ? 'Catálogo Completo' : category}</h1>
-            <p className="text-sm text-[#A8A29E]">{filteredProducts.length} peças encontradas</p>
+            <p className="text-sm text-[#A8A29E]">{filteredProducts.length} produtos encontrados</p>
           </header>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
             {isLoadingProducts ? (
               <div className="col-span-full py-20 text-center text-[#423226]">Carregando catálogo...</div>
             ) : filteredProducts.length === 0 ? (
-              <div className="col-span-full py-20 text-center text-[#423226]">Nenhuma peça corresponde aos filtros aplicados.</div>
+              <div className="col-span-full py-20 text-center text-[#423226]">Nenhum produto corresponde aos filtros aplicados.</div>
             ) : (
               filteredProducts.map(product => (
                 <ProductCard 

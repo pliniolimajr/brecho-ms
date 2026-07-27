@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BRAND_NAME } from '../constants';
 
 interface FooterProps {
@@ -16,7 +17,7 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
             {BRAND_NAME}
           </h2>
           <p className="text-sm text-[#FDF6F0]/70 mb-6 leading-relaxed max-w-xs">
-            Um brechó curado de peças únicas. Valorizando o passado, vestindo o presente com estilo e sustentabilidade.
+            Uma loja curada com as melhores peças. Vestindo o presente com estilo e sustentabilidade.
           </p>
         </div>
 
@@ -24,22 +25,23 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         <div className="col-span-1 flex flex-col gap-4">
           <h3 className="text-xs uppercase tracking-widest font-bold text-[#FDF6F0] mb-4 border-b border-[#C06A35]/30 pb-2 inline-block w-max">Navegação</h3>
           <a href="#products" onClick={(e) => onLinkClick(e, 'products')} className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Catálogo Completo</a>
-          <a href="#about" onClick={(e) => onLinkClick(e, 'about')} className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Nossa História</a>
-          <a href="/minha-conta" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Minha Conta</a>
+          <Link to="/sobre" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Nossa História</Link>
+          <Link to="/minha-conta" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Minha Conta</Link>
         </div>
 
         {/* Links: Suporte */}
         <div className="col-span-1 flex flex-col gap-4">
           <h3 className="text-xs uppercase tracking-widest font-bold text-[#FDF6F0] mb-4 border-b border-[#C06A35]/30 pb-2 inline-block w-max">Suporte</h3>
-          <a href="#" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Trocas e Devoluções</a>
-          <a href="#" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Prazos de Entrega</a>
-          <a href="#" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Perguntas Frequentes</a>
+          <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Trocas e Devoluções</Link>
+          <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Prazos de Retirada</Link>
+          <Link to="/faq" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Perguntas Frequentes</Link>
+          <Link to="/contato" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Fale Conosco</Link>
         </div>
 
         {/* Contato & Social */}
         <div className="col-span-1 flex flex-col gap-4">
           <h3 className="text-xs uppercase tracking-widest font-bold text-[#FDF6F0] mb-4 border-b border-[#C06A35]/30 pb-2 inline-block w-max">Fale Conosco</h3>
-          <p className="text-sm text-[#FDF6F0]/70">contato@brechoms.com.br</p>
+          <p className="text-sm text-[#FDF6F0]/70">contato@littlepalm.co</p>
           <p className="text-sm text-[#FDF6F0]/70 mb-4">(11) 98765-4321</p>
           <div className="flex gap-4">
             <a href="#" className="text-[#FDF6F0] hover:text-[#C06A35] transition-colors">

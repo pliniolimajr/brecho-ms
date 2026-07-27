@@ -1,10 +1,25 @@
 
 import { useStore } from '../store/useStore';
 import Checkout from '../components/Checkout';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 export function CheckoutPage() {
   const { cart } = useStore();
+  const { session, loading } = useAuth();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FDF6F0] flex justify-center items-center">
+        <div className="w-8 h-8 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Navigate to="/login?redirect=/checkout" replace />;
+  }
+
   return <Checkout items={cart} onBack={() => navigate('/')} />;
 }

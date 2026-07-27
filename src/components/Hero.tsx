@@ -31,7 +31,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 w-full h-full">
         <img 
             src="https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=2000" 
-            alt="Moda sustentável e brechó" 
+            alt="Estilo e Moda" 
             className="w-full h-full object-cover grayscale contrast-[0.7] brightness-[0.95] animate-[pulse_15s_ease-in-out_infinite_alternate]"
         />
         {/* Warmer Brown Overlay for Richness */}
@@ -47,11 +47,11 @@ const Hero: React.FC = () => {
             Moda Sustentável
           </span>
           <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif font-normal text-white tracking-tight mb-8 drop-shadow-sm">
-            Brechó <span className="italic text-[#FDF6F0]">MS.</span>
+            Little Palm <span className="italic text-[#FDF6F0]">Co.</span>
           </h1>
           <p className="max-w-lg mx-0 md:mx-auto text-lg md:text-xl text-white/90 font-light leading-relaxed mb-12 text-shadow-sm">
-            Peças únicas, escolhas com propósito. <br/>
-            Valorize o que é bom e transforme o seu guarda-roupa com garimpos exclusivos.
+            Descubra as últimas tendências e estilos que combinam com você. <br/>
+            Valorize o que é bom e transforme o seu guarda-roupa com produtos exclusivos.
           </p>
           
           <a 
@@ -59,7 +59,7 @@ const Hero: React.FC = () => {
             onClick={(e) => handleNavClick(e, 'products')}
             className="group relative px-10 py-4 bg-[#FDF6F0] text-[#1A332B] rounded-full text-sm font-semibold uppercase tracking-widest hover:bg-white transition-all duration-500 overflow-hidden shadow-lg hover:shadow-xl inline-block"
           >
-            <span className="relative z-10 group-hover:text-[#1A332B]">Garimpe Agora</span>
+            <span className="relative z-10 group-hover:text-[#1A332B]">Compre Agora</span>
           </a>
         </div>
       </div>

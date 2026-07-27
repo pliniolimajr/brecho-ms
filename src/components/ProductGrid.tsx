@@ -26,9 +26,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({ onProductClick }) => {
       <div className="max-w-[1800px] mx-auto">
         <header className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-8">
           <div className="max-w-2xl">
-            <h2 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-6">Últimos Garimpos</h2>
+            <h2 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-6">Últimas Novidades</h2>
             <p className="text-lg text-[#423226]">
-              Peças únicas que acabaram de chegar. Se apaixonou? Leva, porque só tem uma!
+              Roupas incríveis que acabaram de chegar. Se apaixonou? Leva!
             </p>
           </div>
         </header>
@@ -36,9 +36,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({ onProductClick }) => {
         {/* Large Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20">
           {isLoadingProducts ? (
-            <div className="col-span-full py-20 text-center text-[#423226]">Carregando garimpos...</div>
+            <div className="col-span-full py-20 text-center text-[#423226]">Carregando produtos...</div>
           ) : recentProducts.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-[#423226]">O brechó está vazio no momento.</div>
+            <div className="col-span-full py-20 text-center text-[#423226]">A loja está vazia no momento.</div>
           ) : (
             recentProducts.map(product => (
               <ProductCard key={product.id} product={product} onClick={onProductClick} />

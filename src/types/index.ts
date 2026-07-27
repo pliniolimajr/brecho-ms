@@ -13,11 +13,16 @@ export interface Product {
   longDescription?: string;
   price: number;
   category: 'Todos' | 'Vestidos' | 'Calças' | 'Saias' | 'Camisetas' | 'Casacos' | 'Acessórios' | 'Calçados' | 'Outros';
-  size?: 'PP' | 'P' | 'M' | 'G' | 'GG' | 'ÚNICO';
+  size?: string;
   imageUrl: string;
   gallery?: string[];
   features: string[];
   isSold?: boolean;
+  brand?: string;
+  color?: string[];
+  material?: string;
+  measurements?: any;
+  stockQuantity?: number;
 }
 
 export interface Order {

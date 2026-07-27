@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../services/supabaseClient';
 import type { Product } from '../types';
 
@@ -14,22 +15,19 @@ interface StoreState {
   // Products State
   products: Product[];
   isLoadingProducts: boolean;
-  fetchProducts: () => Promise<void>;
+  lastFetched: number | null;
+  fetchProducts: (force?: boolean) => Promise<void>;
 }
 
-export const useStore = create<StoreState>((set, get) => ({
+export const useStore = create<StoreState>()(
+  persist(
+    (set, get) => ({
   cart: [],
   isCartOpen: false,
   
   addToCart: (product) => {
     const { cart } = get();
-    // Bloqueio de Carrinho: Limitar a 1 (peça única)
-    const alreadyInCart = cart.find(p => p.id === product.id);
-    if (!alreadyInCart) {
-      set({ cart: [...cart, product], isCartOpen: true });
-    } else {
-      set({ isCartOpen: true }); // Apenas abre o carrinho se já tiver
-    }
+    set({ cart: [...cart, product], isCartOpen: true });
   },
   
   removeFromCart: (productId) => {
@@ -42,8 +40,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
   products: [],
   isLoadingProducts: false,
+  lastFetched: null,
 
-  fetchProducts: async () => {
+  fetchProducts: async (force = false) => {
+    const { products, lastFetched } = get();
+    if (!force && products.length > 0 && lastFetched && Date.now() - lastFetched < 30000) {
+      return;
+    }
     set({ isLoadingProducts: true });
     const { data, error } = await supabase
       .from('products')
@@ -68,8 +71,20 @@ export const useStore = create<StoreState>((set, get) => ({
       imageUrl: row.image_url,
       gallery: row.gallery,
       features: row.features,
+      size: row.size,
+      brand: row.brand,
+      color: row.color,
+      material: row.material,
+      measurements: row.measurements,
+      stockQuantity: row.stock_quantity,
     }));
 
-    set({ products: mappedProducts, isLoadingProducts: false });
+    set({ products: mappedProducts, isLoadingProducts: false, lastFetched: Date.now() });
   }
-}));
+    }),
+    {
+      name: 'littlepalm-cart-storage',
+      partialize: (state) => ({ cart: state.cart }),
+    }
+  )
+);
