@@ -8,8 +8,8 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
   return (
-    <footer className="bg-[#1A332B] text-[#FDF6F0] py-20 px-6 md:px-12 border-t-4 border-[#C06A35]">
-      <div className="max-w-[1800px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
+    <footer className="bg-[#1A332B] text-[#FDF6F0] py-10 md:py-12 px-6 md:px-12 border-t-4 border-[#C06A35]">
+      <div className="max-w-[1800px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         
         {/* Brand */}
         <div className="col-span-1 md:col-span-1">
@@ -17,7 +17,7 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
             {BRAND_NAME}
           </h2>
           <p className="text-sm text-[#FDF6F0]/70 mb-6 leading-relaxed max-w-xs">
-            Uma loja curada com as melhores peças. Vestindo o presente com estilo e sustentabilidade.
+            Mais do que reunir roupas, a Palm Co. seleciona peças que compartilham uma mesma visão de estilo: elegância descomplicada, qualidade e autenticidade.
           </p>
         </div>
 
@@ -33,7 +33,7 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         <div className="col-span-1 flex flex-col gap-4">
           <h3 className="text-xs uppercase tracking-widest font-bold text-[#FDF6F0] mb-4 border-b border-[#C06A35]/30 pb-2 inline-block w-max">Suporte</h3>
           <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Trocas e Devoluções</Link>
-          <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Prazos de Retirada</Link>
+          <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Prazos de Envio</Link>
           <Link to="/faq" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Perguntas Frequentes</Link>
           <Link to="/contato" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Fale Conosco</Link>
         </div>
@@ -41,7 +41,7 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         {/* Contato & Social */}
         <div className="col-span-1 flex flex-col gap-4">
           <h3 className="text-xs uppercase tracking-widest font-bold text-[#FDF6F0] mb-4 border-b border-[#C06A35]/30 pb-2 inline-block w-max">Fale Conosco</h3>
-          <p className="text-sm text-[#FDF6F0]/70">contato@littlepalm.co</p>
+          <p className="text-sm text-[#FDF6F0]/70">contato@palm.co</p>
           <p className="text-sm text-[#FDF6F0]/70 mb-4">(11) 98765-4321</p>
           <div className="flex gap-4">
             <a href="#" className="text-[#FDF6F0] hover:text-[#C06A35] transition-colors">
@@ -56,9 +56,12 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         </div>
       </div>
       
-      <div className="max-w-[1800px] mx-auto mt-16 pt-8 border-t border-[#C06A35]/30 flex flex-col justify-center items-center gap-4">
-        <p className="text-xs text-[#FDF6F0]/50 tracking-widest uppercase">
-          &copy; {new Date().getFullYear()} {BRAND_NAME}. Todos os direitos reservados.
+      <div className="max-w-[1800px] mx-auto mt-10 pt-6 border-t border-[#C06A35]/30 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-[#FDF6F0]/60">
+        <p className="tracking-widest uppercase text-center md:text-left">
+          &copy; {new Date().getFullYear()} {BRAND_NAME.endsWith('.') ? BRAND_NAME : BRAND_NAME + '.'} Todos os direitos reservados.
+        </p>
+        <p className="tracking-widest uppercase text-center md:text-right">
+          Desenvolvido por <a href="https://www.apertef1.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-[#C06A35] transition-colors underline font-medium text-[#FDF6F0]">Aperte F1</a>
         </p>
       </div>
     </footer>

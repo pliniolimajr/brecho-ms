@@ -1,11 +1,52 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useStoreSettings } from '../hooks/useStoreSettings';
+import { useNavigate } from 'react-router-dom';
+
+const HERO_SLIDES = [
+  {
+    id: 1,
+    url: '/hero/slide_1.jpg',
+    title: 'Mulher em arquitetura mediterrânea',
+  },
+  {
+    id: 2,
+    url: '/hero/slide_2.jpg',
+    title: 'Textura de linho orgânico',
+  },
+  {
+    id: 3,
+    url: '/hero/slide_3.jpg',
+    title: 'Sombra de palmeiras na parede',
+  },
+  {
+    id: 4,
+    url: '/hero/slide_4.jpg',
+    title: 'Detalhe em couro artesanal',
+  },
+  {
+    id: 5,
+    url: '/hero/slide_5.jpg',
+    title: 'Casal em passeio urbano',
+  },
+];
 
 const Hero: React.FC = () => {
+  const { hero } = useStoreSettings();
+  const navigate = useNavigate();
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlideIndex((prevIndex) => (prevIndex + 1) % HERO_SLIDES.length);
+    }, 15000); // 15 segundos por imagem
+
+    return () => clearInterval(timer);
+  }, []);
+
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     const element = document.getElementById(targetId);
     if (element) {
-      // Manual scroll calculation to account for fixed header
       const headerOffset = 85;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.scrollY - headerOffset;
@@ -15,61 +56,126 @@ const Hero: React.FC = () => {
         behavior: "smooth"
       });
       
-      // Update URL hash without jumping, safely ignoring errors in sandboxed environments
       try {
         window.history.pushState(null, '', `#${targetId}`);
       } catch (err) {
         // Ignore SecurityError in restricted environments
       }
+    } else {
+      navigate('/catalogo');
     }
   };
 
   return (
-    <section className="relative w-full h-screen min-h-[800px] overflow-hidden bg-[#C06A35]">
+    <section className="relative w-full h-screen min-h-[750px] overflow-hidden bg-[#111111]">
       
-      {/* Background Image - Thrift Store / Fashion aesthetic */}
+      {/* Background Slider Container */}
       <div className="absolute inset-0 w-full h-full">
-        <img 
-            src="https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=2000" 
-            alt="Estilo e Moda" 
-            className="w-full h-full object-cover grayscale contrast-[0.7] brightness-[0.95] animate-[pulse_15s_ease-in-out_infinite_alternate]"
-        />
-        {/* Warmer Brown Overlay for Richness */}
-        <div className="absolute inset-0 bg-[#433E38]/40 mix-blend-multiply"></div>
-        {/* Deep Sepia Tone for Shadow Depth */}
-        <div className="absolute inset-0 bg-[#313030]/20"></div>
+        {HERO_SLIDES.map((slide, index) => {
+          const isActive = index === currentSlideIndex;
+          return (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 w-full h-full transition-opacity duration-2000 ease-in-out ${
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+            >
+              <img 
+                src={slide.url} 
+                alt={slide.title} 
+                className={`w-full h-full object-cover object-center grayscale contrast-[0.9] brightness-[0.85] transition-transform duration-[15000ms] ease-out ${
+                  isActive ? 'scale-105' : 'scale-100'
+                }`}
+              />
+            </div>
+          );
+        })}
+
+        {/* Dark Editorial Overlay ~50% */}
+        <div className="absolute inset-0 bg-black/50 z-10"></div>
+        {/* Subtle Vignette for Depth */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/40 z-10"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center items-start text-left md:items-center md:text-center px-6">
-        <div className="animate-fade-in-up w-full md:w-auto">
-          <span className="block text-xs md:text-sm font-medium uppercase tracking-[0.2em] text-white/90 mb-6 backdrop-blur-sm bg-white/10 px-4 py-2 rounded-full mx-0 md:mx-auto w-fit">
-            Moda Sustentável
-          </span>
-          <h1 className="text-6xl md:text-8xl lg:text-9xl font-serif font-normal text-white tracking-tight mb-8 drop-shadow-sm">
-            Little Palm <span className="italic text-[#FDF6F0]">Co.</span>
+      {/* Hero Content Area */}
+      <div className="relative z-20 h-full max-w-[1400px] mx-auto px-6 flex flex-col justify-center items-center text-center">
+        <div className="max-w-3xl flex flex-col items-center animate-fade-in-up">
+          
+          {/* Microtag: Editorial style with lines */}
+          <div className="flex items-center gap-4 text-[11px] font-medium tracking-[0.3em] uppercase text-white/80 mb-6">
+            <span className="w-8 h-[1px] bg-white/40"></span>
+            <span>{hero.tagline || 'DESIGN ATEMPORAL'}</span>
+            <span className="w-8 h-[1px] bg-white/40"></span>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif font-normal text-[#FDF6F0] tracking-tight mb-6 drop-shadow-sm">
+            {hero.title || 'Palm Co.'}
           </h1>
-          <p className="max-w-lg mx-0 md:mx-auto text-lg md:text-xl text-white/90 font-light leading-relaxed mb-12 text-shadow-sm">
-            Descubra as últimas tendências e estilos que combinam com você. <br/>
-            Valorize o que é bom e transforme o seu guarda-roupa com produtos exclusivos.
+
+          {/* Subtitle */}
+          <p className="max-w-xl text-base sm:text-lg md:text-xl text-white/85 font-light leading-relaxed mb-10 tracking-wide font-sans">
+            {hero.subtitle || 'Peças criadas para acompanhar seu dia com conforto, qualidade e um design que permanece atual.'}
           </p>
           
-          <a 
-            href="#products" 
-            onClick={(e) => handleNavClick(e, 'products')}
-            className="group relative px-10 py-4 bg-[#FDF6F0] text-[#1A332B] rounded-full text-sm font-semibold uppercase tracking-widest hover:bg-white transition-all duration-500 overflow-hidden shadow-lg hover:shadow-xl inline-block"
-          >
-            <span className="relative z-10 group-hover:text-[#1A332B]">Compre Agora</span>
-          </a>
+          {/* Buttons Area */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-8 w-full">
+            {/* Primary Button (Opção C: Reto / Arquitetônico rounded-none) */}
+            <a 
+              href="#products" 
+              onClick={(e) => handleNavClick(e, 'products')}
+              className="group h-[52px] px-8 sm:px-9 bg-[#F4EFE9] text-[#111111] border border-[#F4EFE9] rounded-none text-xs font-semibold uppercase tracking-[0.18em] hover:bg-[#C06A35] hover:text-white hover:border-[#C06A35] hover:-translate-y-[2px] transition-all duration-250 ease-out shadow-sm hover:shadow-xl inline-flex items-center justify-center gap-3"
+            >
+              <span>{hero.buttonText || 'Explorar coleção'}</span>
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth={1.75} 
+                stroke="currentColor" 
+                className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1.5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </a>
+
+            {/* Secondary Button */}
+            <a 
+              href="/sobre" 
+              onClick={(e) => { e.preventDefault(); navigate('/sobre'); }}
+              className="group relative py-3 px-4 text-xs sm:text-sm font-medium tracking-[0.2em] text-white/90 uppercase transition-colors hover:text-white inline-flex items-center justify-center"
+            >
+              <span>Nossa história</span>
+              <span className="absolute bottom-1 left-0 right-0 h-[1px] bg-white/40 group-hover:bg-white transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left"></span>
+            </a>
+          </div>
+
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce text-white/50">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
+      {/* Slide Indicators / Navigation Controls */}
+      <div className="absolute bottom-8 right-8 z-20 flex items-center gap-3">
+        {HERO_SLIDES.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentSlideIndex(index)}
+            aria-label={`Slide ${index + 1}`}
+            className={`h-1 transition-all duration-500 rounded-full ${
+              index === currentSlideIndex ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+            }`}
+          />
+        ))}
       </div>
+
+      {/* Subtle Scroll Indicator */}
+      <div 
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 opacity-50 hover:opacity-90 transition-opacity cursor-pointer text-white"
+        onClick={(e) => handleNavClick(e as any, 'products')}
+      >
+        <span className="text-[9px] uppercase tracking-[0.25em] font-light">Scroll</span>
+        <div className="w-[1px] h-6 bg-gradient-to-b from-white via-white/50 to-transparent animate-pulse"></div>
+      </div>
+
     </section>
   );
 };

@@ -9,7 +9,7 @@ export function Terms() {
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">1. Aceitação dos Termos</h2>
             <p>
-              Ao acessar e utilizar a plataforma da Little Palm Co., você concorda em cumprir e estar vinculado aos seguintes Termos de Uso. Caso não concorde com qualquer parte destes termos, você não deve utilizar nosso site ou serviços.
+              Ao acessar e utilizar a plataforma da Palm Co., você concorda em cumprir e estar vinculado aos seguintes Termos de Uso. Caso não concorde com qualquer parte destes termos, você não deve utilizar nosso site ou serviços.
             </p>
           </section>
 
@@ -30,14 +30,14 @@ export function Terms() {
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">4. Propriedade Intelectual</h2>
             <p>
-              Todo o conteúdo deste site, incluindo imagens, textos, logotipos e layouts, é de propriedade exclusiva da Little Palm Co. e é protegido pelas leis de propriedade intelectual. É proibida qualquer reprodução ou uso não autorizado.
+              Todo o conteúdo deste site, incluindo imagens, textos, logotipos e layouts, é de propriedade exclusiva da Palm Co. e é protegido pelas leis de propriedade intelectual. É proibida qualquer reprodução ou uso não autorizado.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">5. Limitação de Responsabilidade</h2>
             <p>
-              A Little Palm Co. não se responsabiliza por danos diretos, indiretos ou incidentais resultantes do uso ou da incapacidade de usar nossos serviços, ou por qualquer erro nas informações publicadas.
+              A Palm Co. não se responsabiliza por danos diretos, indiretos ou incidentais resultantes do uso ou da incapacidade de usar nossos serviços, ou por qualquer erro nas informações publicadas.
             </p>
           </section>
         </div>

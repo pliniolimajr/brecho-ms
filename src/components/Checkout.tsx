@@ -3,11 +3,6 @@ import type { Product } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
-import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
-
-// Inicialize com a Public Key (pode usar uma variável de ambiente ou de teste por enquanto)
-initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY || 'APP_USR-00000000000-00000-00000000-0000000', { locale: 'pt-BR' });
-
 interface CheckoutProps {
   items: Product[];
   onBack: () => void;
@@ -17,12 +12,31 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
   const { user } = useAuth();
   const { clearCart } = useStore();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [preferenceId, setPreferenceId] = useState<string | null>(null);
+  const [success] = useState(false);
+  const [preferenceId] = useState<string | null>(null);
 
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Delivery states
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
+  
+  const [shippingAddress, setShippingAddress] = useState({
+    zipCode: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: ''
+  });
+
+  const [shippingRates, setShippingRates] = useState<any[]>([]);
+  const [selectedRate, setSelectedRate] = useState<any | null>(null);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     email: user?.email || '',
@@ -32,32 +46,160 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     paymentMethod: 'pix' as 'pix' | 'credit_card'
   });
 
+  // Calculate Shipping Helper
+  const handleCalculateShipping = async (zip: string) => {
+    const clean = zip.replace(/\D/g, '');
+    if (!clean || clean.length < 8) return;
+    
+    setLoadingShipping(true);
+    setShippingError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calculate-shipping`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          toZip: clean,
+          items: items
+        })
+      });
+      const data = await response.json();
+      if (data.error) {
+        setShippingError(data.error);
+        setShippingRates([]);
+      } else {
+        setShippingRates(data);
+        if (data.length > 0) {
+          // Escolhe automaticamente a opção mais barata
+          const sorted = [...data].sort((a, b) => a.price - b.price);
+          setSelectedRate(sorted[0]);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      setShippingError('Erro ao calcular frete. Tente novamente.');
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  // ViaCEP autocomplete
+  const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    // Formatação visual do CEP: 00000-000
+    const formatted = rawVal
+      .replace(/\D/g, '')
+      .replace(/(\d{5})(\d)/, '$1-$2')
+      .substring(0, 9);
+
+    setShippingAddress(prev => ({ ...prev, zipCode: formatted }));
+    
+    const clean = formatted.replace(/\D/g, '');
+    if (clean.length === 8) {
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          setShippingAddress(prev => ({
+            ...prev,
+            street: data.logradouro || '',
+            neighborhood: data.bairro || '',
+            city: data.localidade || '',
+            state: data.uf || '',
+          }));
+          handleCalculateShipping(clean);
+        } else {
+          setShippingError('CEP não encontrado.');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const handleAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setSelectedAddressId(id);
+    if (id === 'new') {
+      setShippingAddress({
+        zipCode: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+      });
+      setSelectedRate(null);
+      setShippingRates([]);
+    } else {
+      const addr = savedAddresses.find(a => a.id === id);
+      if (addr) {
+        const zipWithHyphen = addr.zip_code.replace(/(\d{5})(\d)/, '$1-$2');
+        setShippingAddress({
+          zipCode: zipWithHyphen,
+          street: addr.street,
+          number: addr.number,
+          complement: addr.complement || '',
+          neighborhood: addr.neighborhood,
+          city: addr.city,
+          state: addr.state,
+        });
+        handleCalculateShipping(addr.zip_code);
+      }
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setFormData(prev => ({ ...prev, email: user.email || '' }));
       
-      const fetchProfile = async () => {
-        const { data } = await supabase
+      const fetchProfileAndAddresses = async () => {
+        const { data: profile } = await supabase
           .from('customers')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
-        if (data) {
+        if (profile) {
           setFormData(prev => ({
             ...prev,
-            firstName: data.first_name || '',
-            lastName: data.last_name || '',
-            phone: data.phone || '',
+            firstName: profile.first_name || '',
+            lastName: profile.last_name || '',
+            phone: profile.phone || '',
           }));
+        }
+
+        const { data: addresses } = await supabase
+          .from('addresses')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        if (addresses && addresses.length > 0) {
+          setSavedAddresses(addresses);
+          const defaultAddr = addresses.find(a => a.is_default) || addresses[0];
+          setSelectedAddressId(defaultAddr.id);
+          const zipWithHyphen = defaultAddr.zip_code.replace(/(\d{5})(\d)/, '$1-$2');
+          setShippingAddress({
+            zipCode: zipWithHyphen,
+            street: defaultAddr.street,
+            number: defaultAddr.number,
+            complement: defaultAddr.complement || '',
+            neighborhood: defaultAddr.neighborhood,
+            city: defaultAddr.city,
+            state: defaultAddr.state,
+          });
+          handleCalculateShipping(defaultAddr.zip_code);
         }
       };
       
-      fetchProfile();
+      fetchProfileAndAddresses();
     }
   }, [user]);
 
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  const shipping = 0; // Free shipping mock
+  const shippingCost = selectedRate ? selectedRate.price : 0;
   
   const discountAmount = useMemo(() => {
     if (!appliedCoupon) return 0;
@@ -68,7 +210,66 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     }
   }, [appliedCoupon, subtotal]);
 
-  const total = Math.max(0, subtotal + shipping - discountAmount);
+  const total = Math.max(0, subtotal + shippingCost - discountAmount);
+
+  // Sincronização do Carrinho Abandonado
+  const syncAbandonedCart = async () => {
+    if (!items || items.length === 0) return;
+
+    let sessionCartId = localStorage.getItem('littlepalm_cart_session_id');
+    if (!sessionCartId) {
+      sessionCartId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+      localStorage.setItem('littlepalm_cart_session_id', sessionCartId);
+    }
+
+    const cartItems = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      size: item.size,
+      imageUrl: item.imageUrl
+    }));
+
+    const customerInfo = {
+      email: formData.email,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone,
+      shippingAddress: {
+        zipCode: shippingAddress.zipCode,
+        street: shippingAddress.street,
+        number: shippingAddress.number,
+        complement: shippingAddress.complement,
+        neighborhood: shippingAddress.neighborhood,
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        shippingService: selectedRate?.name || ''
+      }
+    };
+
+    try {
+      await supabase.from('abandoned_carts').upsert({
+        id: sessionCartId,
+        user_id: user?.id || null,
+        cart_items: cartItems,
+        customer_info: customerInfo,
+        total_amount: total,
+        status: 'abandoned'
+      });
+    } catch (err) {
+      console.error('Erro ao sincronizar carrinho abandonado:', err);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      syncAbandonedCart();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [formData, shippingAddress, selectedRate, items, appliedCoupon]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -117,9 +318,37 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return;
+    if (!selectedRate) {
+      alert('Selecione uma opção de frete para continuar.');
+      return;
+    }
     setLoading(true);
 
-    // Sincronizar dados digitados com o perfil do cliente
+    // Validação de estoque real no Supabase
+    try {
+      const itemIds = items.map(i => i.id);
+      const { data: dbProducts, error: stockCheckError } = await supabase
+        .from('products')
+        .select('id, name, is_sold, stock_quantity')
+        .in('id', itemIds);
+
+      if (stockCheckError) {
+        console.error('Erro ao verificar estoque real:', stockCheckError);
+      } else if (dbProducts) {
+        for (const item of items) {
+          const found = dbProducts.find(p => p.id === item.id);
+          if (found && (found.is_sold || (found.stock_quantity !== null && found.stock_quantity <= 0))) {
+            alert(`O produto "${found.name || item.name}" não está mais disponível em estoque.`);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.error('Exceção ao validar estoque:', stockErr);
+    }
+
+    // Sincronizar perfil do cliente
     if (user) {
       const { data: profile } = await supabase
         .from('customers')
@@ -139,22 +368,48 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       } else {
         await supabase.from('customers').insert(profilePayload);
       }
+
+      // Se for endereço novo, salvar no catálogo do cliente
+      if (selectedAddressId === 'new') {
+        await supabase.from('addresses').insert({
+          user_id: user.id,
+          street: shippingAddress.street,
+          number: shippingAddress.number,
+          complement: shippingAddress.complement,
+          neighborhood: shippingAddress.neighborhood,
+          city: shippingAddress.city,
+          state: shippingAddress.state,
+          zip_code: shippingAddress.zipCode.replace(/\D/g, ''),
+          is_default: savedAddresses.length === 0
+        });
+      }
     }
 
     // 1. Criar o pedido (Order)
+    const shippingDetails = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone,
+      pickup: false,
+      postalCode: shippingAddress.zipCode.replace(/\D/g, ''),
+      street: shippingAddress.street,
+      number: shippingAddress.number,
+      complement: shippingAddress.complement,
+      neighborhood: shippingAddress.neighborhood,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      shippingCost: shippingCost,
+      shippingService: selectedRate?.name || ''
+    };
+
     const { data: orderData, error: orderError } = await supabase.from('orders').insert({
       user_id: user?.id || null,
       status: 'pending',
       total_amount: total,
-      payment_method: formData.paymentMethod,
+      payment_method: 'mercado_pago',
       coupon_id: appliedCoupon?.id || null,
       discount_amount: discountAmount,
-      shipping_address: {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone,
-        pickup: true
-      }
+      shipping_address: shippingDetails
     }).select().single();
 
     if (orderError || !orderData) {
@@ -164,64 +419,120 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       return;
     }
 
-    // 2. Criar os itens do pedido
-    const orderItems = items.map(item => ({
-      order_id: orderData.id,
-      product_id: item.id,
-      price: item.price
-    }));
-
-    await supabase.from('order_items').insert(orderItems);
-
-    // Incrementar uso do cupom se aplicável
-    if (appliedCoupon) {
-      await supabase.rpc('increment_coupon_uses', { coupon_id: appliedCoupon.id });
-    }
-
-    // 3. Gerar Preferência do Mercado Pago
+    // 2. Gerar Preferência do Mercado Pago ANTES de commitar os itens/cupons (com timeout de 10s)
     try {
       const discountRatio = subtotal > 0 ? discountAmount / subtotal : 0;
+      
+      // Ajusta preço dos itens aplicando o desconto proporcionalmente
       const adjustedItems = items.map(item => ({
         ...item,
         price: Number((item.price * (1 - discountRatio)).toFixed(2))
       }));
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-preference`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          items: adjustedItems,
-          payer: {
-            email: formData.email,
-            firstName: formData.firstName,
-            lastName: formData.lastName
+      // Adiciona o frete como um item de serviço no Mercado Pago se houver
+      if (shippingCost > 0) {
+        adjustedItems.push({
+          id: 'shipping_fee',
+          name: `Frete: ${selectedRate?.name || 'Correios'}`,
+          price: shippingCost,
+          category: 'Outros',
+          imageUrl: '',
+          features: [],
+          tagline: '',
+          description: ''
+        } as any);
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      let response: Response;
+      try {
+        response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-preference`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
           },
-          orderId: orderData.id // Para o webhook
-        })
-      });
+          body: JSON.stringify({
+            items: adjustedItems,
+            payer: {
+              email: formData.email,
+              firstName: formData.firstName,
+              lastName: formData.lastName
+            },
+            orderId: orderData.id,
+            origin: window.location.origin
+          }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       
       const prefData = await response.json();
-      if (prefData.id) {
-         setPreferenceId(prefData.id);
+      if (prefData.init_point || prefData.sandbox_init_point) {
          
-         // Marcar produtos como pendentes ou aguardar o webhook.
-         // Aqui, para simplificar o MVP, marcamos como vendidos para reservar.
+         // Se sucesso, criar os itens do pedido no banco
+         const orderItems = items.map(item => ({
+           order_id: orderData.id,
+           product_id: item.id,
+           price: item.price
+         }));
+         await supabase.from('order_items').insert(orderItems);
+
+         // Incrementar uso do cupom se aplicável
+         if (appliedCoupon) {
+           await supabase.rpc('increment_coupon_uses', { coupon_id: appliedCoupon.id });
+         }
+
+         // Marcar produtos como vendidos para reserva
          for (const item of items) {
            await supabase.from('products').update({ is_sold: true }).eq('id', item.id);
          }
          
+         // Marcar carrinho abandonado correspondente como recuperado
+         try {
+           const sessionCartId = localStorage.getItem('littlepalm_cart_session_id');
+           if (sessionCartId) {
+             await supabase
+               .from('abandoned_carts')
+               .update({
+                 status: 'recovered',
+                 order_id: orderData.id
+               })
+               .eq('id', sessionCartId);
+             localStorage.removeItem('littlepalm_cart_session_id');
+           }
+         } catch (err) {
+           console.error('Erro ao recuperar carrinho:', err);
+         }
+
          clearCart();
-         setSuccess(true);
+         
+         // Redirecionar para o Checkout do Mercado Pago
+         const redirectUrl = prefData.sandbox_init_point || prefData.init_point;
+         window.location.href = redirectUrl;
+
       } else {
-         throw new Error(prefData.error || 'Erro ao gerar pagamento');
+         throw new Error(prefData.error || `Erro inesperado da Edge Function: ${JSON.stringify(prefData)}`);
       }
-    } catch (err) {
-      console.error(err);
-      alert('Erro de comunicação com o Mercado Pago. Tente novamente mais tarde.');
-    } finally {
+    } catch (err: any) {
+      console.error("Erro completo no checkout:", err);
+      let rollbackMessage = "";
+      if (orderData?.id) {
+         const { error: deleteError } = await supabase.from('orders').delete().eq('id', orderData.id);
+         if (deleteError) {
+           console.error("Erro no rollback do pedido:", deleteError);
+           rollbackMessage = ` (Não foi possível limpar o pedido temporário: ${deleteError.message})`;
+         } else {
+           rollbackMessage = " (Pedido temporário cancelado)";
+         }
+      }
+      const errorMessage = err.name === 'AbortError'
+        ? 'Tempo limite de conexão excedido com o Mercado Pago (10s). Por favor, tente novamente.'
+        : (err.message || err);
+      alert(`Erro no processo de checkout: ${errorMessage}${rollbackMessage}`);
       setLoading(false);
     }
   };
@@ -266,11 +577,174 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                 </div>
               </div>
 
-              {/* Section 2: Shipping */}
+              {/* Section 2: Shipping Address */}
               <div>
-                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Retirada na Loja</h2>
-                <p className="text-sm text-[#423226] mb-4">No momento, não estamos realizando envios. Seus produtos estarão reservados para retirada presencial após a confirmação do pagamento.</p>
-                <div className="space-y-4">
+                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Endereço de Entrega</h2>
+
+                <div className="space-y-6">
+                  {/* Endereço Salvo (Seleção Rápida) */}
+                  {user && savedAddresses.length > 0 && (
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Usar Endereço Salvo</label>
+                      <select 
+                        value={selectedAddressId} 
+                        onChange={handleAddressSelect} 
+                        className="w-full bg-white border border-[#C06A35]/30 rounded p-3 text-[#1A332B] text-sm focus:border-[#1A332B] outline-none"
+                      >
+                        {savedAddresses.map(addr => (
+                          <option key={addr.id} value={addr.id}>
+                            {addr.street}, {addr.number} ({addr.city} - {addr.state})
+                          </option>
+                        ))}
+                        <option value="new">+ Cadastrar Novo Endereço</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Formulário de Endereço */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CEP</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="00000-000" 
+                          value={shippingAddress.zipCode} 
+                          onChange={handleCepChange} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Número</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="Ex: 123" 
+                          value={shippingAddress.number} 
+                          onChange={e => setShippingAddress({...shippingAddress, number: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Rua / Logradouro</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="Rua..." 
+                          value={shippingAddress.street} 
+                          onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Complemento</label>
+                        <input 
+                          type="text" 
+                          placeholder="Apto, Bloco, etc." 
+                          value={shippingAddress.complement} 
+                          onChange={e => setShippingAddress({...shippingAddress, complement: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Bairro</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="Bairro..." 
+                          value={shippingAddress.neighborhood} 
+                          onChange={e => setShippingAddress({...shippingAddress, neighborhood: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Cidade</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="Cidade..." 
+                          value={shippingAddress.city} 
+                          onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Estado</label>
+                        <input 
+                          required 
+                          type="text" 
+                          placeholder="UF" 
+                          value={shippingAddress.state} 
+                          onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} 
+                          disabled={selectedAddressId !== 'new'}
+                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Exibição dos Fretes Calculados */}
+                  <div className="mt-8 border-t border-[#C06A35]/20 pt-6">
+                    <h3 className="font-serif text-lg text-[#1A332B] mb-4">Escolha a Opção de Envio</h3>
+                    
+                    {loadingShipping ? (
+                      <div className="flex items-center gap-3 text-[#A8A29E] py-4">
+                        <svg className="animate-spin h-5 w-5 text-[#1A332B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Consultando taxas com SuperFrete...</span>
+                      </div>
+                    ) : shippingError ? (
+                      <p className="text-sm text-red-700 py-2">{shippingError}</p>
+                    ) : shippingRates.length === 0 ? (
+                      <p className="text-sm text-[#A8A29E] py-2">Insira um CEP válido para calcular as opções de frete.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {shippingRates.map(rate => (
+                          <label 
+                            key={rate.id} 
+                            onClick={() => setSelectedRate(rate)}
+                            className={`flex items-center justify-between p-4 border rounded cursor-pointer transition-all duration-300 ${selectedRate?.id === rate.id ? 'border-[#1A332B] bg-[#1A332B]/5' : 'border-[#C06A35]/20 hover:border-[#C06A35]'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input 
+                                type="radio" 
+                                name="shipping_rate" 
+                                checked={selectedRate?.id === rate.id} 
+                                onChange={() => setSelectedRate(rate)}
+                                className="accent-[#1A332B]" 
+                              />
+                              <div>
+                                <span className="font-medium text-[#1A332B] block">{rate.name}</span>
+                                <span className="text-xs text-[#A8A29E]">Prazo de entrega: {rate.delivery_time} {rate.delivery_time > 1 ? 'dias úteis' : 'dia útil'}</span>
+                              </div>
+                            </div>
+                            <span className="font-serif text-[#1A332B] font-medium">R$ {rate.price.toFixed(2).replace('.', ',')}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-8 space-y-4">
                    <div className="grid grid-cols-2 gap-4">
                       <input required type="text" placeholder="Nome" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
                       <input required type="text" placeholder="Sobrenome" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
@@ -281,39 +755,23 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
                {/* Section 3: Payment */}
               <div>
-                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Pagamento (Mercado Pago)</h2>
+                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Pagamento Seguro (Mercado Pago)</h2>
                 <div className="p-6 border border-[#C06A35] bg-white/50 space-y-4">
-                   <p className="text-sm text-[#423226] mb-4">Escolha a forma de pagamento e finalize com segurança.</p>
-                   {preferenceId ? (
-                     <div className="mt-4">
-                        <Wallet initialization={{ preferenceId }} />
-                     </div>
-                   ) : (
-                     <div className="flex gap-4">
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input type="radio" name="payment" value="pix" checked={formData.paymentMethod === 'pix'} onChange={() => setFormData({...formData, paymentMethod: 'pix'})} className="accent-[#1A332B]" />
-                         <span>PIX</span>
-                       </label>
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input type="radio" name="payment" value="credit_card" checked={formData.paymentMethod === 'credit_card'} onChange={() => setFormData({...formData, paymentMethod: 'credit_card'})} className="accent-[#1A332B]" />
-                         <span>Cartão de Crédito</span>
-                       </label>
-                     </div>
-                   )}
+                   <p className="text-sm text-[#423226]">
+                     Você será redirecionado para o ambiente seguro do Mercado Pago para escolher sua forma de pagamento (PIX, Boleto ou Cartão de Crédito) e finalizar a compra.
+                   </p>
                 </div>
               </div>
 
-              {!preferenceId && (
-                <div>
-                  <button 
-                      type="submit"
-                      disabled={loading || items.length === 0}
-                      className="w-full py-5 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-sm font-medium transition-colors disabled:opacity-50"
-                  >
-                      {loading ? 'Processando...' : `Confirmar Pedido — R$ ${total.toFixed(2).replace('.', ',')}`}
-                  </button>
-                </div>
-              )}
+              <div>
+                <button 
+                    type="submit"
+                    disabled={loading || items.length === 0 || !selectedRate}
+                    className="w-full py-5 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                    {loading ? 'Redirecionando...' : `Finalizar no Mercado Pago — R$ ${total.toFixed(2).replace('.', ',')}`}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -350,7 +808,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
               )}
               <div className="flex justify-between text-sm text-[#423226]">
                  <span>Frete</span>
-                 <span>Grátis</span>
+                 <span>{selectedRate ? `R$ ${selectedRate.price.toFixed(2).replace('.', ',')}` : 'A calcular'}</span>
               </div>
             </div>
 

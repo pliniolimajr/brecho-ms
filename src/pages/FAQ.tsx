@@ -11,15 +11,15 @@ export function FAQ() {
   const faqs: FAQItem[] = [
     {
       question: "As peças são originais?",
-      answer: "Sim! Todas as peças vendidas na Little Palm Co. passam por um rigoroso processo de autenticação e curadoria antes de serem expostas em nosso catálogo."
+      answer: "Sim! Todas as peças vendidas na Palm Co. passam por um rigoroso processo de autenticação e curadoria antes de serem expostas em nosso catálogo."
     },
     {
-      question: "Como funciona a retirada presencial?",
-      answer: "Ao finalizar seu pedido, você receberá a confirmação de pagamento. Seus produtos estarão prontos para retirada no nosso showroom no dia seguinte. Entraremos em contato via WhatsApp para combinar o melhor horário."
+      question: "Como funciona o envio e entrega?",
+      answer: "Nossos envios são feitos via Correios (PAC ou SEDEX) em até 2 dias úteis após a confirmação do pagamento. O prazo final depende da sua região e é calculado no momento da compra."
     },
     {
-      question: "Vocês enviam para outros estados?",
-      answer: "No momento estamos focados na retirada presencial em nosso showroom. Em breve expandiremos para entregas nacionais via transportadora parceira."
+      question: "Como posso rastrear meu pedido?",
+      answer: "Assim que o pedido for postado nos Correios, enviaremos o código de rastreamento por e-mail e WhatsApp para você acompanhar a entrega passo a passo."
     },
     {
       question: "Como posso pagar minhas compras?",
@@ -27,7 +27,7 @@ export function FAQ() {
     },
     {
       question: "Posso devolver uma peça se não servir?",
-      answer: "Claro. Você tem até 7 dias corridos a partir da retirada da peça para solicitar a troca ou a devolução por qualquer motivo. A peça precisa estar com a tag intacta e sem sinais de uso."
+      answer: "Claro. Você tem até 7 dias corridos a partir da data de recebimento do pacote para solicitar a troca ou a devolução por qualquer motivo. A peça precisa estar com a tag intacta e sem sinais de uso."
     }
   ];
 

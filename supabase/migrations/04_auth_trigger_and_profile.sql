@@ -15,8 +15,18 @@ BEGIN
   INSERT INTO public.customers (user_id, first_name, last_name, phone, cpf, birth_date, preferences)
   VALUES (
     new.id,
-    COALESCE(new.raw_user_meta_data->>'first_name', ''),
-    COALESCE(new.raw_user_meta_data->>'last_name', ''),
+    COALESCE(
+      NULLIF(new.raw_user_meta_data->>'first_name', ''), 
+      split_part(new.raw_user_meta_data->>'full_name', ' ', 1), 
+      split_part(new.raw_user_meta_data->>'name', ' ', 1), 
+      ''
+    ),
+    COALESCE(
+      NULLIF(new.raw_user_meta_data->>'last_name', ''), 
+      substr(new.raw_user_meta_data->>'full_name', length(split_part(new.raw_user_meta_data->>'full_name', ' ', 1)) + 2), 
+      substr(new.raw_user_meta_data->>'name', length(split_part(new.raw_user_meta_data->>'name', ' ', 1)) + 2), 
+      ''
+    ),
     COALESCE(new.raw_user_meta_data->>'phone', ''),
     COALESCE(new.raw_user_meta_data->>'cpf', ''),
     (NULLIF(new.raw_user_meta_data->>'birth_date', ''))::DATE,

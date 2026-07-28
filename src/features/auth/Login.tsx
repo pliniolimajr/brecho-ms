@@ -10,11 +10,14 @@ export function Login() {
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [preferences, setPreferences] = useState<'feminine' | 'masculine' | 'none'>('none');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cpfError, setCpfError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -41,6 +44,21 @@ export function Login() {
     value = value.replace(/(\d{3})(\d)/, '$1.$2');
     value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     setCpf(value);
+    setCpfError(null);
+  };
+
+  const handleCpfBlur = async () => {
+    if (cpf.length === 14) {
+      try {
+        const { data, error } = await supabase.rpc('check_cpf_exists', { p_cpf: cpf });
+        if (error) throw error;
+        if (data) {
+          setCpfError('Este CPF já está cadastrado.');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar CPF:', err);
+      }
+    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +73,7 @@ export function Login() {
     setPhone(value);
   };
 
-  const handleOAuthLogin = async (provider: 'google' | 'azure') => {
+  const handleOAuthLogin = async (provider: 'google') => {
     const redirectToUrl = `${window.location.origin}${redirect}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -73,8 +91,18 @@ export function Login() {
     setSuccessMsg(null);
 
     if (isSignUp) {
+      if (cpfError) {
+        setError('O CPF informado já está cadastrado.');
+        setLoading(false);
+        return;
+      }
       if (!isPasswordValid) {
         setError('A senha não cumpre todos os requisitos de segurança.');
+        setLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('As senhas não coincidem.');
         setLoading(false);
         return;
       }
@@ -94,12 +122,15 @@ export function Login() {
             cpf,
             phone,
             birth_date: birthDate,
-            preferences,
           }
         }
       });
       if (error) {
-        setError(error.message);
+        if (error.message.includes('Database error saving new user')) {
+           setError('Este CPF já está cadastrado ou os dados informados são inválidos.');
+        } else {
+           setError(error.message);
+        }
       } else {
         if (data?.session) {
           navigate(redirect);
@@ -119,12 +150,12 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF6F0] flex flex-col justify-center items-center p-4 md:p-8 text-[#1A332B]">
+    <div className="min-h-[80vh] pt-24 pb-16 px-4 md:px-8 bg-[#FDF6F0] flex flex-col items-center justify-start text-[#1A332B] animate-fade-in-up">
       <div className="max-w-lg w-full bg-white p-6 md:p-10 rounded shadow-md border border-[#C06A35]/15">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-serif mb-2">{isSignUp ? 'Criar Conta' : 'Bem-vindo(a)'}</h1>
           <p className="text-xs tracking-widest uppercase opacity-60">
-            {isSignUp ? 'Junte-se à Little Palm Co.' : 'Acesse sua conta'}
+            {isSignUp ? 'Junte-se à Palm Co.' : 'Acesse sua conta'}
           </p>
         </div>
 
@@ -178,9 +209,11 @@ export function Login() {
                     required
                     value={cpf}
                     onChange={handleCpfChange}
-                    className="w-full border-b border-[#1A332B]/30 bg-transparent py-2 focus:outline-none focus:border-[#1A332B] transition-colors"
+                    onBlur={handleCpfBlur}
+                    className={`w-full border-b bg-transparent py-2 focus:outline-none transition-colors ${cpfError ? 'border-red-500' : 'border-[#1A332B]/30 focus:border-[#1A332B]'}`}
                     placeholder="000.000.000-00"
                   />
+                  {cpfError && <span className="text-red-500 text-xs mt-1 block">{cpfError}</span>}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="phone">Telefone *</label>
@@ -208,42 +241,7 @@ export function Login() {
                 />
               </div>
 
-              <div>
-                <span className="block text-xs font-semibold uppercase tracking-wider mb-2">Quais são as suas preferências?</span>
-                <span className="block text-xs text-gray-500 mb-3">Vamos selecionar itens personalizados para você.</span>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="preferences"
-                      checked={preferences === 'feminine'}
-                      onChange={() => setPreferences('feminine')}
-                      className="accent-[#1A332B]"
-                    />
-                    Moda Feminina
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="preferences"
-                      checked={preferences === 'masculine'}
-                      onChange={() => setPreferences('masculine')}
-                      className="accent-[#1A332B]"
-                    />
-                    Moda Masculina
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="preferences"
-                      checked={preferences === 'none'}
-                      onChange={() => setPreferences('none')}
-                      className="accent-[#1A332B]"
-                    />
-                    Prefiro não informar
-                  </label>
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -262,16 +260,60 @@ export function Login() {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="password">Senha *</label>
-            <input 
-              id="password"
-              type="password" 
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border-b border-[#1A332B]/30 bg-transparent py-2 focus:outline-none focus:border-[#1A332B] transition-colors"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input 
+                id="password"
+                type={showPassword ? "text" : "password"} 
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border-b border-[#1A332B]/30 bg-transparent py-2 pr-10 focus:outline-none focus:border-[#1A332B] transition-colors"
+                placeholder="••••••••"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#1A332B] transition-colors"
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                )}
+              </button>
+            </div>
           </div>
+
+          {isSignUp && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="confirmPassword">Confirmar Senha *</label>
+              <div className="relative">
+                <input 
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"} 
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full border-b bg-transparent py-2 pr-10 focus:outline-none transition-colors ${confirmPassword && password !== confirmPassword ? 'border-red-500 text-red-500' : 'border-[#1A332B]/30 focus:border-[#1A332B]'}`}
+                  placeholder="••••••••"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#1A332B] transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  )}
+                </button>
+              </div>
+              {confirmPassword && password !== confirmPassword && (
+                <span className="text-red-500 text-xs mt-1 block">As senhas não coincidem.</span>
+              )}
+            </div>
+          )}
 
           {isSignUp && password.length > 0 && (
             <div className="bg-[#FDF6F0] p-4 rounded border border-[#C06A35]/10 space-y-3 text-xs">
@@ -353,15 +395,6 @@ export function Login() {
                 <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"/>
               </svg>
               Google
-            </button>
-            <button 
-              onClick={() => handleOAuthLogin('azure')}
-              className="w-full flex items-center justify-center gap-2 border border-[#C06A35]/50 p-3 rounded text-sm text-[#1A332B] hover:bg-white transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M7.462 0H0v7.462h7.462V0zM16 0H8.538v7.462H16V0zM7.462 8.538H0V16h7.462V8.538zM16 8.538H8.538V16H16V8.538z"/>
-              </svg>
-              Microsoft
             </button>
           </div>
         </div>

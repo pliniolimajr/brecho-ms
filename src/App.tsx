@@ -16,6 +16,11 @@ const FAQ = lazy(() => import('./pages/FAQ').then(module => ({ default: module.F
 const Contact = lazy(() => import('./pages/Contact').then(module => ({ default: module.Contact })));
 const Terms = lazy(() => import('./pages/Terms').then(module => ({ default: module.Terms })));
 const Privacy = lazy(() => import('./pages/Privacy').then(module => ({ default: module.Privacy })));
+const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess').then(module => ({ default: module.CheckoutSuccess })));
+const CheckoutFailure = lazy(() => import('./pages/CheckoutFailure').then(module => ({ default: module.CheckoutFailure })));
+const CheckoutPending = lazy(() => import('./pages/CheckoutPending').then(module => ({ default: module.CheckoutPending })));
+
+import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 
 export function App() {
   return (
@@ -39,13 +44,18 @@ export function App() {
             <Route path="contato" element={<Contact />} />
             <Route path="termos" element={<Terms />} />
             <Route path="privacidade" element={<Privacy />} />
+            <Route path="checkout-success" element={<CheckoutSuccess />} />
+            <Route path="checkout-failure" element={<CheckoutFailure />} />
+            <Route path="checkout-pending" element={<CheckoutPending />} />
+            <Route path="login" element={<Login />} />
           </Route>
 
-          {/* Auth Route */}
-          <Route path="/login" element={<Login />} />
-
           {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={
+            <ProtectedAdminRoute>
+              <AdminLayout />
+            </ProtectedAdminRoute>
+          }>
             <Route index element={<AdminDashboard />} />
             {/* Outras rotas do admin: /admin/orders, /admin/customers */}
           </Route>

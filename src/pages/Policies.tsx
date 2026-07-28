@@ -12,23 +12,23 @@ export function Policies() {
 
         <div className="space-y-10 bg-white p-8 md:p-12 rounded border border-[#C06A35]/20">
           <section className="space-y-4">
-            <h2 className="text-xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">1. Retirada na Loja</h2>
+            <h2 className="text-xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">1. Envio e Entrega</h2>
             <p className="text-sm text-[#423226] leading-relaxed">
-              Atualmente operamos exclusivamente com a modalidade de **retirada presencial**. Após a aprovação do seu pagamento, os produtos ficarão reservados no nosso showroom e prontos para retirada em até 1 dia útil.
+              Realizamos envios para todo o Brasil através dos Correios (modalidades PAC e SEDEX). Os pedidos são despachados em até <strong className="font-semibold text-[#1A332B]">2 dias úteis</strong> após a confirmação do pagamento. O prazo final de entrega e o valor do frete variam de acordo com o CEP de destino e são informados no momento do checkout.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">2. Trocas e Devoluções</h2>
             <p className="text-sm text-[#423226] leading-relaxed">
-              Aceitamos trocas ou devoluções no prazo de até **7 dias corridos** a contar do dia da retirada, conforme o Código de Defesa do Consumidor. A peça deve ser devolvida nas mesmas condições em que foi adquirida, sem sinais de uso e com a etiqueta da Little Palm Co. fixada.
+              Aceitamos trocas ou devoluções no prazo de até <strong className="font-semibold text-[#1A332B]">7 dias corridos</strong> a contar da data de recebimento do pedido, conforme o Código de Defesa do Consumidor. A peça deve ser devolvida nas mesmas condições em que foi entregue, sem sinais de uso e com a etiqueta da Palm Co. fixada.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">3. Como solicitar</h2>
             <p className="text-sm text-[#423226] leading-relaxed">
-              Para iniciar o processo de troca ou devolução, entre em contato pelo nosso WhatsApp ou e-mail com o número do seu pedido. Nossa equipe agendará um horário para você realizar a devolução presencialmente.
+              Para iniciar o processo de troca ou devolução, entre em contato pelo nosso WhatsApp ou e-mail com o número do seu pedido. Forneceremos um código de autorização de postagem dos Correios (logística reversa) para que você possa nos enviar o produto sem custos de frete.
             </p>
           </section>
         </div>

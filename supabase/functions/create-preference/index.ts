@@ -12,14 +12,20 @@ serve(async (req) => {
   }
 
   try {
-    const { items, payer } = await req.json()
+    const { items, payer, origin, orderId } = await req.json()
     const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
     
     if (!MP_ACCESS_TOKEN) {
         throw new Error('MP_ACCESS_TOKEN não está configurado nas variáveis de ambiente do Supabase.')
     }
 
-    const preferenceData = {
+    let backUrlBase = origin || req.headers.get('origin') || req.headers.get('Origin') || 'http://localhost:5173'
+    if (typeof backUrlBase !== 'string' || (!backUrlBase.startsWith('http://') && !backUrlBase.startsWith('https://'))) {
+      backUrlBase = 'http://localhost:5173'
+    }
+    backUrlBase = backUrlBase.replace(/\/$/, '') // Remove trailing slash if present
+
+    const preferenceData: any = {
       items: items.map((item: any) => ({
         id: item.id,
         title: item.name,
@@ -33,11 +39,21 @@ serve(async (req) => {
         surname: payer.lastName,
       },
       back_urls: {
-        success: `${req.headers.get('origin')}/checkout-success`,
-        failure: `${req.headers.get('origin')}/checkout-failure`,
-        pending: `${req.headers.get('origin')}/checkout-pending`,
+        success: `${backUrlBase}/checkout-success`,
+        failure: `${backUrlBase}/checkout-failure`,
+        pending: `${backUrlBase}/checkout-pending`,
       },
-      auto_return: 'approved',
+      external_reference: orderId,
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '')
+    if (supabaseUrl) {
+      preferenceData.notification_url = `${supabaseUrl}/functions/v1/payment-webhook`
+    }
+
+    // Mercado Pago API validator rejects auto_return if back_urls are localhost or lack TLDs
+    if (!backUrlBase.includes('localhost') && !backUrlBase.includes('127.0.0.1')) {
+      preferenceData.auto_return = 'approved';
     }
 
     const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
@@ -51,7 +67,12 @@ serve(async (req) => {
 
     const data = await response.json()
     
-    return new Response(JSON.stringify({ id: data.id }), {
+    if (!response.ok) {
+      const errorMsg = data.message || data.error || JSON.stringify(data);
+      throw new Error(`Mercado Pago API Error: ${errorMsg} | Sent Payload: ${JSON.stringify(preferenceData)}`);
+    }
+    
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

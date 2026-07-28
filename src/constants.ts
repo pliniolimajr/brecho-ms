@@ -59,6 +59,6 @@ export const PRODUCTS: Product[] = [
   }
 ];
 
-export const BRAND_NAME = 'Little Palm Co.';
+export const BRAND_NAME = 'Palm Co.';
 export const PRIMARY_COLOR = 'stone-900'; 
 export const ACCENT_COLOR = 'stone-500';
