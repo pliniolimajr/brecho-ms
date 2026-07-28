@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 10 - TABELA SEPARADA PARA ADMINISTRADORES (LITTLE PALM CO.)
+-- FASE 10 - TABELA SEPARADA PARA ADMINISTRADORES (LITTLE Palm CO.)
 -- Execute este script no SQL Editor do Supabase
 -- =========================================================================
 

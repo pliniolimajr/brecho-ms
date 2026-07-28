@@ -59,10 +59,10 @@ const generateProducts = (count) => {
     const color = colors[Math.floor(Math.random() * colors.length)];
     const brand = brands[Math.floor(Math.random() * brands.length)];
     const size = sizes[Math.floor(Math.random() * sizes.length)];
-    
+
     const name = `${type.prefix} em ${mat} ${adj}`;
     const price = Math.floor(Math.random() * (type.priceRange[1] - type.priceRange[0])) + type.priceRange[0] + 0.90;
-    
+
     // Pick 3 random distinct images
     const shuffledImages = [...images].sort(() => 0.5 - Math.random());
     const mainImage = shuffledImages[0];
@@ -72,13 +72,13 @@ const generateProducts = (count) => {
       name: name,
       tagline: `Coleção Exclusiva - ${brand}`,
       description: `Peça impecável da marca ${brand}, perfeita para um look ${adj.toLowerCase()} e sofisticado. A cor ${color} traz versatilidade ao guarda-roupa.`,
-      long_description: `Feito com maestria em ${mat}, o ${name} é uma escolha certeira para quem busca conforto sem abrir mão da elegância. Peça garimpada com cuidado, passando por rigoroso processo de curadoria da Palm Co. Lavagem a seco recomendada.`,
+      long_description: `Feito com maestria em ${mat}, o ${name} é uma escolha certeira para quem busca conforto sem abrir mão da elegância. Peça garimpada com cuidado, passando por rigoroso processo de curadoria da Palm CO. Lavagem a seco recomendada.`,
       price: price,
       category: type.categories[0],
       size: size,
       image_url: mainImage,
       gallery: gallery,
-      features: ['Curadoria Palm Co.', `Material: ${mat}`, `Cor: ${color}`],
+      features: ['Curadoria Palm CO.', `Material: ${mat}`, `Cor: ${color}`],
       brand: brand,
       color: [color],
       material: mat,
@@ -86,7 +86,7 @@ const generateProducts = (count) => {
       is_sold: false
     });
   }
-  
+
   return products;
 };
 
@@ -104,12 +104,12 @@ async function seed() {
     console.error("❌ Erro ao deletar produtos antigos:", deleteError.message);
     return;
   }
-  
+
   console.log("✅ Base de produtos limpa com sucesso!");
 
   // 2. Generate 50 realistic products
   const productsToInsert = generateProducts(50);
-  
+
   console.log(`🌱 Inserindo ${productsToInsert.length} novos produtos realistas...`);
   const { error: insertError } = await supabase
     .from('products')

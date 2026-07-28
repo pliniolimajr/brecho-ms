@@ -1,4 +1,4 @@
-# 📖 Manual de Instruções do Administrador — Little Palm Co.
+# 📖 Manual de Instruções do Administrador — Little Palm CO.
 
 Bem-vindo ao guia prático de gerenciamento do Painel de Controle da sua loja! Aqui você aprenderá a gerenciar o estoque, atualizar pedidos, gerenciar cupons e acompanhar as métricas em poucos cliques.
 

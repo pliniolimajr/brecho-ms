@@ -4,12 +4,12 @@ export function Terms() {
       <div className="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded shadow-sm border border-[#C06A35]/20">
         <h1 className="text-4xl font-serif mb-6 text-center">Termos de Uso</h1>
         <p className="text-sm text-gray-500 mb-8 text-center uppercase tracking-widest">Última atualização: Julho de 2026</p>
-        
+
         <div className="space-y-6 text-[#423226] leading-relaxed">
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">1. Aceitação dos Termos</h2>
             <p>
-              Ao acessar e utilizar a plataforma da Palm Co., você concorda em cumprir e estar vinculado aos seguintes Termos de Uso. Caso não concorde com qualquer parte destes termos, você não deve utilizar nosso site ou serviços.
+              Ao acessar e utilizar a plataforma da Palm CO., você concorda em cumprir e estar vinculado aos seguintes Termos de Uso. Caso não concorde com qualquer parte destes termos, você não deve utilizar nosso site ou serviços.
             </p>
           </section>
 
@@ -30,14 +30,14 @@ export function Terms() {
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">4. Propriedade Intelectual</h2>
             <p>
-              Todo o conteúdo deste site, incluindo imagens, textos, logotipos e layouts, é de propriedade exclusiva da Palm Co. e é protegido pelas leis de propriedade intelectual. É proibida qualquer reprodução ou uso não autorizado.
+              Todo o conteúdo deste site, incluindo imagens, textos, logotipos e layouts, é de propriedade exclusiva da Palm CO. e é protegido pelas leis de propriedade intelectual. É proibida qualquer reprodução ou uso não autorizado.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-serif mb-3 text-[#1A332B]">5. Limitação de Responsabilidade</h2>
             <p>
-              A Palm Co. não se responsabiliza por danos diretos, indiretos ou incidentais resultantes do uso ou da incapacidade de usar nossos serviços, ou por qualquer erro nas informações publicadas.
+              A Palm CO. não se responsabiliza por danos diretos, indiretos ou incidentais resultantes do uso ou da incapacidade de usar nossos serviços, ou por qualquer erro nas informações publicadas.
             </p>
           </section>
         </div>

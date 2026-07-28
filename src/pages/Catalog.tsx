@@ -24,7 +24,7 @@ export function Catalog() {
   const [selectedMaterial, setSelectedMaterial] = useState('Todos');
 
   useEffect(() => {
-    document.title = 'Coleção & Catálogo | Palm Co.';
+    document.title = 'Coleção & Catálogo | Palm CO.';
   }, []);
 
   useEffect(() => {
@@ -77,8 +77,8 @@ export function Catalog() {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(q) || 
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
         p.brand?.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
@@ -89,11 +89,11 @@ export function Catalog() {
     if (category !== 'Todos') {
       result = result.filter(p => p.category === category);
     }
-    
+
     if (size) {
       result = result.filter(p => p.size === size);
     }
-    
+
     if (selectedBrand !== 'Todos') {
       result = result.filter(p => p.brand === selectedBrand);
     }
@@ -128,7 +128,7 @@ export function Catalog() {
   return (
     <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
       <div className="max-w-[1800px] mx-auto px-6 md:px-12">
-        
+
         <h1 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-3">Coleção & Curadoria</h1>
         <p className="text-[#423226] mb-8 max-w-2xl text-sm md:text-base leading-relaxed">
           Peças atemporais selecionadas com olhar criterioso. Explore nosso catálogo por categoria, tamanho, cor ou tecido.
@@ -137,16 +137,16 @@ export function Catalog() {
         {/* Search & Sort Header Bar */}
         <div className="mb-8 flex flex-col md:flex-row gap-4 max-w-4xl">
           <div className="relative flex-1">
-            <input 
-              type="text" 
-              placeholder="Buscar por nome, tecido, cor ou marca..." 
+            <input
+              type="text"
+              placeholder="Buscar por nome, tecido, cor ou marca..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="catalog-search-input"
               className="w-full bg-white border border-[#C06A35]/30 py-3 pl-4 pr-12 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors rounded-sm text-sm"
             />
             {searchQuery ? (
-              <button 
+              <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-4 top-3 text-[#A8A29E] hover:text-[#1A332B] font-bold text-sm"
                 title="Limpar busca"
@@ -160,8 +160,8 @@ export function Catalog() {
             )}
           </div>
           <div className="w-full md:w-56 flex-shrink-0 relative">
-            <select 
-              value={sortOrder} 
+            <select
+              value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
               id="catalog-sort-select"
               className="w-full bg-white border border-[#C06A35]/30 py-3 px-4 text-[#1A332B] outline-none focus:border-[#1A332B] transition-colors appearance-none cursor-pointer pr-10 rounded-sm text-sm"
@@ -172,7 +172,7 @@ export function Catalog() {
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#A8A29E]">
               <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
               </svg>
             </div>
           </div>
@@ -230,7 +230,7 @@ export function Catalog() {
                 <button onClick={() => setMaxPrice(1000)} className="font-bold hover:text-[#C06A35]">&times;</button>
               </span>
             )}
-            <button 
+            <button
               onClick={resetAllFilters}
               className="text-[#C06A35] underline hover:text-[#1A332B] font-medium ml-auto text-xs"
             >
@@ -240,7 +240,7 @@ export function Catalog() {
         )}
 
         <div className="md:hidden mb-6">
-          <button 
+          <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
             className="w-full bg-[#1A332B] text-white py-3 uppercase tracking-widest text-sm font-medium flex items-center justify-center gap-2 rounded-sm"
           >
@@ -252,7 +252,7 @@ export function Catalog() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-12 items-start">
-          
+
           {/* Sidebar - Filtros */}
           <aside className={`w-full md:w-64 flex-shrink-0 space-y-8 ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
             <div>
@@ -260,7 +260,7 @@ export function Catalog() {
               <ul className="space-y-1.5">
                 {CATEGORIES.map(cat => (
                   <li key={cat}>
-                    <button 
+                    <button
                       onClick={() => setCategory(cat)}
                       className={`text-sm text-left w-full transition-colors ${category === cat ? 'font-bold text-[#C06A35]' : 'text-[#423226] hover:text-[#1A332B]'}`}
                     >
@@ -274,14 +274,14 @@ export function Catalog() {
             <div>
               <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Tamanho</h3>
               <div className="flex flex-wrap gap-1.5">
-                <button 
+                <button
                   onClick={() => setSize('')}
                   className={`px-3 py-1 text-xs border rounded-sm transition-colors ${!size ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                 >
                   Todos
                 </button>
                 {SIZES.map(s => (
-                  <button 
+                  <button
                     key={s}
                     onClick={() => setSize(s)}
                     className={`px-3 py-1 text-xs border rounded-sm transition-colors ${size === s ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
@@ -297,7 +297,7 @@ export function Catalog() {
                 <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Marca</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueBrands.map(b => (
-                    <button 
+                    <button
                       key={b}
                       onClick={() => setSelectedBrand(b)}
                       className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedBrand === b ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
@@ -314,7 +314,7 @@ export function Catalog() {
                 <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Cor</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueColors.map(c => (
-                    <button 
+                    <button
                       key={c}
                       onClick={() => setSelectedColor(c)}
                       className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedColor === c ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
@@ -331,7 +331,7 @@ export function Catalog() {
                 <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Material</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueMaterials.map(m => (
-                    <button 
+                    <button
                       key={m}
                       onClick={() => setSelectedMaterial(m)}
                       className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedMaterial === m ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
@@ -350,7 +350,7 @@ export function Catalog() {
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex-1">
                   <label className="text-[10px] uppercase font-bold text-[#A8A29E] block mb-1">Mínimo</label>
-                  <input 
+                  <input
                     type="number"
                     min="0"
                     max={maxPrice}
@@ -363,7 +363,7 @@ export function Catalog() {
                 <span className="text-[#A8A29E] font-medium pt-4">-</span>
                 <div className="flex-1">
                   <label className="text-[10px] uppercase font-bold text-[#A8A29E] block mb-1">Máximo</label>
-                  <input 
+                  <input
                     type="number"
                     min={minPrice}
                     placeholder="1000"
@@ -375,12 +375,12 @@ export function Catalog() {
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] text-[#A8A29E] block">Ajuste rápido preço máx: R$ {maxPrice}</label>
-                <input 
-                  type="range" 
-                  min="10" 
-                  max="1000" 
-                  step="10" 
-                  value={maxPrice} 
+                <input
+                  type="range"
+                  min="10"
+                  max="1000"
+                  step="10"
+                  value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
                   className="w-full accent-[#1A332B] cursor-pointer"
                 />
@@ -413,7 +413,7 @@ export function Catalog() {
                   <p className="text-sm text-[#423226] max-w-md mx-auto mb-6">
                     Não encontramos produtos correspondentes aos filtros aplicados. Tente ajustar os parâmetros ou busque por termos mais genéricos.
                   </p>
-                  <button 
+                  <button
                     onClick={resetAllFilters}
                     className="px-6 py-2.5 bg-[#1A332B] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#C06A35] transition-colors"
                   >
@@ -422,10 +422,10 @@ export function Catalog() {
                 </div>
               ) : (
                 filteredProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onClick={(p) => navigate(`/produto/${p.id}`)} 
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={(p) => navigate(`/produto/${p.id}`)}
                   />
                 ))
               )}

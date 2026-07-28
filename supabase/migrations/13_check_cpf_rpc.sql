@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. RPC PARA CHECAGEM DE CPF
+-- FASE 4 - LITTLE Palm CO. RPC PARA CHECAGEM DE CPF
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

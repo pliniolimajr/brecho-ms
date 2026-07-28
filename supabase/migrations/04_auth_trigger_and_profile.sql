@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. AUTO USER PROFILE CREATION & NAME & PREFERENCES
+-- FASE 4 - LITTLE Palm CO. AUTO USER PROFILE CREATION & NAME & PREFERENCES
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

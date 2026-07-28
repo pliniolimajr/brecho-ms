@@ -22,7 +22,7 @@ export function Login() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  
+
   const redirect = searchParams.get('redirect') || '/minha-conta';
 
   const isMinLengthAndAlphaNumeric = password.length >= 6 && /[a-zA-Z]/.test(password) && /[0-9]/.test(password);
@@ -127,9 +127,9 @@ export function Login() {
       });
       if (error) {
         if (error.message.includes('Database error saving new user')) {
-           setError('Este CPF já está cadastrado ou os dados informados são inválidos.');
+          setError('Este CPF já está cadastrado ou os dados informados são inválidos.');
         } else {
-           setError(error.message);
+          setError(error.message);
         }
       } else {
         if (data?.session) {
@@ -155,7 +155,7 @@ export function Login() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-serif mb-2">{isSignUp ? 'Criar Conta' : 'Bem-vindo(a)'}</h1>
           <p className="text-xs tracking-widest uppercase opacity-60">
-            {isSignUp ? 'Junte-se à Palm Co.' : 'Acesse sua conta'}
+            {isSignUp ? 'Junte-se à Palm CO.' : 'Acesse sua conta'}
           </p>
         </div>
 
@@ -170,15 +170,15 @@ export function Login() {
               {successMsg}
             </div>
           )}
-          
+
           {isSignUp && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="firstName">Nome *</label>
-                  <input 
+                  <input
                     id="firstName"
-                    type="text" 
+                    type="text"
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -188,9 +188,9 @@ export function Login() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="lastName">Sobrenome *</label>
-                  <input 
+                  <input
                     id="lastName"
-                    type="text" 
+                    type="text"
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
@@ -203,9 +203,9 @@ export function Login() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="cpf">CPF *</label>
-                  <input 
+                  <input
                     id="cpf"
-                    type="text" 
+                    type="text"
                     required
                     value={cpf}
                     onChange={handleCpfChange}
@@ -217,9 +217,9 @@ export function Login() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="phone">Telefone *</label>
-                  <input 
+                  <input
                     id="phone"
-                    type="text" 
+                    type="text"
                     required
                     value={phone}
                     onChange={handlePhoneChange}
@@ -231,9 +231,9 @@ export function Login() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="birthDate">Data de Nascimento *</label>
-                <input 
+                <input
                   id="birthDate"
-                  type="date" 
+                  type="date"
                   required
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
@@ -247,9 +247,9 @@ export function Login() {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="email">E-mail *</label>
-            <input 
+            <input
               id="email"
-              type="email" 
+              type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -261,17 +261,17 @@ export function Login() {
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="password">Senha *</label>
             <div className="relative">
-              <input 
+              <input
                 id="password"
-                type={showPassword ? "text" : "password"} 
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border-b border-[#1A332B]/30 bg-transparent py-2 pr-10 focus:outline-none focus:border-[#1A332B] transition-colors"
                 placeholder="••••••••"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#1A332B] transition-colors"
               >
@@ -288,17 +288,17 @@ export function Login() {
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider mb-2" htmlFor="confirmPassword">Confirmar Senha *</label>
               <div className="relative">
-                <input 
+                <input
                   id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"} 
+                  type={showConfirmPassword ? "text" : "password"}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className={`w-full border-b bg-transparent py-2 pr-10 focus:outline-none transition-colors ${confirmPassword && password !== confirmPassword ? 'border-red-500 text-red-500' : 'border-[#1A332B]/30 focus:border-[#1A332B]'}`}
                   placeholder="••••••••"
                 />
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-[#1A332B] transition-colors"
                 >
@@ -361,7 +361,7 @@ export function Login() {
 
           {isSignUp && (
             <div className="flex items-start gap-2 pt-2">
-              <input 
+              <input
                 id="acceptedTerms"
                 type="checkbox"
                 required
@@ -375,8 +375,8 @@ export function Login() {
             </div>
           )}
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading || (isSignUp && (!isPasswordValid || !acceptedTerms))}
             className="w-full bg-[#1A332B] text-[#FDF6F0] py-4 text-xs uppercase tracking-widest hover:opacity-90 transition-opacity mt-8 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -387,20 +387,20 @@ export function Login() {
         <div className="mt-8 pt-8 border-t border-[#C06A35]/30">
           <p className="text-center text-sm text-[#423226] mb-4">Ou acesse com:</p>
           <div className="flex flex-col gap-3">
-            <button 
+            <button
               onClick={() => handleOAuthLogin('google')}
               className="w-full flex items-center justify-center gap-2 border border-[#C06A35]/50 p-3 rounded text-sm text-[#1A332B] hover:bg-white transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"/>
+                <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352 2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z" />
               </svg>
               Google
             </button>
           </div>
         </div>
-        
+
         <div className="mt-8 text-center">
-          <button 
+          <button
             onClick={() => { setIsSignUp(!isSignUp); setError(null); setSuccessMsg(null); }}
             className="text-xs tracking-widest uppercase opacity-60 hover:opacity-100 transition-opacity"
           >

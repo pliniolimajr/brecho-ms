@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. CUSTOMER BALANCES (STORE CREDIT)
+-- FASE 4 - LITTLE Palm CO. CUSTOMER BALANCES (STORE CREDIT)
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

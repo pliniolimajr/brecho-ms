@@ -27,13 +27,13 @@ export const STORE_SETTINGS = {
   } as TopBarSettings,
   hero: {
     imageUrl: "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=2000",
-    title: "Palm Co.",
+    title: "Palm CO.",
     subtitle: "Peças criadas para acompanhar seu dia com conforto, qualidade e um design que permanece atual.",
     tagline: "DESIGN ATEMPORAL",
     buttonText: "Explorar coleção"
   } as HeroSettings,
   storeInfo: {
-    name: "Palm Co.",
+    name: "Palm CO.",
     document: "12.345.678/0001-90",
     address: "Rua das Palmeiras, 123",
     city: "Campo Grande",
@@ -48,7 +48,7 @@ export function useStoreSettings() {
     hero: STORE_SETTINGS.hero,
     storeInfo: STORE_SETTINGS.storeInfo,
     loading: false,
-    fetchSettings: async () => {},
+    fetchSettings: async () => { },
     updateSetting: async () => true
   };
 }

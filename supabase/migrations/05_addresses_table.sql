@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. ENDEREÇOS DOS CLIENTES (ADDRESSES)
+-- FASE 4 - LITTLE Palm CO. ENDEREÇOS DOS CLIENTES (ADDRESSES)
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

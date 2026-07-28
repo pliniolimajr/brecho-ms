@@ -1,6 +1,6 @@
-# Prompt para Agente - Correções Necessárias Little Palm Co.
+# Prompt para Agente - Correções Necessárias Little Palm CO.
 
-**Contexto:** Little Palm Co. é uma loja de roupas NOVAS (não é brechó). O sistema atual está 85% funcional, mas precisa de correções críticas para produção.
+**Contexto:** Little Palm CO. é uma loja de roupas NOVAS (não é brechó). O sistema atual está 85% funcional, mas precisa de correções críticas para produção.
 
 ## INSTRUÇÕES PARA O AGENTE
 

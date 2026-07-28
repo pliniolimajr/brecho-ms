@@ -25,7 +25,7 @@ export const PRODUCTS: Product[] = [
     category: 'Calças',
     imageUrl: 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1000',
     gallery: [
-        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1000'
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1000'
     ],
     features: ['Poliéster', 'Tamanho 44', 'Secagem Rápida']
   },
@@ -39,7 +39,7 @@ export const PRODUCTS: Product[] = [
     category: 'Camisetas',
     imageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e32f85e23?auto=format&fit=crop&q=80&w=1000',
     gallery: [
-        'https://images.unsplash.com/photo-1596755094514-f87e32f85e23?auto=format&fit=crop&q=80&w=1000'
+      'https://images.unsplash.com/photo-1596755094514-f87e32f85e23?auto=format&fit=crop&q=80&w=1000'
     ],
     features: ['Flanela', 'Tamanho M', 'Anos 90']
   },
@@ -53,12 +53,12 @@ export const PRODUCTS: Product[] = [
     category: 'Casacos',
     imageUrl: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&q=80&w=1000',
     gallery: [
-        'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&q=80&w=1000'
+      'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&q=80&w=1000'
     ],
     features: ['Jeans 100% Algodão', 'Tamanho G', 'Oversized']
   }
 ];
 
-export const BRAND_NAME = 'Palm Co.';
-export const PRIMARY_COLOR = 'stone-900'; 
+export const BRAND_NAME = 'Palm CO.';
+export const PRIMARY_COLOR = 'stone-900';
 export const ACCENT_COLOR = 'stone-500';

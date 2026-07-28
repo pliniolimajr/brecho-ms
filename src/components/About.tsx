@@ -13,10 +13,10 @@ const About: React.FC = () => {
         </div>
         <div className="md:w-2/3 max-w-2xl">
           <p className="text-lg md:text-xl text-[#423226] font-light leading-relaxed mb-8">
-            A Palm Co. nasceu inspirada em Palmeirinha, um pequeno distrito do interior da Bahia onde o tempo parece seguir outro ritmo. Foi nesse ambiente de simplicidade, acolhimento e autenticidade que surgiu a inspiração para construir uma marca que valorizasse escolhas feitas com calma e intenção.
+            A Palm CO. nasceu inspirada em Palmeirinha, um pequeno distrito do interior da Bahia onde o tempo parece seguir outro ritmo. Foi nesse ambiente de simplicidade, acolhimento e autenticidade que surgiu a inspiração para construir uma marca que valorizasse escolhas feitas com calma e intenção.
           </p>
           <p className="text-lg md:text-xl text-[#423226] font-light leading-relaxed mb-8">
-            Essa origem não define um estilo específico de roupa; define um jeito de olhar. Mais do que reunir roupas, a Palm Co. seleciona peças que compartilham uma mesma visão de estilo: elegância descomplicada, qualidade, autenticidade e versatilidade. Cada peça passa pelo olhar sensível da nossa curadoria antes de chegar até você.
+            Essa origem não define um estilo específico de roupa; define um jeito de olhar. Mais do que reunir roupas, a Palm CO. seleciona peças que compartilham uma mesma visão de estilo: elegância descomplicada, qualidade, autenticidade e versatilidade. Cada peça passa pelo olhar sensível da nossa curadoria antes de chegar até você.
           </p>
           <img
             src="/images/curadoria2.jpg"
@@ -24,7 +24,7 @@ const About: React.FC = () => {
             className="w-full h-[400px] object-cover grayscale contrast-[0.9] brightness-110 mt-12"
           />
           <p className="text-sm font-medium uppercase tracking-widest text-[#A8A29E] mt-4">
-            Curadoria Palm Co.
+            Curadoria Palm CO.
           </p>
         </div>
       </div>
@@ -44,7 +44,7 @@ const About: React.FC = () => {
             Curadoria antes<br />de quantidade.
           </h3>
           <p className="text-lg text-[#423226] font-light leading-relaxed mb-12 max-w-md">
-            A Palm Co. não compete por preço, volume ou tendências passageiras. Nós competimos pela confiança no nosso olhar. Acreditamos que vestir-se bem não significa acumular, mas sim escolher peças bonitas, bem construídas e fáceis de incorporar ao seu dia a dia.
+            A Palm CO. não compete por preço, volume ou tendências passageiras. Nós competimos pela confiança no nosso olhar. Acreditamos que vestir-se bem não significa acumular, mas sim escolher peças bonitas, bem construídas e fáceis de incorporar ao seu dia a dia.
           </p>
         </div>
       </div>

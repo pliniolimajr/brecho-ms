@@ -21,7 +21,7 @@ export function Policies() {
           <section className="space-y-4">
             <h2 className="text-xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">2. Trocas e Devoluções</h2>
             <p className="text-sm text-[#423226] leading-relaxed">
-              Aceitamos trocas ou devoluções no prazo de até <strong className="font-semibold text-[#1A332B]">7 dias corridos</strong> a contar da data de recebimento do pedido, conforme o Código de Defesa do Consumidor. A peça deve ser devolvida nas mesmas condições em que foi entregue, sem sinais de uso e com a etiqueta da Palm Co. fixada.
+              Aceitamos trocas ou devoluções no prazo de até <strong className="font-semibold text-[#1A332B]">7 dias corridos</strong> a contar da data de recebimento do pedido, conforme o Código de Defesa do Consumidor. A peça deve ser devolvida nas mesmas condições em que foi entregue, sem sinais de uso e com a etiqueta da Palm CO. fixada.
             </p>
           </section>
 

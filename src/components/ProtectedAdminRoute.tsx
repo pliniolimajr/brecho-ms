@@ -72,17 +72,17 @@ export const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ childr
         </div>
         <h1 className="text-3xl font-serif italic text-[#1A332B] mb-2">Acesso Restrito</h1>
         <p className="text-sm text-[#423226] max-w-md mb-8 leading-relaxed">
-          Esta área é reservada exclusivamente para administradores da Palm Co. Sua conta não está registrada na lista de administradores.
+          Esta área é reservada exclusivamente para administradores da Palm CO. Sua conta não está registrada na lista de administradores.
         </p>
         <div className="flex gap-4">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="px-6 py-3 bg-[#1A332B] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#C06A35] transition-colors"
           >
             Voltar para a Loja
           </Link>
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="px-6 py-3 border border-[#1A332B] text-[#1A332B] text-xs font-bold uppercase tracking-widest hover:bg-[#1A332B]/5 transition-colors"
           >
             Trocar de Conta

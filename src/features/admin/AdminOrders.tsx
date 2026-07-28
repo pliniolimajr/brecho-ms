@@ -39,7 +39,7 @@ export function AdminOrders({
         .update({ tracking_code: code })
         .eq('id', orderId);
       if (error) throw error;
-      
+
       fetchAdminOrders();
       setEditingTrackingId(null);
       alert('Código de rastreio atualizado com sucesso!');
@@ -53,11 +53,11 @@ export function AdminOrders({
     const randomDigits = Math.floor(100000000 + Math.random() * 900000000);
     const mockTracking = `LP${randomDigits}BR`;
     const mockPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-    
+
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ 
+        .update({
           tracking_code: mockTracking,
           shipping_carrier: 'Correios',
           shipping_service: 'PAC (SuperFrete)',
@@ -89,7 +89,7 @@ export function AdminOrders({
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={handleExportCSV}
             className="border border-[#1A332B] text-[#1A332B] px-5 py-2.5 rounded-none text-xs font-semibold uppercase tracking-widest hover:bg-[#1A332B] hover:text-white transition-colors"
           >
@@ -105,11 +105,10 @@ export function AdminOrders({
           <button
             key={st}
             onClick={() => setStatusFilter(st)}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${
-              statusFilter === st 
-                ? 'bg-[#1A332B] text-white' 
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${statusFilter === st
+                ? 'bg-[#1A332B] text-white'
                 : 'bg-[#FDF6F0] text-[#423226] hover:bg-[#C06A35]/20'
-            }`}
+              }`}
           >
             {st === 'all' && 'Todos'}
             {st === 'pending' && 'Pendente'}
@@ -271,7 +270,7 @@ function printDeclarationOfContent(order: any, storeInfo: any) {
   const recipientCityState = `${address.city || ''} / ${address.state || ''}`;
   const recipientZip = address.postalCode || '';
 
-  const senderName = storeInfo.name || 'Palm Co.';
+  const senderName = storeInfo.name || 'Palm CO.';
   const senderDoc = storeInfo.document || '';
   const senderAddress = storeInfo.address || '';
   const senderCityState = `${storeInfo.city || ''} / ${storeInfo.state || ''}`;
@@ -386,7 +385,7 @@ function printShippingLabel(order: any, storeInfo: any) {
   const recipientCityState = `${address.city || ''} / ${address.state || ''}`;
   const recipientZip = address.postalCode || '';
 
-  const senderName = storeInfo.name || 'Palm Co.';
+  const senderName = storeInfo.name || 'Palm CO.';
   const senderAddress = storeInfo.address || '';
   const senderCityState = `${storeInfo.city || ''} / ${storeInfo.state || ''}`;
   const senderZip = storeInfo.zipCode || '';
@@ -420,7 +419,7 @@ function printShippingLabel(order: any, storeInfo: any) {
     <body>
       <div class="label-container">
         <div class="logo-service">
-          <div style="font-weight: bold; font-size: 14px;">LITTLE PALM CO.</div>
+          <div style="font-weight: bold; font-size: 14px;">LITTLE Palm CO.</div>
           <div class="service">${serviceName}</div>
         </div>
 

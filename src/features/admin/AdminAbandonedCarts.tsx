@@ -68,7 +68,7 @@ export function AdminAbandonedCarts({ abandonedCarts, loadingAbandoned }: AdminA
                   const phoneClean = info.phone ? info.phone.replace(/\D/g, '') : '';
 
                   const whatsappMessage = encodeURIComponent(
-                    `Olá ${info.firstName || ''}! Notei que você deixou alguns itens incríveis no seu carrinho na Palm Co. Precisa de alguma ajuda para finalizar seu pedido? 😊`
+                    `Olá ${info.firstName || ''}! Notei que você deixou alguns itens incríveis no seu carrinho na Palm CO. Precisa de alguma ajuda para finalizar seu pedido? 😊`
                   );
 
                   return (

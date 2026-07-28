@@ -11,7 +11,7 @@ export function FAQ() {
   const faqs: FAQItem[] = [
     {
       question: "As peças são originais?",
-      answer: "Sim! Todas as peças vendidas na Palm Co. passam por um rigoroso processo de autenticação e curadoria antes de serem expostas em nosso catálogo."
+      answer: "Sim! Todas as peças vendidas na Palm CO. passam por um rigoroso processo de autenticação e curadoria antes de serem expostas em nosso catálogo."
     },
     {
       question: "Como funciona o envio e entrega?",
@@ -50,8 +50,8 @@ export function FAQ() {
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="border-b border-[#C06A35]/30 pb-4 transition-all duration-300"
               >
                 <button
@@ -63,7 +63,7 @@ export function FAQ() {
                     {isOpen ? '—' : '+'}
                   </span>
                 </button>
-                <div 
+                <div
                   className={`overflow-hidden transition-all duration-300 max-h-0 ${isOpen ? 'max-h-40' : ''}`}
                 >
                   <p className="text-sm text-[#423226] leading-relaxed pt-2">

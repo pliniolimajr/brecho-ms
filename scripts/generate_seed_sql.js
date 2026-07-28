@@ -65,10 +65,10 @@ INSERT INTO public.products (
     const color = colors[Math.floor(Math.random() * colors.length)];
     const brand = brands[Math.floor(Math.random() * brands.length)];
     const size = sizes[Math.floor(Math.random() * sizes.length)];
-    
+
     const name = `${type.prefix} em ${mat} ${adj}`;
     const price = Math.floor(Math.random() * (type.priceRange[1] - type.priceRange[0])) + type.priceRange[0] + 0.90;
-    
+
     // Pick 3 random distinct images
     const shuffledImages = [...images].sort(() => 0.5 - Math.random());
     const mainImage = shuffledImages[0];
@@ -76,16 +76,16 @@ INSERT INTO public.products (
 
     const tagline = `Coleção Exclusiva - ${brand}`;
     const desc = `Peça impecável da marca ${brand}, perfeita para um look ${adj.toLowerCase()} e sofisticado. A cor ${color} traz versatilidade ao guarda-roupa.`;
-    const longDesc = `Feito com maestria em ${mat}, o ${name} é uma escolha certeira para quem busca conforto sem abrir mão da elegância. Peça garimpada com cuidado, passando por rigoroso processo de curadoria da Palm Co. Lavagem a seco recomendada.`;
-    const features = `ARRAY['Curadoria Palm Co.', 'Material: ${mat}', 'Cor: ${color}']`;
+    const longDesc = `Feito com maestria em ${mat}, o ${name} é uma escolha certeira para quem busca conforto sem abrir mão da elegância. Peça garimpada com cuidado, passando por rigoroso processo de curadoria da Palm CO. Lavagem a seco recomendada.`;
+    const features = `ARRAY['Curadoria Palm CO.', 'Material: ${mat}', 'Cor: ${color}']`;
     const colorArray = `ARRAY['${color}']`;
     const galleryArray = `ARRAY['${gallery[0]}', '${gallery[1]}']`;
 
     const row = `(${escapeSql(name)}, ${escapeSql(tagline)}, ${escapeSql(desc)}, ${escapeSql(longDesc)}, ${price}, ${escapeSql(type.categories[0])}, ${escapeSql(size)}, ${escapeSql(mainImage)}, ${galleryArray}, ${features}, ${escapeSql(brand)}, ${colorArray}, ${escapeSql(mat)}, ${Math.floor(Math.random() * 5) + 1}, false)`;
-    
+
     values.push(row);
   }
-  
+
   sql += values.join(',\n') + ';\n';
   return sql;
 }

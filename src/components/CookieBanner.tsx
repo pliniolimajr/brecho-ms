@@ -21,7 +21,7 @@ export default function CookieBanner() {
   return (
     <div className="fixed bottom-6 left-6 right-6 md:left-auto md:right-8 md:max-w-xl z-50 bg-[#FDF6F0] text-[#1A332B] p-5 shadow-xl border border-[#1A332B]/20 rounded-none flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
       <p className="text-xs text-[#423226] leading-relaxed">
-        A Palm Co. utiliza cookies para personalizar sua experiência. Ao continuar navegando, você concorda com nossa{' '}
+        A Palm CO. utiliza cookies para personalizar sua experiência. Ao continuar navegando, você concorda com nossa{' '}
         <Link to="/privacidade" className="underline font-medium text-[#1A332B] hover:text-[#C06A35] transition-colors">
           Política de Privacidade
         </Link>.

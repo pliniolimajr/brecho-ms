@@ -1,4 +1,4 @@
-# Auditoria Atualizada - Little Palm Co. E-commerce
+# Auditoria Atualizada - Little Palm CO. E-commerce
 ## Análise Pós-Implementação - Julho 2026
 
 **Status:** Significativamente evoluído - MVP funcional quase completo  
@@ -531,7 +531,7 @@ const handleReorder = async (order: Order) => {
 ```typescript
 // Adicionar meta tags dinâmicas
 useEffect(() => {
-  document.title = `${product.name} | Little Palm Co.`;
+  document.title = `${product.name} | Little Palm CO.`;
   const metaDescription = document.querySelector('meta[name="description"]');
   if (metaDescription) {
     metaDescription.setAttribute('content', product.description);

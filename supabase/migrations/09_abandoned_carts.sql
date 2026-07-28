@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. CARRINHOS ABANDONADOS
+-- FASE 4 - LITTLE Palm CO. CARRINHOS ABANDONADOS
 -- Execute no SQL Editor do Supabase ou aplique as migrações
 -- =========================================================================
 

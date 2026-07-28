@@ -79,7 +79,7 @@ export function AdminDashboard() {
       .from('orders')
       .select('*, order_items(price, products(name, size))')
       .order('created_at', { ascending: false });
-    
+
     if (data) setAdminOrders(data);
     setLoading(false);
   };
@@ -89,7 +89,7 @@ export function AdminDashboard() {
     try {
       const { data: customerRows, error: customerError } = await supabase.from('customers').select('*');
       const { data: orderRows, error: orderError } = await supabase.from('orders').select('*');
-      
+
       if (customerError) console.error(customerError);
       if (orderError) console.error(orderError);
 
@@ -117,7 +117,7 @@ export function AdminDashboard() {
       orders.forEach(order => {
         const isCancelled = order.status === 'cancelled';
         const total = Number(order.total_amount) || 0;
-        
+
         if (order.user_id && crmMap[order.user_id]) {
           const c = crmMap[order.user_id];
           c.ordersCount += 1;
@@ -130,7 +130,7 @@ export function AdminDashboard() {
           const name = `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Visitante';
           const phone = address.phone || 'N/A';
           const guestKey = `guest_${name}_${phone}`;
-          
+
           if (!crmMap[guestKey]) {
             crmMap[guestKey] = {
               id: guestKey,
@@ -210,7 +210,7 @@ export function AdminDashboard() {
       const phone = order.shipping_address?.phone || 'N/A';
       const itemsStr = order.order_items?.map((item: any) => `${item.products?.name || 'Produto'} (${item.products?.size || 'U'})`).join('; ') || '';
       const totalStr = Number(order.total_amount).toFixed(2);
-      
+
       return [
         order.id,
         dateStr,
@@ -222,7 +222,7 @@ export function AdminDashboard() {
         order.status
       ];
     });
-    
+
     const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -385,7 +385,7 @@ export function AdminDashboard() {
           <div>
             <h1 className="text-4xl font-serif text-[#1A332B] mb-1">Painel de Controle</h1>
             <p className="text-xs text-[#423226] opacity-70 uppercase tracking-widest font-sans">
-              Admin Palm Co.
+              Admin Palm CO.
             </p>
           </div>
         </header>
@@ -398,11 +398,10 @@ export function AdminDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`text-left px-4 py-3 text-sm font-medium transition-colors border-l-2 ${
-                    activeTab === tab.id 
-                      ? 'border-[#C06A35] text-[#1A332B] bg-white font-semibold shadow-sm' 
+                  className={`text-left px-4 py-3 text-sm font-medium transition-colors border-l-2 ${activeTab === tab.id
+                      ? 'border-[#C06A35] text-[#1A332B] bg-white font-semibold shadow-sm'
                       : 'border-transparent text-gray-500 hover:text-[#1A332B] hover:bg-white/50'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>

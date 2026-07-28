@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 3 - LITTLE PALM CO. LOGÍSTICA & FULFILLMENT (SHIPPING LABEL URL)
+-- FASE 3 - LITTLE Palm CO. LOGÍSTICA & FULFILLMENT (SHIPPING LABEL URL)
 -- Execute no SQL Editor do Supabase ou aplique as migrações
 -- =========================================================================
 

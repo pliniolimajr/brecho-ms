@@ -12,7 +12,7 @@ const mockProduct1: Product = {
   category: 'Camisetas',
   imageUrl: 'https://example.com/image.jpg',
   size: 'M',
-  brand: 'Palm Co.',
+  brand: 'Palm CO.',
   color: ['Branco'],
   material: 'Linho',
   stockQuantity: 5,
@@ -29,7 +29,7 @@ const mockProduct2: Product = {
   category: 'Calças',
   imageUrl: 'https://example.com/image2.jpg',
   size: '42',
-  brand: 'Palm Co.',
+  brand: 'Palm CO.',
   color: ['Bege'],
   material: 'Algodão',
   stockQuantity: 2,
@@ -50,7 +50,7 @@ describe('useStore Zustand Store', () => {
 
   it('should add products to the cart', () => {
     useStore.getState().addToCart(mockProduct1);
-    
+
     const state = useStore.getState();
     expect(state.cart).toHaveLength(1);
     expect(state.cart[0]).toEqual(mockProduct1);
@@ -60,9 +60,9 @@ describe('useStore Zustand Store', () => {
   it('should remove products from the cart', () => {
     useStore.getState().addToCart(mockProduct1);
     useStore.getState().addToCart(mockProduct2);
-    
+
     useStore.getState().removeFromCart(mockProduct1.id);
-    
+
     const state = useStore.getState();
     expect(state.cart).toHaveLength(1);
     expect(state.cart[0].id).toBe(mockProduct2.id);
@@ -71,9 +71,9 @@ describe('useStore Zustand Store', () => {
   it('should clear the cart completely', () => {
     useStore.getState().addToCart(mockProduct1);
     useStore.getState().addToCart(mockProduct2);
-    
+
     useStore.getState().clearCart();
-    
+
     const state = useStore.getState();
     expect(state.cart).toEqual([]);
   });

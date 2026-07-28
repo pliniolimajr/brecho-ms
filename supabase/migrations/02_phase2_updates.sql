@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 2 - LITTLE PALM CO. E-COMMERCE
+-- FASE 2 - LITTLE Palm CO. E-COMMERCE
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

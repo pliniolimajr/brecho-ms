@@ -1,5 +1,5 @@
 -- =========================================================================
--- FASE 4 - LITTLE PALM CO. UNIQUE CPF CONSTRAINT
+-- FASE 4 - LITTLE Palm CO. UNIQUE CPF CONSTRAINT
 -- Execute no SQL Editor do Supabase
 -- =========================================================================
 

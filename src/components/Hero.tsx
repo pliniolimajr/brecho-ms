@@ -55,7 +55,7 @@ const Hero: React.FC = () => {
         top: offsetPosition,
         behavior: "smooth"
       });
-      
+
       try {
         window.history.pushState(null, '', `#${targetId}`);
       } catch (err) {
@@ -68,7 +68,7 @@ const Hero: React.FC = () => {
 
   return (
     <section className="relative w-full h-screen min-h-[750px] overflow-hidden bg-[#111111]">
-      
+
       {/* Background Slider Container */}
       <div className="absolute inset-0 w-full h-full">
         {HERO_SLIDES.map((slide, index) => {
@@ -76,16 +76,14 @@ const Hero: React.FC = () => {
           return (
             <div
               key={slide.id}
-              className={`absolute inset-0 w-full h-full transition-opacity duration-2000 ease-in-out ${
-                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            >
-              <img 
-                src={slide.url} 
-                alt={slide.title} 
-                className={`w-full h-full object-cover object-center grayscale contrast-[0.9] brightness-[0.85] transition-transform duration-[15000ms] ease-out ${
-                  isActive ? 'scale-105' : 'scale-100'
+              className={`absolute inset-0 w-full h-full transition-opacity duration-2000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
+            >
+              <img
+                src={slide.url}
+                alt={slide.title}
+                className={`w-full h-full object-cover object-center grayscale contrast-[0.9] brightness-[0.85] transition-transform duration-[15000ms] ease-out ${isActive ? 'scale-105' : 'scale-100'
+                  }`}
               />
             </div>
           );
@@ -100,7 +98,7 @@ const Hero: React.FC = () => {
       {/* Hero Content Area */}
       <div className="relative z-20 h-full max-w-[1400px] mx-auto px-6 flex flex-col justify-center items-center text-center">
         <div className="max-w-3xl flex flex-col items-center animate-fade-in-up">
-          
+
           {/* Microtag: Editorial style with lines */}
           <div className="flex items-center gap-4 text-[11px] font-medium tracking-[0.3em] uppercase text-white/80 mb-6">
             <span className="w-8 h-[1px] bg-white/40"></span>
@@ -110,29 +108,29 @@ const Hero: React.FC = () => {
 
           {/* Title */}
           <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif font-normal text-[#FDF6F0] tracking-tight mb-6 drop-shadow-sm">
-            {hero.title || 'Palm Co.'}
+            {hero.title || 'Palm CO.'}
           </h1>
 
           {/* Subtitle */}
           <p className="max-w-xl text-base sm:text-lg md:text-xl text-white/85 font-light leading-relaxed mb-10 tracking-wide font-sans">
             {hero.subtitle || 'Peças criadas para acompanhar seu dia com conforto, qualidade e um design que permanece atual.'}
           </p>
-          
+
           {/* Buttons Area */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-8 w-full">
             {/* Primary Button (Opção C: Reto / Arquitetônico rounded-none) */}
-            <a 
-              href="#products" 
+            <a
+              href="#products"
               onClick={(e) => handleNavClick(e, 'products')}
               className="group h-[52px] px-8 sm:px-9 bg-[#F4EFE9] text-[#111111] border border-[#F4EFE9] rounded-none text-xs font-semibold uppercase tracking-[0.18em] hover:bg-[#C06A35] hover:text-white hover:border-[#C06A35] hover:-translate-y-[2px] transition-all duration-250 ease-out shadow-sm hover:shadow-xl inline-flex items-center justify-center gap-3"
             >
               <span>{hero.buttonText || 'Explorar coleção'}</span>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                strokeWidth={1.75} 
-                stroke="currentColor" 
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.75}
+                stroke="currentColor"
                 className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1.5"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -140,8 +138,8 @@ const Hero: React.FC = () => {
             </a>
 
             {/* Secondary Button */}
-            <a 
-              href="/sobre" 
+            <a
+              href="/sobre"
               onClick={(e) => { e.preventDefault(); navigate('/sobre'); }}
               className="group relative py-3 px-4 text-xs sm:text-sm font-medium tracking-[0.2em] text-white/90 uppercase transition-colors hover:text-white inline-flex items-center justify-center"
             >
@@ -160,15 +158,14 @@ const Hero: React.FC = () => {
             key={index}
             onClick={() => setCurrentSlideIndex(index)}
             aria-label={`Slide ${index + 1}`}
-            className={`h-1 transition-all duration-500 rounded-full ${
-              index === currentSlideIndex ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
-            }`}
+            className={`h-1 transition-all duration-500 rounded-full ${index === currentSlideIndex ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+              }`}
           />
         ))}
       </div>
 
       {/* Subtle Scroll Indicator */}
-      <div 
+      <div
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 opacity-50 hover:opacity-90 transition-opacity cursor-pointer text-white"
         onClick={(e) => handleNavClick(e as any, 'products')}
       >
