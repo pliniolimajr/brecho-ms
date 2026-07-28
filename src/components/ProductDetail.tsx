@@ -183,6 +183,32 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               R$ {product.price.toFixed(2).replace('.', ',')}
             </span>
 
+            {/* Action Buttons */}
+            <div className="flex gap-4 w-full mb-8">
+              <button
+                onClick={() => onAddToCart(product)}
+                className="flex-1 py-4 bg-black text-white hover:bg-[#C06A35] transition-colors text-xs font-bold uppercase tracking-[0.25em] flex items-center justify-center shadow-md hover:shadow-lg"
+              >
+                Comprar
+              </button>
+              <button
+                onClick={handleWishlistToggle}
+                className={`px-5 border flex items-center justify-center transition-colors shadow-sm hover:shadow-md ${isWishlisted ? 'bg-red-50 text-red-500 border-red-500' : 'border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5'}`}
+                title={isWishlisted ? 'Remover da Wishlist' : 'Adicionar à Wishlist'}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill={isWishlisted ? "currentColor" : "none"}
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                </svg>
+              </button>
+            </div>
+
             {/* Collapsible details inspired by Shoulder */}
             <div className="space-y-4 mb-8">
               <details className="group border-b border-[#C06A35]/10 pb-3" open>
@@ -283,31 +309,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
             </div>
 
             <div className="flex flex-col gap-4">
-              {/* Mobile Sticky Container */}
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-sm border-t border-[#C06A35]/20 md:static md:p-0 md:bg-transparent md:border-t-0 z-40 flex gap-4">
-                <button
-                  onClick={() => onAddToCart(product)}
-                  className="flex-1 py-4 bg-black text-white hover:bg-[#C06A35] transition-colors text-xs font-bold uppercase tracking-[0.25em]"
-                >
-                  Comprar
-                </button>
-                <button
-                  onClick={handleWishlistToggle}
-                  className={`px-5 border border-[#1A332B] flex items-center justify-center transition-colors ${isWishlisted ? 'bg-red-50 text-red-500 border-red-500' : 'text-[#1A332B] hover:bg-[#1A332B]/5'}`}
-                  title={isWishlisted ? 'Remover da Wishlist' : 'Adicionar à Wishlist'}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill={isWishlisted ? "currentColor" : "none"}
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-                  </svg>
-                </button>
-              </div>
+
               <ul className="mt-6 space-y-2 text-xs text-[#423226]">
                 {product.features.map((feature, idx) => (
                   <li key={idx} className="flex items-center gap-3">
