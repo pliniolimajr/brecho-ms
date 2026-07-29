@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../services/supabaseClient';
 
 interface ProtectedAdminRouteProps {
   children: React.ReactNode;
