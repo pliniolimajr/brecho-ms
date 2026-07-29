@@ -8,48 +8,9 @@ interface ProtectedAdminRouteProps {
 }
 
 export const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ children }) => {
-  const { user, loading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [checkingRole, setCheckingRole] = useState(true);
+  const { user, isAdmin, loading } = useAuth();
 
-  useEffect(() => {
-    async function verifyAdminAccess() {
-      if (!user) {
-        setIsAdmin(false);
-        setCheckingRole(false);
-        return;
-      }
-
-      try {
-        // Consulta a tabela dedicada admin_users
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Erro ao consultar tabela admin_users:', error);
-          // Fallback para metadata caso configurado no auth.users
-          const metaRole = user.user_metadata?.role || user.app_metadata?.role;
-          setIsAdmin(metaRole === 'admin');
-        } else {
-          setIsAdmin(!!data);
-        }
-      } catch (err) {
-        console.error('Erro na verificação de admin:', err);
-        setIsAdmin(false);
-      } finally {
-        setCheckingRole(false);
-      }
-    }
-
-    if (!loading) {
-      verifyAdminAccess();
-    }
-  }, [user, loading]);
-
-  if (loading || checkingRole) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#FDF6F0] flex flex-col justify-center items-center gap-4">
         <div className="w-10 h-10 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>

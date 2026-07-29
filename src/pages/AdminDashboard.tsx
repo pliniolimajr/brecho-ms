@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import type { Product } from '../types';
+import { useToast } from '../components/Toast';
 
 import { AdminInventory } from '../features/admin/AdminInventory';
 import { AdminOrders } from '../features/admin/AdminOrders';
@@ -10,6 +11,7 @@ import { AdminAbandonedCarts } from '../features/admin/AdminAbandonedCarts';
 import { AdminMetrics } from '../features/admin/AdminMetrics';
 
 export function AdminDashboard() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics'>('inventory');
 
   const adminTabs = [
@@ -279,7 +281,7 @@ export function AdminDashboard() {
         }
 
         if (lines.length <= 1) {
-          alert('CSV vazio ou inválido. A primeira linha deve conter os cabeçalhos.');
+          showToast('CSV vazio ou inválido. A primeira linha deve conter os cabeçalhos.', 'warning');
           return;
         }
 
@@ -314,19 +316,19 @@ export function AdminDashboard() {
         }
 
         if (productsToInsert.length === 0) {
-          alert('Nenhum produto válido encontrado no CSV.');
+          showToast('Nenhum produto válido encontrado no CSV.', 'warning');
           return;
         }
 
         const { error } = await supabase.from('products').insert(productsToInsert);
         if (error) {
-          alert('Erro ao importar produtos: ' + error.message);
+          showToast('Erro ao importar produtos: ' + error.message, 'error');
         } else {
-          alert(`${productsToInsert.length} produtos importados com sucesso!`);
+          showToast(`${productsToInsert.length} produtos importados com sucesso!`, 'success');
           fetchAdminProducts();
         }
       } catch (err: any) {
-        alert('Erro ao processar arquivo: ' + err.message);
+        showToast('Erro ao processar arquivo: ' + err.message, 'error');
       }
     };
 
@@ -345,8 +347,9 @@ export function AdminDashboard() {
         min_purchase_amount: newCoupon.minPurchaseAmount
       });
     if (error) {
-      alert('Erro ao criar cupom: ' + error.message);
+      showToast('Erro ao criar cupom: ' + error.message, 'error');
     } else {
+      showToast('Cupom criado com sucesso!', 'success');
       setNewCoupon({ code: '', discountType: 'percentage', discountValue: 0, minPurchaseAmount: 0 });
       setShowNewCouponForm(false);
       fetchCoupons();
@@ -359,8 +362,9 @@ export function AdminDashboard() {
       .update({ is_active: !currentStatus })
       .eq('id', id);
     if (error) {
-      alert('Erro ao atualizar cupom: ' + error.message);
+      showToast('Erro ao atualizar cupom: ' + error.message, 'error');
     } else {
+      showToast('Status do cupom atualizado!', 'success');
       fetchCoupons();
     }
   };
@@ -372,8 +376,9 @@ export function AdminDashboard() {
       .delete()
       .eq('id', id);
     if (error) {
-      alert('Erro ao deletar cupom: ' + error.message);
+      showToast('Erro ao deletar cupom: ' + error.message, 'error');
     } else {
+      showToast('Cupom excluído com sucesso.', 'success');
       fetchCoupons();
     }
   };

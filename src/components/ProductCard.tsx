@@ -5,13 +5,15 @@
 
 import React from 'react';
 import type { Product } from '../types';
+import { WishlistButton } from './WishlistButton';
 
 interface ProductCardProps {
   product: Product;
   onClick: (product: Product) => void;
+  onQuickView?: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView }) => {
   const hasSecondaryImage = product.gallery && product.gallery.length > 0 && product.gallery[0];
 
   return (
@@ -48,11 +50,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           </div>
         )}
 
-        {/* Wishlist bookmark outline on top right */}
-        <div className="absolute top-3 right-3 text-[#1A332B] hover:text-[#C06A35] transition-colors p-2 rounded-full bg-white/80 backdrop-blur-sm opacity-80 group-hover:opacity-100 shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
-          </svg>
+        {/* Quick View Button on Hover — desktop only */}
+        {!product.isSold && onQuickView && (
+          <div className="hidden md:block absolute inset-x-0 bottom-0 bg-[#1A332B]/85 py-3 text-center translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-10">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickView(product);
+              }}
+              className="text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest hover:text-[#C06A35] transition-colors w-full h-full block font-sans"
+            >
+              Visualização Rápida
+            </button>
+          </div>
+        )}
+
+        {/* Wishlist bookmark — desktop e mobile */}
+        <div className="absolute top-3 right-3 z-10">
+          <WishlistButton
+            productId={product.id}
+            className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm text-[#1A332B] hover:text-[#C06A35] opacity-80 group-hover:opacity-100"
+          />
         </div>
       </div>
       

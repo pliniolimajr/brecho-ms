@@ -3,6 +3,9 @@ import type { Product } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
+import { useToast } from './Toast';
+import { isValidCPF } from '../utils/validators';
+
 interface CheckoutProps {
   items: Product[];
   onBack: () => void;
@@ -11,6 +14,7 @@ interface CheckoutProps {
 const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
   const { user } = useAuth();
   const { clearCart } = useStore();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [success] = useState(false);
   const [preferenceId] = useState<string | null>(null);
@@ -38,11 +42,14 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
   const [loadingShipping, setLoadingShipping] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
 
+  const [currentStep, setCurrentStep] = useState(1);
+
   const [formData, setFormData] = useState({
     email: user?.email || '',
     firstName: '',
     lastName: '',
     phone: '',
+    cpf: '',
     paymentMethod: 'pix' as 'pix' | 'credit_card'
   });
 
@@ -168,6 +175,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
             firstName: profile.first_name || '',
             lastName: profile.last_name || '',
             phone: profile.phone || '',
+            cpf: profile.cpf || '',
           }));
         }
 
@@ -197,6 +205,52 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       fetchProfileAndAddresses();
     }
   }, [user]);
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value;
+    const formatted = rawVal
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+      .substring(0, 14);
+    setFormData(prev => ({ ...prev, cpf: formatted }));
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.cpf) {
+        showToast('Por favor, preencha todos os campos de identificação.', 'warning');
+        return;
+      }
+      if (!isValidCPF(formData.cpf)) {
+        showToast('CPF inválido. Verifique os dígitos digitados.', 'error');
+        return;
+      }
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      if (
+        !shippingAddress.zipCode ||
+        !shippingAddress.street ||
+        !shippingAddress.number ||
+        !shippingAddress.neighborhood ||
+        !shippingAddress.city ||
+        !shippingAddress.state
+      ) {
+        showToast('Por favor, preencha todos os campos do endereço de entrega.', 'warning');
+        return;
+      }
+      if (!selectedRate) {
+        showToast('Por favor, selecione uma opção de envio.', 'warning');
+        return;
+      }
+      setCurrentStep(3);
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
   const shippingCost = selectedRate ? selectedRate.price : 0;
@@ -319,7 +373,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     e.preventDefault();
     if (items.length === 0) return;
     if (!selectedRate) {
-      alert('Selecione uma opção de frete para continuar.');
+      showToast('Selecione uma opção de frete para continuar.', 'warning');
       return;
     }
     setLoading(true);
@@ -334,18 +388,35 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
       if (stockCheckError) {
         console.error('Erro ao verificar estoque real:', stockCheckError);
-      } else if (dbProducts) {
-        for (const item of items) {
-          const found = dbProducts.find(p => p.id === item.id);
-          if (found && (found.is_sold || (found.stock_quantity !== null && found.stock_quantity <= 0))) {
-            alert(`O produto "${found.name || item.name}" não está mais disponível em estoque.`);
-            setLoading(false);
-            return;
-          }
+        showToast('Não foi possível verificar a disponibilidade do estoque. Por favor, tente novamente em instantes.', 'error');
+        setLoading(false);
+        return;
+      }
+
+      if (!dbProducts) {
+        showToast('Erro ao consultar a disponibilidade dos produtos no banco de dados.', 'error');
+        setLoading(false);
+        return;
+      }
+
+      for (const item of items) {
+        const found = dbProducts.find(p => p.id === item.id);
+        if (!found) {
+          showToast(`O produto "${item.name}" não está mais disponível em nosso catálogo.`, 'error');
+          setLoading(false);
+          return;
+        }
+        if (found.is_sold || (found.stock_quantity !== null && found.stock_quantity <= 0)) {
+          showToast(`O produto "${found.name || item.name}" já foi vendido ou está esgotado.`, 'error');
+          setLoading(false);
+          return;
         }
       }
     } catch (stockErr) {
       console.error('Exceção ao validar estoque:', stockErr);
+      showToast('Erro ao validar estoque dos produtos. Tente novamente em instantes.', 'error');
+      setLoading(false);
+      return;
     }
 
     // Sincronizar perfil do cliente
@@ -360,7 +431,8 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
         user_id: user.id,
         first_name: formData.firstName,
         last_name: formData.lastName,
-        phone: formData.phone
+        phone: formData.phone,
+        cpf: formData.cpf
       };
 
       if (profile?.id) {
@@ -390,6 +462,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       phone: formData.phone,
+      cpf: formData.cpf,
       pickup: false,
       postalCode: shippingAddress.zipCode.replace(/\D/g, ''),
       street: shippingAddress.street,
@@ -414,7 +487,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
     if (orderError || !orderData) {
       console.error(orderError);
-      alert('Erro ao processar pedido. Tente novamente.');
+      showToast('Erro ao processar pedido. Tente novamente.', 'error');
       setLoading(false);
       return;
     }
@@ -532,7 +605,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       const errorMessage = err.name === 'AbortError'
         ? 'Tempo limite de conexão excedido com o Mercado Pago (10s). Por favor, tente novamente.'
         : (err.message || err);
-      alert(`Erro no processo de checkout: ${errorMessage}${rollbackMessage}`);
+      showToast(`Erro no processo de checkout: ${errorMessage}${rollbackMessage}`, 'error');
       setLoading(false);
     }
   };
@@ -562,216 +635,359 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
           Voltar para a Loja
         </button>
 
+        {/* Step Progress Bar */}
+        <div className="mb-14 flex items-center justify-between max-w-lg mx-auto lg:mx-0 border-b border-[#C06A35]/10 pb-6">
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 1 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+              {currentStep > 1 ? '✓' : '1'}
+            </div>
+            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 1 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Identificação</span>
+          </div>
+          <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B]' : 'bg-[#EFEAE4]'}`} />
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+              {currentStep > 2 ? '✓' : '2'}
+            </div>
+            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 2 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Entrega</span>
+          </div>
+          <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B]' : 'bg-[#EFEAE4]'}`} />
+          <div className="flex flex-col items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+              3
+            </div>
+            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 3 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Pagamento</span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
           
-          {/* Left Column: Form */}
+          {/* Left Column: Step Content */}
           <div className="flex-1">
-            <h1 className="text-3xl font-serif text-[#1A332B] mb-4">Finalizar Pedido</h1>
+            <h1 className="text-3xl font-serif text-[#1A332B] mb-8">Finalizar Pedido</h1>
             
             <form onSubmit={handleSubmit} className="space-y-12">
-              {/* Section 1: Contact */}
-              <div>
-                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Informações de Contato</h2>
-                <div className="space-y-4">
-                   <input required type="email" placeholder="Seu e-mail" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
-                </div>
-              </div>
-
-              {/* Section 2: Shipping Address */}
-              <div>
-                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Endereço de Entrega</h2>
-
-                <div className="space-y-6">
-                  {/* Endereço Salvo (Seleção Rápida) */}
-                  {user && savedAddresses.length > 0 && (
-                    <div>
-                      <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Usar Endereço Salvo</label>
-                      <select 
-                        value={selectedAddressId} 
-                        onChange={handleAddressSelect} 
-                        className="w-full bg-white border border-[#C06A35]/30 rounded p-3 text-[#1A332B] text-sm focus:border-[#1A332B] outline-none"
-                      >
-                        {savedAddresses.map(addr => (
-                          <option key={addr.id} value={addr.id}>
-                            {addr.street}, {addr.number} ({addr.city} - {addr.state})
-                          </option>
-                        ))}
-                        <option value="new">+ Cadastrar Novo Endereço</option>
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Formulário de Endereço */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+              {/* Step 1: Identificação */}
+              {currentStep === 1 && (
+                <div className="space-y-8 animate-fade-in-up">
+                  <div>
+                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Informações de Contato & Identificação</h2>
+                    <div className="space-y-6">
                       <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CEP</label>
+                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">E-mail</label>
                         <input 
                           required 
-                          type="text" 
-                          placeholder="00000-000" 
-                          value={shippingAddress.zipCode} 
-                          onChange={handleCepChange} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                          type="email" 
+                          placeholder="Seu e-mail" 
+                          value={formData.email} 
+                          onChange={e => setFormData({...formData, email: e.target.value})} 
+                          className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" 
                         />
                       </div>
-                      <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Número</label>
-                        <input 
-                          required 
-                          type="text" 
-                          placeholder="Ex: 123" 
-                          value={shippingAddress.number} 
-                          onChange={e => setShippingAddress({...shippingAddress, number: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Nome</label>
+                          <input 
+                            required 
+                            type="text" 
+                            placeholder="Nome" 
+                            value={formData.firstName} 
+                            onChange={e => setFormData({...formData, firstName: e.target.value})} 
+                            className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Sobrenome</label>
+                          <input 
+                            required 
+                            type="text" 
+                            placeholder="Sobrenome" 
+                            value={formData.lastName} 
+                            onChange={e => setFormData({...formData, lastName: e.target.value})} 
+                            className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" 
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Rua / Logradouro</label>
-                        <input 
-                          required 
-                          type="text" 
-                          placeholder="Rua..." 
-                          value={shippingAddress.street} 
-                          onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Complemento</label>
-                        <input 
-                          type="text" 
-                          placeholder="Apto, Bloco, etc." 
-                          value={shippingAddress.complement} 
-                          onChange={e => setShippingAddress({...shippingAddress, complement: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Bairro</label>
-                        <input 
-                          required 
-                          type="text" 
-                          placeholder="Bairro..." 
-                          value={shippingAddress.neighborhood} 
-                          onChange={e => setShippingAddress({...shippingAddress, neighborhood: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Cidade</label>
-                        <input 
-                          required 
-                          type="text" 
-                          placeholder="Cidade..." 
-                          value={shippingAddress.city} 
-                          onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Estado</label>
-                        <input 
-                          required 
-                          type="text" 
-                          placeholder="UF" 
-                          value={shippingAddress.state} 
-                          onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} 
-                          disabled={selectedAddressId !== 'new'}
-                          className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">WhatsApp / Telefone</label>
+                          <input 
+                            required 
+                            type="tel" 
+                            placeholder="(00) 00000-0000" 
+                            value={formData.phone} 
+                            onChange={e => setFormData({...formData, phone: e.target.value})} 
+                            className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" 
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CPF (Necessário para a entrega)</label>
+                          <input 
+                            required 
+                            type="text" 
+                            placeholder="000.000.000-00" 
+                            value={formData.cpf} 
+                            onChange={handleCpfChange} 
+                            className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" 
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Exibição dos Fretes Calculados */}
-                  <div className="mt-8 border-t border-[#C06A35]/20 pt-6">
-                    <h3 className="font-serif text-lg text-[#1A332B] mb-4">Escolha a Opção de Envio</h3>
-                    
-                    {loadingShipping ? (
-                      <div className="flex items-center gap-3 text-[#A8A29E] py-4">
-                        <svg className="animate-spin h-5 w-5 text-[#1A332B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Consultando taxas com SuperFrete...</span>
-                      </div>
-                    ) : shippingError ? (
-                      <p className="text-sm text-red-700 py-2">{shippingError}</p>
-                    ) : shippingRates.length === 0 ? (
-                      <p className="text-sm text-[#A8A29E] py-2">Insira um CEP válido para calcular as opções de frete.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {shippingRates.map(rate => (
-                          <label 
-                            key={rate.id} 
-                            onClick={() => setSelectedRate(rate)}
-                            className={`flex items-center justify-between p-4 border rounded cursor-pointer transition-all duration-300 ${selectedRate?.id === rate.id ? 'border-[#1A332B] bg-[#1A332B]/5' : 'border-[#C06A35]/20 hover:border-[#C06A35]'}`}
+                  <div className="pt-4">
+                    <button 
+                      type="button"
+                      onClick={handleNextStep}
+                      className="w-full py-4 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-xs font-bold transition-colors"
+                    >
+                      Prosseguir para Entrega
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Entrega & Frete */}
+              {currentStep === 2 && (
+                <div className="space-y-8 animate-fade-in-up">
+                  <div>
+                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Endereço de Entrega</h2>
+
+                    <div className="space-y-6">
+                      {/* Endereço Salvo (Seleção Rápida) */}
+                      {user && savedAddresses.length > 0 && (
+                        <div>
+                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Usar Endereço Salvo</label>
+                          <select 
+                            value={selectedAddressId} 
+                            onChange={handleAddressSelect} 
+                            className="w-full bg-white border border-[#C06A35]/30 rounded p-3 text-[#1A332B] text-sm focus:border-[#1A332B] outline-none"
                           >
-                            <div className="flex items-center gap-3">
-                              <input 
-                                type="radio" 
-                                name="shipping_rate" 
-                                checked={selectedRate?.id === rate.id} 
-                                onChange={() => setSelectedRate(rate)}
-                                className="accent-[#1A332B]" 
-                              />
-                              <div>
-                                <span className="font-medium text-[#1A332B] block">{rate.name}</span>
-                                <span className="text-xs text-[#A8A29E]">Prazo de entrega: {rate.delivery_time} {rate.delivery_time > 1 ? 'dias úteis' : 'dia útil'}</span>
-                              </div>
-                            </div>
-                            <span className="font-serif text-[#1A332B] font-medium">R$ {rate.price.toFixed(2).replace('.', ',')}</span>
-                          </label>
-                        ))}
+                            {savedAddresses.map(addr => (
+                              <option key={addr.id} value={addr.id}>
+                                {addr.street}, {addr.number} ({addr.city} - {addr.state})
+                              </option>
+                            ))}
+                            <option value="new">+ Cadastrar Novo Endereço</option>
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Formulário de Endereço */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CEP</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="00000-000" 
+                              value={shippingAddress.zipCode} 
+                              onChange={handleCepChange} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Número</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="Ex: 123" 
+                              value={shippingAddress.number} 
+                              onChange={e => setShippingAddress({...shippingAddress, number: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="col-span-2">
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Rua / Logradouro</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="Rua..." 
+                              value={shippingAddress.street} 
+                              onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Complemento</label>
+                            <input 
+                              type="text" 
+                              placeholder="Apto, Bloco, etc." 
+                              value={shippingAddress.complement} 
+                              onChange={e => setShippingAddress({...shippingAddress, complement: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Bairro</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="Bairro..." 
+                              value={shippingAddress.neighborhood} 
+                              onChange={e => setShippingAddress({...shippingAddress, neighborhood: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Cidade</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="Cidade..." 
+                              value={shippingAddress.city} 
+                              onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Estado</label>
+                            <input 
+                              required 
+                              type="text" 
+                              placeholder="UF" 
+                              value={shippingAddress.state} 
+                              onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} 
+                              disabled={selectedAddressId !== 'new'}
+                              className="w-full bg-transparent border-b border-[#C06A35] py-2 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors disabled:opacity-60" 
+                            />
+                          </div>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Exibição dos Fretes Calculados */}
+                      <div className="mt-8 border-t border-[#C06A35]/20 pt-6">
+                        <h3 className="font-serif text-lg text-[#1A332B] mb-4">Escolha a Opção de Envio</h3>
+                        
+                        {loadingShipping ? (
+                          <div className="flex items-center gap-3 text-[#A8A29E] py-4">
+                            <svg className="animate-spin h-5 w-5 text-[#1A332B]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Consultando taxas com SuperFrete...</span>
+                          </div>
+                        ) : shippingError ? (
+                          <p className="text-sm text-red-700 py-2">{shippingError}</p>
+                        ) : shippingRates.length === 0 ? (
+                          <p className="text-sm text-[#A8A29E] py-2">Insira um CEP válido para calcular as opções de frete.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {shippingRates.map(rate => (
+                              <label 
+                                key={rate.id} 
+                                onClick={() => setSelectedRate(rate)}
+                                className={`flex items-center justify-between p-4 border rounded cursor-pointer transition-all duration-300 ${selectedRate?.id === rate.id ? 'border-[#1A332B] bg-[#1A332B]/5' : 'border-[#C06A35]/20 hover:border-[#C06A35]'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input 
+                                    type="radio" 
+                                    name="shipping_rate" 
+                                    checked={selectedRate?.id === rate.id} 
+                                    onChange={() => setSelectedRate(rate)}
+                                    className="accent-[#1A332B]" 
+                                  />
+                                  <div>
+                                    <span className="font-medium text-[#1A332B] block">{rate.name}</span>
+                                    <span className="text-xs text-[#A8A29E]">Prazo de entrega: {rate.delivery_time} {rate.delivery_time > 1 ? 'dias úteis' : 'dia útil'}</span>
+                                  </div>
+                                </div>
+                                <span className="font-serif text-[#1A332B] font-medium">R$ {rate.price.toFixed(2).replace('.', ',')}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button 
+                      type="button"
+                      onClick={handlePrevStep}
+                      className="flex-1 py-4 border border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5 uppercase tracking-widest text-xs font-bold transition-colors"
+                    >
+                      Voltar
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={handleNextStep}
+                      disabled={!selectedRate}
+                      className="flex-1 py-4 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                      Prosseguir para Pagamento
+                    </button>
                   </div>
                 </div>
+              )}
 
-                <div className="mt-8 space-y-4">
-                   <div className="grid grid-cols-2 gap-4">
-                      <input required type="text" placeholder="Nome" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
-                      <input required type="text" placeholder="Sobrenome" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
-                   </div>
-                   <input required type="tel" placeholder="WhatsApp / Telefone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-transparent border-b border-[#C06A35] py-3 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors" />
+              {/* Step 3: Resumo & Pagamento */}
+              {currentStep === 3 && (
+                <div className="space-y-8 animate-fade-in-up">
+                  <div>
+                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Pagamento Seguro (Mercado Pago)</h2>
+                    <div className="p-6 border border-[#C06A35]/30 bg-white space-y-4 rounded-sm">
+                      <p className="text-sm text-[#423226] leading-relaxed">
+                        Ao clicar em finalizar, você será redirecionado para o ambiente seguro do **Mercado Pago** para escolher sua forma de pagamento preferida:
+                      </p>
+                      <ul className="text-xs text-[#423226] space-y-2 pl-4 list-disc">
+                        <li><strong>PIX:</strong> Confirmação imediata e preparação de envio mais rápida.</li>
+                        <li><strong>Cartão de Crédito:</strong> Parcelamento disponível conforme taxas vigentes.</li>
+                        <li><strong>Boleto Bancário:</strong> Vencimento em até 3 dias úteis.</li>
+                      </ul>
+                    </div>
+
+                    <div className="mt-8 border border-[#C06A35]/20 p-6 bg-[#FAF9F6] rounded-sm space-y-4">
+                      <h3 className="text-xs uppercase tracking-widest text-[#A8A29E] font-bold">Resumo de Entrega</h3>
+                      <div className="text-sm text-[#423226] space-y-1">
+                        <p><strong>Destinatário:</strong> {formData.firstName} {formData.lastName}</p>
+                        <p><strong>CPF:</strong> {formData.cpf}</p>
+                        <p><strong>Telefone:</strong> {formData.phone}</p>
+                        <p className="border-t border-[#C06A35]/10 pt-2 mt-2">
+                          <strong>Endereço:</strong> {shippingAddress.street}, {shippingAddress.number}
+                          {shippingAddress.complement && ` - ${shippingAddress.complement}`} ({shippingAddress.neighborhood}, {shippingAddress.city} - {shippingAddress.state})
+                        </p>
+                        <p><strong>Opção de Envio:</strong> {selectedRate?.name} (R$ {selectedRate?.price.toFixed(2).replace('.', ',')})</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    <button 
+                      type="button"
+                      onClick={handlePrevStep}
+                      disabled={loading}
+                      className="flex-1 py-4 border border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5 uppercase tracking-widest text-xs font-bold transition-colors disabled:opacity-50"
+                    >
+                      Voltar
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={loading || items.length === 0 || !selectedRate}
+                      className="flex-[2] py-4 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-xs font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {loading ? 'Redirecionando...' : `Finalizar no Mercado Pago — R$ ${total.toFixed(2).replace('.', ',')}`}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-               {/* Section 3: Payment */}
-              <div>
-                <h2 className="text-xl font-serif text-[#1A332B] mb-6">Pagamento Seguro (Mercado Pago)</h2>
-                <div className="p-6 border border-[#C06A35] bg-white/50 space-y-4">
-                   <p className="text-sm text-[#423226]">
-                     Você será redirecionado para o ambiente seguro do Mercado Pago para escolher sua forma de pagamento (PIX, Boleto ou Cartão de Crédito) e finalizar a compra.
-                   </p>
-                </div>
-              </div>
-
-              <div>
-                <button 
-                    type="submit"
-                    disabled={loading || items.length === 0 || !selectedRate}
-                    className="w-full py-5 bg-[#1A332B] hover:bg-[#433E38] text-[#FDF6F0] uppercase tracking-widest text-sm font-medium transition-colors disabled:opacity-50"
-                >
-                    {loading ? 'Redirecionando...' : `Finalizar no Mercado Pago — R$ ${total.toFixed(2).replace('.', ',')}`}
-                </button>
-              </div>
+              )}
             </form>
           </div>
 

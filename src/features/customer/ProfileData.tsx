@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { isValidCPF } from '../../utils/validators';
+import { useToast } from '../../components/Toast';
 
 interface ProfileDataProps {
   user: User | null;
@@ -10,6 +12,7 @@ interface ProfileDataProps {
 
 export function ProfileData({ user, customerData, fetchProfile }: ProfileDataProps) {
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     first_name: customerData?.first_name || '',
     last_name: customerData?.last_name || '',
@@ -25,6 +28,11 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    if (formData.cpf && !isValidCPF(formData.cpf)) {
+      showToast('CPF inválido. Por favor, verifique os dígitos informados.', 'warning');
+      return;
+    }
     
     setLoading(true);
     try {
@@ -41,12 +49,12 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
         
       if (error) throw error;
       await fetchProfile();
-      alert('Dados atualizados com sucesso!');
+      showToast('Dados atualizados com sucesso!', 'success');
     } catch (err: any) {
       if (err.code === '23505') {
-        alert('Este CPF já está cadastrado em outra conta. Verifique os dados digitados.');
+        showToast('Este CPF já está cadastrado em outra conta. Verifique os dados digitados.', 'error');
       } else {
-        alert('Erro ao atualizar: ' + err.message);
+        showToast('Erro ao atualizar: ' + err.message, 'error');
       }
     } finally {
       setLoading(false);

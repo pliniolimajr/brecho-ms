@@ -9,7 +9,7 @@ import { ProfileFavorites } from '../features/customer/ProfileFavorites';
 import { ProfileBalances } from '../features/customer/ProfileBalances';
 
 export function CustomerProfile() {
-  const { session, user, loading, supabase: sb } = useAuth();
+  const { session, user, isAdmin, loading, supabase: sb } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'profile' | 'favorites' | 'orders' | 'balances' | 'addresses'>('profile');
   const [customer, setCustomer] = useState<any>(null);
@@ -59,6 +59,10 @@ export function CustomerProfile() {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
   }
 
   const handleLogout = async () => {

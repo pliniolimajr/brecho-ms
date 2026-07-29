@@ -76,6 +76,55 @@ serve(async (req) => {
         } else {
           console.log(`Pedido ${orderId} atualizado para: ${newStatus} (${paymentMethod})`)
           
+          // Se o pagamento foi aprovado, enviar e-mail de confirmação
+          if (newStatus === 'paid') {
+            try {
+              const { data: orderDetails } = await supabaseClient
+                .from('orders')
+                .select('*, order_items(price, products(name, size))')
+                .eq('id', orderId)
+                .single();
+
+              if (orderDetails) {
+                const address = orderDetails.shipping_address || {};
+                const customerName = `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Cliente';
+                const customerEmail = paymentData.payer?.email || address.email || 'contato@palm-co.com';
+
+                const orderItems = orderDetails.order_items || [];
+                const itemsList = orderItems.map((item: any) => ({
+                  name: item.products?.name || 'Produto',
+                  size: item.products?.size || 'Único',
+                  price: item.price
+                }));
+
+                const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseServiceKey}`
+                  },
+                  body: JSON.stringify({
+                    type: 'order_confirmed',
+                    email: customerEmail,
+                    name: customerName,
+                    orderId: orderId,
+                    totalAmount: orderDetails.total_amount,
+                    items: itemsList
+                  })
+                });
+
+                if (emailResponse.ok) {
+                  console.log(`E-mail de confirmação enviado com sucesso para ${customerEmail}`);
+                } else {
+                  const errText = await emailResponse.text();
+                  console.error(`Erro ao chamar a Edge Function de e-mail: ${errText}`);
+                }
+              }
+            } catch (mailErr: any) {
+              console.error('Erro ao preparar/enviar e-mail de confirmação do pedido:', mailErr.message);
+            }
+          }
+
           // Se o pagamento foi cancelado/rejeitado, devolver os produtos ao estoque
           if (newStatus === 'cancelled') {
             const { data: items } = await supabaseClient

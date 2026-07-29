@@ -2,9 +2,28 @@ import { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import ProductCard from '../components/ProductCard';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { QuickViewModal } from '../components/QuickViewModal';
+import type { Product } from '../types';
 
 const CATEGORIES = ['Todos', 'Vestidos', 'Calças', 'Saias', 'Camisetas', 'Casacos', 'Acessórios', 'Calçados', 'Outros'];
 const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'ÚNICO', '34', '36', '38', '40', '42', '44', '46', '48'];
+const ITEMS_PER_PAGE = 12;
+
+const ProductSkeletonCard = () => (
+  <div className="animate-pulse bg-white border border-[#C06A35]/15 rounded overflow-hidden flex flex-col h-full shadow-sm">
+    <div className="w-full aspect-[3/4] bg-[#FDF6F0]/80" />
+    <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+      <div className="space-y-2">
+        <div className="h-2.5 bg-gray-200 rounded w-1/4" />
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+      </div>
+      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+        <div className="h-4 bg-gray-200 rounded w-1/3" />
+        <div className="h-3 bg-gray-200 rounded w-1/6" />
+      </div>
+    </div>
+  </div>
+);
 
 export function Catalog() {
   const { products, isLoadingProducts } = useStore();
@@ -22,6 +41,22 @@ export function Catalog() {
   const [selectedBrand, setSelectedBrand] = useState('Todos');
   const [selectedColor, setSelectedColor] = useState('Todos');
   const [selectedMaterial, setSelectedMaterial] = useState('Todos');
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Quick View States
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+
+  const handleOpenQuickView = (product: Product) => {
+    setQuickViewProduct(product);
+    setIsQuickViewOpen(true);
+  };
+
+  const handleCloseQuickView = () => {
+    setIsQuickViewOpen(false);
+    setQuickViewProduct(null);
+  };
 
   useEffect(() => {
     document.title = 'Coleção & Catálogo | Palm CO.';
@@ -124,6 +159,17 @@ export function Catalog() {
 
     return result;
   }, [products, category, size, minPrice, maxPrice, sortOrder, searchQuery, selectedBrand, selectedColor, selectedMaterial, searchParams]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, size, minPrice, maxPrice, sortOrder, searchQuery, selectedBrand, selectedColor, selectedMaterial, searchParams]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   return (
     <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
@@ -398,10 +444,9 @@ export function Catalog() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
               {isLoadingProducts ? (
-                <div className="col-span-full py-24 text-center">
-                  <div className="w-8 h-8 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-xs uppercase tracking-widest text-[#423226]">Carregando acervo...</p>
-                </div>
+                Array.from({ length: 6 }).map((_, i) => (
+                  <ProductSkeletonCard key={i} />
+                ))
               ) : filteredProducts.length === 0 ? (
                 <div className="col-span-full py-20 text-center bg-white p-8 rounded border border-[#C06A35]/20">
                   <div className="w-12 h-12 bg-[#C06A35]/10 rounded-full flex items-center justify-center text-[#C06A35] mx-auto mb-4">
@@ -421,19 +466,70 @@ export function Catalog() {
                   </button>
                 </div>
               ) : (
-                filteredProducts.map(product => (
+                paginatedProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
                     onClick={(p) => navigate(`/produto/${p.id}`)}
+                    onQuickView={handleOpenQuickView}
                   />
                 ))
               )}
             </div>
+
+            {/* Controles de Paginação */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex justify-center items-center gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(prev - 1, 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 border border-[#C06A35]/30 rounded text-xs font-bold uppercase tracking-wider text-[#1A332B] hover:bg-[#1A332B] hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  Anterior
+                </button>
+                <div className="flex gap-1.5 px-2">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => {
+                        setCurrentPage(page);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className={`w-8 h-8 rounded text-xs font-bold transition-colors ${
+                        currentPage === page
+                          ? 'bg-[#1A332B] text-white'
+                          : 'bg-white border border-[#C06A35]/30 text-[#1A332B] hover:border-[#1A332B]'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="px-4 py-2 border border-[#C06A35]/30 rounded text-xs font-bold uppercase tracking-wider text-[#1A332B] hover:bg-[#1A332B] hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                >
+                  Próxima
+                </button>
+              </div>
+            )}
           </main>
         </div>
 
       </div>
+
+      <QuickViewModal 
+        product={quickViewProduct} 
+        isOpen={isQuickViewOpen} 
+        onClose={handleCloseQuickView} 
+      />
     </div>
   );
 }

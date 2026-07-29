@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { useToast } from '../../components/Toast';
 
 interface ProfileAddressesProps {
   user: User | null;
@@ -9,6 +10,7 @@ interface ProfileAddressesProps {
 export function ProfileAddresses({ user }: ProfileAddressesProps) {
   const [addresses, setAddresses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
   
   const [editingAddress, setEditingAddress] = useState<any | null>(null);
   const [addressForm, setAddressForm] = useState({
@@ -107,8 +109,9 @@ export function ProfileAddresses({ user }: ProfileAddressesProps) {
 
     const { error } = await query;
     if (error) {
-      alert('Erro ao salvar endereço: ' + error.message);
+      showToast('Erro ao salvar endereço: ' + error.message, 'error');
     } else {
+      showToast('Endereço salvo com sucesso!', 'success');
       setEditingAddress(null);
       fetchAddresses();
     }
@@ -119,8 +122,9 @@ export function ProfileAddresses({ user }: ProfileAddressesProps) {
     await supabase.from('addresses').update({ is_default: false }).eq('user_id', user.id);
     const { error } = await supabase.from('addresses').update({ is_default: true }).eq('id', addrId);
     if (error) {
-      alert('Erro ao definir endereço padrão: ' + error.message);
+      showToast('Erro ao definir endereço padrão: ' + error.message, 'error');
     } else {
+      showToast('Endereço principal atualizado com sucesso!', 'success');
       fetchAddresses();
     }
   };
@@ -129,8 +133,9 @@ export function ProfileAddresses({ user }: ProfileAddressesProps) {
     if (window.confirm('Deseja realmente remover este endereço?')) {
       const { error } = await supabase.from('addresses').delete().eq('id', addrId);
       if (error) {
-        alert('Erro ao deletar endereço: ' + error.message);
+        showToast('Erro ao deletar endereço: ' + error.message, 'error');
       } else {
+        showToast('Endereço excluído com sucesso.', 'success');
         fetchAddresses();
       }
     }

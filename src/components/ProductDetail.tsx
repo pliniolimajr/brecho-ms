@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
 import ProductCard from './ProductCard';
 import type { Product } from '../types';
+import { useToast } from './Toast';
 
 interface ProductDetailProps {
   product: Product;
@@ -14,6 +15,7 @@ interface ProductDetailProps {
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const { products } = useStore();
 
   const relatedProducts = React.useMemo(() => {
@@ -56,7 +58,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
 
   const handleWishlistToggle = async () => {
     if (!user) {
-      alert('Você precisa estar logado para salvar itens na sua lista de desejos.');
+      showToast('Você precisa estar logado para salvar itens na sua lista de desejos.', 'warning');
       navigate('/login');
       return;
     }
@@ -65,6 +67,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
       await supabase.from('wishlists').delete().eq('id', wishlistId);
       setIsWishlisted(false);
       setWishlistId(null);
+      showToast('Produto removido da sua wishlist.', 'info');
     } else {
       const { data, error } = await supabase
         .from('wishlists')
@@ -75,6 +78,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
       if (!error && data) {
         setIsWishlisted(true);
         setWishlistId(data.id);
+        showToast('Produto adicionado à sua wishlist!', 'success');
       }
     }
   };
@@ -105,7 +109,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
   const handleAddReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert('Você precisa estar logado para avaliar.');
+      showToast('Você precisa estar logado para avaliar.', 'warning');
       navigate('/login');
       return;
     }
@@ -120,8 +124,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
       });
 
     if (error) {
-      alert('Erro ao enviar avaliação: ' + error.message);
+      showToast('Erro ao enviar avaliação: ' + error.message, 'error');
     } else {
+      showToast('Sua avaliação foi enviada com sucesso!', 'success');
       setNewComment('');
       setNewRating(5);
       fetchReviews();

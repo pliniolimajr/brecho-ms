@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { BRAND_NAME } from '../constants';
+import { useAuth } from '../hooks/useAuth';
 
 interface FooterProps {
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
@@ -28,6 +29,7 @@ const FooterColumn: React.FC<{ title: string; children: React.ReactNode }> = ({ 
 };
 
 const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
+  const { session, isAdmin } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -49,6 +51,24 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
           throw error;
         }
       } else {
+        // Envia o e-mail de boas-vindas via Edge Function
+        try {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            },
+            body: JSON.stringify({
+              type: 'welcome',
+              email: email,
+              name: name
+            })
+          }).catch(mailErr => console.error('Erro de rede ao enviar e-mail de boas-vindas:', mailErr));
+        } catch (mailErr) {
+          console.error('Erro ao enviar e-mail de boas-vindas:', mailErr);
+        }
+
         setStatus('success');
         setMessage('Cadastro realizado com sucesso!');
         setName('');
@@ -111,10 +131,16 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
             <a href="#products" onClick={(e) => onLinkClick(e, 'products')} className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Catálogo</a>
           </FooterColumn>
 
-          <FooterColumn title="Minha Conta">
-            <Link to="/login" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Acessar Conta</Link>
-            <Link to="/minha-conta" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Meus Pedidos</Link>
-          </FooterColumn>
+          {session && isAdmin ? (
+            <FooterColumn title="Painel Admin">
+              <Link to="/admin" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Painel do Administrador</Link>
+            </FooterColumn>
+          ) : (
+            <FooterColumn title="Minha Conta">
+              <Link to="/login" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Acessar Conta</Link>
+              <Link to="/minha-conta" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Meus Pedidos</Link>
+            </FooterColumn>
+          )}
 
           <FooterColumn title="Ajuda">
             <Link to="/politicas" className="text-sm text-[#FDF6F0]/70 hover:text-[#C06A35] transition-colors w-max">Trocas e Devoluções</Link>
@@ -183,7 +209,6 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
                  </div>
                </div>
                <div className="h-6 px-3 bg-white rounded flex items-center justify-center opacity-80" title="Pix"><span className="text-[#32BCA4] text-[10px] font-bold">pix</span></div>
-               <div className="h-6 px-3 bg-white rounded flex items-center justify-center opacity-80" title="Boleto"><span className="text-[#1A332B] text-[10px] font-medium tracking-wider">||||| ||</span></div>
              </div>
           </div>
 

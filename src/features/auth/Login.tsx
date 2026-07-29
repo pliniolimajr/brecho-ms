@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { isValidCPF } from '../../utils/validators';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -32,6 +33,7 @@ export function Login() {
 
   const lowerPwd = password.toLowerCase();
   const nameParts = [firstName, lastName, email.split('@')[0]].filter(Boolean).map(p => p.toLowerCase());
+
   const containsNameOrEmail = nameParts.length > 0 && nameParts.some(part => part.length >= 3 && lowerPwd.includes(part));
   const hasSequentialEquals = /(.)\1\1\1/.test(password);
 
@@ -48,7 +50,11 @@ export function Login() {
   };
 
   const handleCpfBlur = async () => {
-    if (cpf.length === 14) {
+    if (cpf.length > 0) {
+      if (!isValidCPF(cpf)) {
+        setCpfError('CPF inválido. Verifique os dígitos digitados.');
+        return;
+      }
       try {
         const { data, error } = await supabase.rpc('check_cpf_exists', { p_cpf: cpf });
         if (error) throw error;
@@ -91,6 +97,12 @@ export function Login() {
     setSuccessMsg(null);
 
     if (isSignUp) {
+      if (!isValidCPF(cpf)) {
+        setError('O CPF informado é inválido.');
+        setCpfError('CPF inválido. Verifique os dígitos digitados.');
+        setLoading(false);
+        return;
+      }
       if (cpfError) {
         setError('O CPF informado já está cadastrado.');
         setLoading(false);
@@ -139,12 +151,30 @@ export function Login() {
         }
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) setError(error.message);
-      else navigate(redirect);
+      if (error) {
+        setError(error.message);
+      } else if (data?.user) {
+        try {
+          const { data: adminData } = await supabase
+            .from('admin_users')
+            .select('id')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+
+          const isUserAdmin = !!adminData || data.user.user_metadata?.role === 'admin' || data.user.app_metadata?.role === 'admin';
+          if (isUserAdmin) {
+            navigate('/admin');
+          } else {
+            navigate(redirect);
+          }
+        } catch (err) {
+          navigate(redirect);
+        }
+      }
     }
     setLoading(false);
   };

@@ -1,5 +1,6 @@
 import Hero from '../components/Hero';
 import ProductGrid from '../components/ProductGrid';
+import { Lookbook } from '../components/Lookbook';
 import About from '../components/About';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,6 +14,7 @@ export function Home() {
           window.scrollTo({ top: 0, behavior: 'smooth' });
           navigate(`/produto/${p.id}`);
       }} />
+      <Lookbook />
       <About />
     </>
   );

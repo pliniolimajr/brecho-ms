@@ -21,47 +21,50 @@ const CheckoutFailure = lazy(() => import('./pages/CheckoutFailure').then(module
 const CheckoutPending = lazy(() => import('./pages/CheckoutPending').then(module => ({ default: module.CheckoutPending })));
 
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
+import { ToastProvider } from './components/Toast';
 
 export function App() {
   return (
-    <BrowserRouter>
-      <Suspense fallback={
-        <div className="min-h-screen bg-[#FDF6F0] flex justify-center items-center">
-          <div className="w-8 h-8 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      }>
-        <Routes>
-          {/* Store Routes */}
-          <Route path="/" element={<StoreLayout />}>
-            <Route index element={<Home />} />
-            <Route path="catalogo" element={<Catalog />} />
-            <Route path="produto/:id" element={<ProductPage />} />
-            <Route path="checkout" element={<CheckoutPage />} />
-            <Route path="minha-conta" element={<CustomerProfile />} />
-            <Route path="sobre" element={<About />} />
-            <Route path="politicas" element={<Policies />} />
-            <Route path="faq" element={<FAQ />} />
-            <Route path="contato" element={<Contact />} />
-            <Route path="termos" element={<Terms />} />
-            <Route path="privacidade" element={<Privacy />} />
-            <Route path="checkout-success" element={<CheckoutSuccess />} />
-            <Route path="checkout-failure" element={<CheckoutFailure />} />
-            <Route path="checkout-pending" element={<CheckoutPending />} />
-            <Route path="login" element={<Login />} />
-          </Route>
+    <ToastProvider>
+      <BrowserRouter>
+        <Suspense fallback={
+          <div className="min-h-screen bg-[#FDF6F0] flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Routes>
+            {/* Store Routes */}
+            <Route path="/" element={<StoreLayout />}>
+              <Route index element={<Home />} />
+              <Route path="catalogo" element={<Catalog />} />
+              <Route path="produto/:id" element={<ProductPage />} />
+              <Route path="checkout" element={<CheckoutPage />} />
+              <Route path="minha-conta" element={<CustomerProfile />} />
+              <Route path="sobre" element={<About />} />
+              <Route path="politicas" element={<Policies />} />
+              <Route path="faq" element={<FAQ />} />
+              <Route path="contato" element={<Contact />} />
+              <Route path="termos" element={<Terms />} />
+              <Route path="privacidade" element={<Privacy />} />
+              <Route path="checkout-success" element={<CheckoutSuccess />} />
+              <Route path="checkout-failure" element={<CheckoutFailure />} />
+              <Route path="checkout-pending" element={<CheckoutPending />} />
+              <Route path="login" element={<Login />} />
+            </Route>
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedAdminRoute>
-              <AdminLayout />
-            </ProtectedAdminRoute>
-          }>
-            <Route index element={<AdminDashboard />} />
-            {/* Outras rotas do admin: /admin/orders, /admin/customers */}
-          </Route>
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedAdminRoute>
+                <AdminLayout />
+              </ProtectedAdminRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              {/* Outras rotas do admin: /admin/orders, /admin/customers */}
+            </Route>
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

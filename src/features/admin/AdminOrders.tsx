@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
+import { useToast } from '../../components/Toast';
 
 interface AdminOrdersProps {
   adminOrders: any[];
@@ -18,15 +19,77 @@ export function AdminOrders({
   fetchCRMData,
   handleExportCSV
 }: AdminOrdersProps) {
+  const { showToast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null);
   const [tempTrackingCode, setTempTrackingCode] = useState<string>('');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const logStatusHistory = async (orderId: string, action: string, details?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const changedBy = session?.user?.email || 'admin';
+
+      const { data: order } = await supabase
+        .from('orders')
+        .select('status_history, shipping_address')
+        .eq('id', orderId)
+        .single();
+
+      if (!order) return;
+
+      const history = Array.isArray(order.status_history)
+        ? order.status_history
+        : (order.shipping_address && Array.isArray(order.shipping_address.statusHistory))
+        ? order.shipping_address.statusHistory
+        : [];
+
+      const newEntry = {
+        timestamp: new Date().toISOString(),
+        action,
+        changed_by: changedBy,
+        details: details || ''
+      };
+
+      const updatedHistory = [...history, newEntry];
+
+      // Tenta atualizar a coluna status_history dedicada
+      const { error: colError } = await supabase
+        .from('orders')
+        .update({ status_history: updatedHistory })
+        .eq('id', orderId);
+
+      // Fallback para shipping_address caso a coluna não exista
+      if (colError) {
+        const updatedAddress = {
+          ...order.shipping_address,
+          statusHistory: updatedHistory
+        };
+        await supabase
+          .from('orders')
+          .update({ shipping_address: updatedAddress })
+          .eq('id', orderId);
+      }
+    } catch (e) {
+      console.warn('Falha ao registrar histórico de status:', e);
+    }
+  };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    const statusNames: Record<string, string> = {
+      pending: 'Aguardando Pagamento',
+      paid: 'Pago / Preparando Envio',
+      shipped: 'Enviado',
+      delivered: 'Entregue',
+      cancelled: 'Cancelado'
+    };
+    const friendlyStatus = statusNames[newStatus] || newStatus;
+
     const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
     if (error) {
-      alert('Erro ao atualizar status do pedido. Verifique se você tem permissão de Admin.');
+      showToast('Erro ao atualizar status do pedido. Verifique se você tem permissão de Admin.', 'error');
     } else {
+      await logStatusHistory(orderId, `Status alterado para "${friendlyStatus}"`);
       fetchAdminOrders();
       fetchCRMData();
     }
@@ -40,12 +103,13 @@ export function AdminOrders({
         .eq('id', orderId);
       if (error) throw error;
 
+      await logStatusHistory(orderId, `Código de rastreio atualizado`, `Código: ${code}`);
       fetchAdminOrders();
       setEditingTrackingId(null);
-      alert('Código de rastreio atualizado com sucesso!');
+      showToast('Código de rastreio atualizado com sucesso!', 'success');
     } catch (err: any) {
       console.error(err);
-      alert('Erro ao salvar código de rastreio.');
+      showToast('Erro ao salvar código de rastreio.', 'error');
     }
   };
 
@@ -66,17 +130,36 @@ export function AdminOrders({
         .eq('id', orderId);
       if (error) throw error;
 
+      await logStatusHistory(orderId, `Etiqueta de Envio emitida via SuperFrete`, `Rastreio: ${mockTracking}`);
       fetchAdminOrders();
-      alert(`Etiqueta de Envio emitida com sucesso via SuperFrete! Rastreamento gerado: ${mockTracking}`);
+      showToast(`Etiqueta de Envio emitida com sucesso via SuperFrete! Rastreamento gerado: ${mockTracking}`, 'success');
     } catch (err: any) {
       console.error(err);
-      alert('Erro ao emitir etiqueta.');
+      showToast('Erro ao emitir etiqueta.', 'error');
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
   const filteredOrders = adminOrders.filter(o => {
-    if (statusFilter === 'all') return true;
-    return o.status === statusFilter;
+    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const clientName = `${o.shipping_address?.firstName || ''} ${o.shipping_address?.lastName || ''}`.toLowerCase();
+      const orderId = (o.id || '').toLowerCase();
+      const phone = (o.shipping_address?.phone || '').toLowerCase();
+      const itemNames = (o.order_items || []).map((i: any) => (i.products?.name || '').toLowerCase()).join(' ');
+
+      return (
+        clientName.includes(q) ||
+        orderId.includes(q) ||
+        phone.includes(q) ||
+        itemNames.includes(q)
+      );
+    }
+
+    return true;
   });
 
   return (
@@ -98,25 +181,45 @@ export function AdminOrders({
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded shadow-sm border border-[#C06A35]/20 flex flex-wrap gap-2 items-center">
-        <span className="text-xs font-semibold uppercase tracking-widest text-[#423226] mr-2">Filtrar Status:</span>
-        {['all', 'pending', 'paid', 'delivered', 'cancelled'].map((st) => (
-          <button
-            key={st}
-            onClick={() => setStatusFilter(st)}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${statusFilter === st
-                ? 'bg-[#1A332B] text-white'
-                : 'bg-[#FDF6F0] text-[#423226] hover:bg-[#C06A35]/20'
-              }`}
-          >
-            {st === 'all' && 'Todos'}
-            {st === 'pending' && 'Pendente'}
-            {st === 'paid' && 'Pago'}
-            {st === 'delivered' && 'Entregue'}
-            {st === 'cancelled' && 'Cancelado'}
-          </button>
-        ))}
+      {/* Filter & Search Bar */}
+      <div className="bg-white p-4 rounded shadow-sm border border-[#C06A35]/20 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-[#423226] mr-2">Status:</span>
+          {['all', 'pending', 'paid', 'delivered', 'cancelled'].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${statusFilter === st
+                  ? 'bg-[#1A332B] text-white'
+                  : 'bg-[#FDF6F0] text-[#423226] hover:bg-[#C06A35]/20'
+                }`}
+            >
+              {st === 'all' && 'Todos'}
+              {st === 'pending' && 'Pendente'}
+              {st === 'paid' && 'Pago'}
+              {st === 'delivered' && 'Entregue'}
+              {st === 'cancelled' && 'Cancelado'}
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full md:w-80">
+          <input
+            type="text"
+            placeholder="Buscar por ID, cliente, telefone ou produto..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-1.5 text-xs text-[#1A332B] placeholder-gray-400 focus:outline-none focus:border-[#1A332B]"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1.5 text-xs text-gray-400 hover:text-[#1A332B] font-bold"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded shadow-sm border border-[#C06A35]/20 overflow-hidden">
@@ -142,105 +245,165 @@ export function AdminOrders({
                 {filteredOrders.map(order => {
                   const clientName = `${order.shipping_address?.firstName || ''} ${order.shipping_address?.lastName || ''}`.trim() || 'Cliente';
                   const dateStr = new Date(order.created_at).toLocaleDateString('pt-BR');
+                  const history = Array.isArray(order.status_history)
+                    ? order.status_history
+                    : (order.shipping_address && Array.isArray(order.shipping_address.statusHistory))
+                    ? order.shipping_address.statusHistory
+                    : [];
 
                   return (
-                    <tr key={order.id} className="border-b border-[#C06A35]/10 hover:bg-[#FDF6F0]/50 transition-colors">
-                      <td className="p-4">
-                        <span className="font-mono text-xs font-bold text-[#1A332B] block">
-                          #{order.id.split('-')[0].toUpperCase()}
-                        </span>
-                        <span className="text-xs text-gray-500">{dateStr}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm font-semibold text-[#1A332B] block">{clientName}</span>
-                        <span className="text-xs text-gray-500">{order.shipping_address?.phone || 'Sem tel.'}</span>
-                      </td>
-                      <td className="p-4 text-xs text-[#423226]">
-                        {order.order_items?.map((item: any, idx: number) => (
-                          <div key={idx} className="line-clamp-1">
-                            • {item.products?.name} ({item.products?.size || 'U'})
-                          </div>
-                        ))}
-                      </td>
-                      <td className="p-4 text-sm font-bold text-[#1A332B]">
-                        R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4">
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white font-semibold"
+                    <React.Fragment key={order.id}>
+                      <tr className="border-b border-[#C06A35]/10 hover:bg-[#FDF6F0]/50 transition-colors">
+                        <td 
+                          className="p-4 cursor-pointer hover:underline"
+                          onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
                         >
-                          <option value="pending">Pendente</option>
-                          <option value="paid">Pago</option>
-                          <option value="delivered">Entregue</option>
-                          <option value="cancelled">Cancelado</option>
-                        </select>
-                      </td>
-                      <td className="p-4 text-xs">
-                        {editingTrackingId === order.id ? (
-                          <div className="flex gap-1 items-center">
-                            <input
-                              type="text"
-                              value={tempTrackingCode}
-                              onChange={(e) => setTempTrackingCode(e.target.value)}
-                              placeholder="Código Rastreio"
-                              className="border p-1 text-xs rounded w-28"
-                            />
-                            <button
-                              onClick={() => handleSaveTrackingCode(order.id, tempTrackingCode)}
-                              className="bg-green-700 text-white text-xs px-2 py-1 rounded"
-                            >
-                              OK
-                            </button>
-                            <button
-                              onClick={() => setEditingTrackingId(null)}
-                              className="text-gray-500 text-xs"
-                            >
-                              X
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            {order.tracking_code ? (
-                              <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 block w-fit">
-                                {order.tracking_code}
-                              </span>
-                            ) : (
+                          <span className="font-mono text-xs font-bold text-[#1A332B] block flex items-center gap-1">
+                            #{order.id.split('-')[0].toUpperCase()}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 transition-transform ${expandedOrderId === order.id ? 'rotate-180' : ''}`}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                          </span>
+                          <span className="text-xs text-gray-500">{dateStr}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-semibold text-[#1A332B] block">{clientName}</span>
+                          <span className="text-xs text-gray-500">{order.shipping_address?.phone || 'Sem tel.'}</span>
+                        </td>
+                        <td className="p-4 text-xs text-[#423226]">
+                          {order.order_items?.map((item: any, idx: number) => (
+                            <div key={idx} className="line-clamp-1">
+                              • {item.products?.name} ({item.products?.size || 'U'})
+                            </div>
+                          ))}
+                        </td>
+                        <td className="p-4 text-sm font-bold text-[#1A332B]">
+                          R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="p-4">
+                          <select
+                            value={order.status}
+                            onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white font-semibold"
+                          >
+                            <option value="pending">Pendente</option>
+                            <option value="paid">Pago</option>
+                            <option value="shipped">Enviado</option>
+                            <option value="delivered">Entregue</option>
+                            <option value="cancelled">Cancelado</option>
+                          </select>
+                        </td>
+                        <td className="p-4 text-xs">
+                          {editingTrackingId === order.id ? (
+                            <div className="flex gap-1 items-center">
+                              <input
+                                type="text"
+                                value={tempTrackingCode}
+                                onChange={(e) => setTempTrackingCode(e.target.value)}
+                                placeholder="Código Rastreio"
+                                className="border p-1 text-xs rounded w-28"
+                              />
                               <button
-                                onClick={() => { setEditingTrackingId(order.id); setTempTrackingCode(''); }}
-                                className="text-xs text-[#C06A35] underline"
+                                onClick={() => handleSaveTrackingCode(order.id, tempTrackingCode)}
+                                className="bg-green-700 text-white text-xs px-2 py-1 rounded"
                               >
-                                + Add Rastreio
+                                OK
                               </button>
-                            )}
-
-                            <div className="flex gap-2 pt-1">
                               <button
-                                onClick={() => handleSimulateShippingLabel(order.id)}
-                                className="text-[10px] bg-[#1A332B] text-white px-2 py-0.5 rounded hover:bg-[#433E38]"
+                                onClick={() => setEditingTrackingId(null)}
+                                className="text-gray-500 text-xs"
                               >
-                                Emitir Etiqueta
+                                X
                               </button>
                             </div>
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-4 text-xs space-y-1">
-                        <button
-                          onClick={() => printDeclarationOfContent(order, storeInfo)}
-                          className="text-blue-600 hover:underline block"
-                        >
-                          Declaração de Conteúdo
-                        </button>
-                        <button
-                          onClick={() => printShippingLabel(order, storeInfo)}
-                          className="text-amber-700 hover:underline block"
-                        >
-                          Etiqueta para Impressão
-                        </button>
-                      </td>
-                    </tr>
+                          ) : (
+                            <div className="space-y-1">
+                              {order.tracking_code ? (
+                                <span className="font-mono text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 block w-fit">
+                                  {order.tracking_code}
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => { setEditingTrackingId(order.id); setTempTrackingCode(''); }}
+                                  className="text-xs text-[#C06A35] underline"
+                                >
+                                  + Add Rastreio
+                                </button>
+                              )}
+
+                              <div className="flex gap-2 pt-1">
+                                <button
+                                  onClick={() => handleSimulateShippingLabel(order.id)}
+                                  className="text-[10px] bg-[#1A332B] text-white px-2 py-0.5 rounded hover:bg-[#433E38]"
+                                >
+                                  Emitir Etiqueta
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4 text-xs space-y-1">
+                          <button
+                            onClick={() => printDeclarationOfContent(order, storeInfo, showToast)}
+                            className="text-blue-600 hover:underline block text-left"
+                          >
+                            Declaração de Conteúdo
+                          </button>
+                          <button
+                            onClick={() => printShippingLabel(order, storeInfo, showToast)}
+                            className="text-amber-700 hover:underline block text-left"
+                          >
+                            Etiqueta para Impressão
+                          </button>
+                        </td>
+                      </tr>
+
+                      {expandedOrderId === order.id && (
+                        <tr className="bg-[#FDF6F0]/40 border-b border-[#C06A35]/15">
+                          <td colSpan={7} className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div>
+                                <h4 className="text-xs uppercase tracking-wider font-bold text-[#1A332B] mb-2">Endereço de Entrega</h4>
+                                <div className="text-xs text-[#423226] space-y-1 bg-white p-3 rounded border border-gray-200 shadow-sm">
+                                  <p><strong>Destinatário:</strong> {clientName}</p>
+                                  <p><strong>Rua:</strong> {order.shipping_address?.street}, {order.shipping_address?.number} {order.shipping_address?.complement && ` - ${order.shipping_address.complement}`}</p>
+                                  <p><strong>Bairro:</strong> {order.shipping_address?.neighborhood}</p>
+                                  <p><strong>Cidade/UF:</strong> {order.shipping_address?.city} - {order.shipping_address?.state}</p>
+                                  <p><strong>CEP:</strong> {order.shipping_address?.postalCode}</p>
+                                  {order.shipping_address?.shippingService && (
+                                    <p><strong>Frete:</strong> {order.shipping_address.shippingService} (R$ {Number(order.shipping_address.shippingCost || 0).toFixed(2).replace('.', ',')})</p>
+                                  )}
+                                  <p><strong>Método de Pagamento:</strong> <span className="uppercase font-semibold">{order.payment_method}</span></p>
+                                </div>
+                              </div>
+                              <div>
+                                <h4 className="text-xs uppercase tracking-wider font-bold text-[#1A332B] mb-2">Rastreabilidade & Histórico</h4>
+                                <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-3 max-h-48 overflow-y-auto">
+                                  {history.length === 0 ? (
+                                    <p className="text-xs text-gray-400 italic">Nenhum evento registrado no histórico.</p>
+                                  ) : (
+                                    <div className="relative border-l border-gray-200 pl-4 ml-1.5 space-y-3 text-left">
+                                      {history.map((h: any, idx: number) => (
+                                        <div key={idx} className="relative">
+                                          <div className="absolute -left-[21px] mt-1 w-2.5 h-2.5 rounded-full bg-[#C06A35] border border-white" />
+                                          <div className="text-xs">
+                                            <span className="font-semibold text-[#1A332B] block">{h.action}</span>
+                                            <span className="text-[10px] text-gray-500 block">
+                                              {new Date(h.timestamp).toLocaleString('pt-BR')} • por {h.changed_by}
+                                            </span>
+                                            {h.details && <p className="text-[10px] text-gray-400 mt-0.5">{h.details}</p>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -252,10 +415,10 @@ export function AdminOrders({
   );
 }
 
-function printDeclarationOfContent(order: any, storeInfo: any) {
+function printDeclarationOfContent(order: any, storeInfo: any, showToast: any) {
   const printWindow = window.open('', '_blank', 'width=800,height=900');
   if (!printWindow) {
-    alert('Por favor, ative a exibição de popups para imprimir.');
+    showToast('Por favor, ative a exibição de popups para imprimir.', 'warning');
     return;
   }
 
@@ -370,10 +533,10 @@ function printDeclarationOfContent(order: any, storeInfo: any) {
   printWindow.print();
 }
 
-function printShippingLabel(order: any, storeInfo: any) {
+function printShippingLabel(order: any, storeInfo: any, showToast: any) {
   const printWindow = window.open('', '_blank', 'width=600,height=800');
   if (!printWindow) {
-    alert('Por favor, ative a exibição de popups para imprimir.');
+    showToast('Por favor, ative a exibição de popups para imprimir.', 'warning');
     return;
   }
 

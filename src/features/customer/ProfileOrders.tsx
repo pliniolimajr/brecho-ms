@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { User } from '@supabase/supabase-js';
+import { useStore } from '../../store/useStore';
+import { useToast } from '../../components/Toast';
 
 interface ProfileOrdersProps {
   user: User | null;
@@ -10,6 +12,9 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const { addToCart, setIsCartOpen } = useStore();
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchOrders();
@@ -21,7 +26,7 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(price, products(name, image_url, size))')
+        .select('*, order_items(price, product_id, products(id, name, image_url, size))')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
         
@@ -31,6 +36,73 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
       console.error('Erro ao buscar pedidos:', err.message);
     } finally {
       setLoadingOrders(false);
+    }
+  };
+
+  const handleReorder = async (order: any) => {
+    setReorderingId(order.id);
+    try {
+      const items = order.order_items || [];
+      const itemIds = items.map((i: any) => i.product_id || i.products?.id).filter(Boolean);
+
+      if (itemIds.length === 0) {
+        showToast('Nenhum produto válido encontrado neste pedido.', 'error');
+        return;
+      }
+
+      const { data: dbProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', itemIds)
+        .eq('is_sold', false);
+
+      if (error) throw error;
+
+      if (!dbProducts || dbProducts.length === 0) {
+        showToast('Desculpe, os produtos deste pedido já foram vendidos ou não estão mais disponíveis.', 'warning');
+        return;
+      }
+
+      let addedCount = 0;
+      for (const row of dbProducts) {
+        if (row.stock_quantity !== null && row.stock_quantity <= 0) continue;
+        const product: any = {
+          id: row.id,
+          name: row.name,
+          tagline: row.tagline,
+          description: row.description,
+          longDescription: row.long_description,
+          price: Number(row.price),
+          category: row.category,
+          imageUrl: row.image_url,
+          gallery: row.gallery,
+          features: row.features,
+          size: row.size,
+          brand: row.brand,
+          color: row.color,
+          material: row.material,
+          measurements: row.measurements,
+          stockQuantity: row.stock_quantity,
+        };
+        addToCart(product);
+        addedCount++;
+      }
+
+      if (addedCount > 0) {
+        setIsCartOpen(true);
+        if (addedCount < items.length) {
+          showToast(`${addedCount} produto(s) adicionado(s) ao carrinho. Alguns itens não estavam mais disponíveis.`, 'warning');
+        } else {
+          showToast('Todos os itens do pedido foram adicionados ao seu carrinho!', 'success');
+        }
+      } else {
+        showToast('Nenhum dos produtos do pedido possui estoque disponível no momento.', 'warning');
+      }
+    } catch (err: any) {
+      console.error('Erro ao refazer pedido:', err);
+      showToast('Não foi possível refazer o pedido no momento.', 'error');
+    } finally {
+      setReorderingId(null);
     }
   };
 
@@ -77,6 +149,16 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
                     <span className="block text-xs text-[#A8A29E] uppercase tracking-widest mb-1">Total</span>
                     <span className="font-serif text-lg text-[#1A332B]">R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}</span>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReorder(order);
+                    }}
+                    disabled={reorderingId === order.id}
+                    className="bg-[#1A332B] text-white px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:bg-[#C06A35] transition-colors disabled:opacity-50"
+                  >
+                    {reorderingId === order.id ? 'Adicionando...' : 'Comprar Novamente'}
+                  </button>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 transition-transform ${expandedOrderId === order.id ? 'rotate-180' : ''}`}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                   </svg>

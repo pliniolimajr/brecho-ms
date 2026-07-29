@@ -14,12 +14,10 @@ interface CartDrawerProps {
   onCheckout: () => void;
 }
 
-const FREE_SHIPPING_THRESHOLD = 300;
+
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemoveItem, onCheckout }) => {
   const total = items.reduce((sum, item) => sum + item.price, 0);
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - total);
-  const freeShippingProgress = Math.min(100, (total / FREE_SHIPPING_THRESHOLD) * 100);
 
   return (
     <>
@@ -51,24 +49,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
           </button>
         </div>
 
-        {/* Free Shipping Progress Bar */}
-        <div className="bg-[#1A332B] text-white p-3.5 px-6 text-xs text-center border-b border-[#C06A35]/20">
-          {remainingForFreeShipping > 0 ? (
-            <p className="mb-2">
-              Faltam apenas <span className="font-bold text-[#C06A35]">R$ {remainingForFreeShipping.toFixed(2).replace('.', ',')}</span> para ganhar <span className="font-bold uppercase tracking-wider">Frete Grátis</span>!
-            </p>
-          ) : (
-            <p className="mb-2 font-bold text-emerald-300 tracking-wider">
-              🎉 Parabéns! Você conquistou FRETE GRÁTIS!
-            </p>
-          )}
-          <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
-            <div 
-              className="bg-[#C06A35] h-full rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${freeShippingProgress}%` }}
-            />
-          </div>
-        </div>
+
 
         {/* Items List */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useStore } from '../../store/useStore';
 import type { Product } from '../../types';
+import { useToast } from '../../components/Toast';
 
 interface AdminInventoryProps {
   adminProducts: Product[];
@@ -17,6 +18,7 @@ export function AdminInventory({
   handleCSVImport
 }: AdminInventoryProps) {
   const { fetchProducts } = useStore();
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -119,10 +121,11 @@ export function AdminInventory({
       .upload(fileName, file);
 
     if (uploadError) {
-      alert('Erro ao fazer upload: ' + uploadError.message);
+      showToast('Erro ao fazer upload: ' + uploadError.message, 'error');
     } else {
       const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
       setEditingProduct({...editingProduct, imageUrl: data.publicUrl});
+      showToast('Upload de imagem realizado com sucesso!', 'success');
     }
     setUploadingImage(false);
   };
@@ -151,6 +154,9 @@ export function AdminInventory({
     if (uploadedUrls.length > 0) {
       const currentGallery = editingProduct.gallery || [];
       setEditingProduct({ ...editingProduct, gallery: [...currentGallery, ...uploadedUrls] });
+      showToast(`${uploadedUrls.length} imagens adicionadas à galeria!`, 'success');
+    } else {
+      showToast('Nenhuma imagem pôde ser enviada.', 'error');
     }
     setUploadingImage(false);
   };

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BRAND_NAME } from '../constants';
 
 import { useAuth } from '../hooks/useAuth';
 import { useStoreSettings } from '../hooks/useStoreSettings';
+import { useStore } from '../store/useStore';
 
 interface NavbarProps {
   onNavClick?: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
@@ -17,8 +18,12 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
 
-  const { session } = useAuth();
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const { session, isAdmin } = useAuth();
   const { topBar } = useStoreSettings();
+  const { products, fetchProducts } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +34,29 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('recent_searches');
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const saveSearchTerm = (term: string) => {
+    const cleanTerm = term.trim().toLowerCase();
+    if (!cleanTerm) return;
+    setRecentSearches(prev => {
+      const filtered = prev.filter(t => t !== cleanTerm);
+      const updated = [cleanTerm, ...filtered].slice(0, 5);
+      localStorage.setItem('recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleCartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setMobileMenuOpen(false);
@@ -38,11 +66,21 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
+      saveSearchTerm(searchInput);
       navigate(`/catalogo?search=${encodeURIComponent(searchInput.trim())}`);
       setSearchOpen(false);
+      setShowDropdown(false);
       setSearchInput('');
     }
   };
+
+  const suggestedProducts = useMemo(() => {
+    if (!searchInput.trim() || searchInput.length < 2) return [];
+    const q = searchInput.toLowerCase();
+    return products
+      .filter(p => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.brand?.toLowerCase().includes(q))
+      .slice(0, 4);
+  }, [products, searchInput]);
 
   return (
     <>
@@ -119,7 +157,11 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
             {/* Right: Actions */}
             <div className="flex items-center justify-end gap-6 text-[11px] font-medium tracking-[0.15em] uppercase text-[#423226]">
               {/* Search (Desktop & Mobile) */}
-              <div className="relative flex items-center justify-end">
+              <div 
+                className="relative flex items-center justify-end"
+                onMouseEnter={() => setShowDropdown(true)}
+                onMouseLeave={() => setShowDropdown(false)}
+              >
                 {/* Desktop Inline Sliding Search Input */}
                 <form 
                   onSubmit={handleSearchSubmit} 
@@ -132,6 +174,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
                     placeholder="O que você procura?"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
+                    onFocus={() => setShowDropdown(true)}
                     className="w-full bg-white border border-[#C06A35]/30 px-3.5 py-1.5 text-xs text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] rounded-sm pr-7"
                     autoFocus={searchOpen}
                   />
@@ -151,8 +194,10 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
                 <button 
                   onClick={() => {
                     if (searchOpen && searchInput.trim()) {
+                      saveSearchTerm(searchInput);
                       navigate(`/catalogo?search=${encodeURIComponent(searchInput.trim())}`);
                       setSearchOpen(false);
+                      setShowDropdown(false);
                       setSearchInput('');
                     } else {
                       setSearchOpen(!searchOpen);
@@ -166,15 +211,113 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
                     <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.637 10.637Z" />
                   </svg>
                 </button>
+
+                {/* Predictive Dropdown Popup */}
+                {searchOpen && showDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-[#C06A35]/25 shadow-xl rounded-sm z-[999] text-left p-4 normal-case">
+                    {/* Recent Searches */}
+                    {recentSearches.length > 0 && !searchInput.trim() && (
+                      <div className="mb-4">
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#A8A29E] mb-2">Buscas Recentes</h4>
+                        <div className="flex flex-wrap gap-1.5">
+                          {recentSearches.map((term, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                saveSearchTerm(term);
+                                navigate(`/catalogo?search=${encodeURIComponent(term)}`);
+                                setSearchOpen(false);
+                                setShowDropdown(false);
+                                setSearchInput('');
+                              }}
+                              className="text-[10px] bg-[#FDF6F0] hover:bg-[#C06A35]/10 text-[#423226] px-2.5 py-1 rounded-sm border border-[#C06A35]/15 transition-colors"
+                            >
+                              {term}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Popular Categories when search is empty */}
+                    {!searchInput.trim() && (
+                      <div>
+                        <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#A8A29E] mb-2">Categorias Populares</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['Vestidos', 'Camisetas', 'Calças', 'Acessórios'].map((cat) => (
+                            <button
+                              key={cat}
+                              onClick={() => {
+                                saveSearchTerm(cat);
+                                navigate(`/catalogo?search=${encodeURIComponent(cat)}`);
+                                setSearchOpen(false);
+                                setShowDropdown(false);
+                                setSearchInput('');
+                              }}
+                              className="text-left text-xs text-[#423226] hover:text-[#C06A35] py-1 border-b border-[#FDF6F0] transition-colors"
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions when typing */}
+                    {searchInput.trim().length >= 1 && (
+                      <div className="space-y-4">
+                        {/* Suggested Products */}
+                        <div>
+                          <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#A8A29E] mb-2.5">Produtos Sugeridos</h4>
+                          {suggestedProducts.length === 0 ? (
+                            <p className="text-[11px] text-[#A8A29E]">Nenhum produto encontrado.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {suggestedProducts.map((p) => (
+                                <div
+                                  key={p.id}
+                                  onClick={() => {
+                                    navigate(`/produto/${p.id}`);
+                                    setSearchOpen(false);
+                                    setShowDropdown(false);
+                                    setSearchInput('');
+                                  }}
+                                  className="flex items-center gap-3 cursor-pointer hover:bg-[#FDF6F0] p-1.5 rounded transition-colors"
+                                >
+                                  <img src={p.imageUrl} alt={p.name} className="w-10 h-10 object-cover rounded" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-serif text-[#1A332B] truncate">{p.name}</p>
+                                    <p className="text-[10px] text-[#C06A35] font-semibold">
+                                      R$ {Number(p.price).toFixed(2).replace('.', ',')}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {/* Instant Search Help */}
+                        <div className="pt-2 border-t border-[#FDF6F0] text-center">
+                          <button
+                            onClick={handleSearchSubmit}
+                            className="text-[10px] text-[#1A332B] hover:text-[#C06A35] font-bold underline uppercase tracking-wider"
+                          >
+                            Ver todos os resultados
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Account */}
               <a 
-                href={session ? "/minha-conta" : "/login"} 
-                onClick={(e) => { e.preventDefault(); navigate(session ? "/minha-conta" : "/login"); }}
+                href={session ? (isAdmin ? "/admin" : "/minha-conta") : "/login"} 
+                onClick={(e) => { e.preventDefault(); navigate(session ? (isAdmin ? "/admin" : "/minha-conta") : "/login"); }}
                 className="hidden md:block hover:text-[#C06A35] transition-colors"
               >
-                Conta
+                {session && isAdmin ? "Painel Admin" : "Conta"}
               </a>
 
               {/* Wishlist */}
@@ -240,7 +383,17 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onO
             <a href="/catalogo?filter=outlet" onClick={() => { setMobileMenuOpen(false); navigate('/catalogo?filter=outlet'); }} className="hover:opacity-60 transition-opacity">Outlet</a>
             */}
             <hr className="w-16 border-t border-[#C06A35]/20 my-4" />
-            <a href="/minha-conta" onClick={() => { setMobileMenuOpen(false); navigate('/minha-conta'); }} className="hover:opacity-60 transition-opacity">Minha Conta</a>
+            <a 
+              href={session ? (isAdmin ? "/admin" : "/minha-conta") : "/minha-conta"} 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                setMobileMenuOpen(false); 
+                navigate(session ? (isAdmin ? "/admin" : "/minha-conta") : "/minha-conta"); 
+              }} 
+              className="hover:opacity-60 transition-opacity"
+            >
+              {session && isAdmin ? "Painel Admin" : "Minha Conta"}
+            </a>
             <a href="/minha-conta?tab=wishlist" onClick={() => { setMobileMenuOpen(false); navigate('/minha-conta?tab=wishlist'); }} className="hover:opacity-60 transition-opacity">Favoritos</a>
             <button 
                 onClick={handleCartClick} 
