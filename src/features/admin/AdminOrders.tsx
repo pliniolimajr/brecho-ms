@@ -25,6 +25,10 @@ export function AdminOrders({
   const [tempTrackingCode, setTempTrackingCode] = useState<string>('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
+  // Filtros de Data
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
   const logStatusHistory = async (orderId: string, action: string, details?: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -144,6 +148,18 @@ export function AdminOrders({
   const filteredOrders = adminOrders.filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false;
     
+    // Filtro de Data
+    if (startDate) {
+      const orderDate = new Date(o.created_at).setHours(0, 0, 0, 0);
+      const start = new Date(startDate).setHours(0, 0, 0, 0);
+      if (orderDate < start) return false;
+    }
+    if (endDate) {
+      const orderDate = new Date(o.created_at).setHours(0, 0, 0, 0);
+      const end = new Date(endDate).setHours(23, 59, 59, 999);
+      if (orderDate > end) return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const clientName = `${o.shipping_address?.firstName || ''} ${o.shipping_address?.lastName || ''}`.toLowerCase();
@@ -182,39 +198,73 @@ export function AdminOrders({
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white p-4 rounded shadow-sm border border-[#C06A35]/20 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs font-semibold uppercase tracking-widest text-[#423226] mr-2">Status:</span>
-          {['all', 'pending', 'paid', 'delivered', 'cancelled'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${statusFilter === st
-                  ? 'bg-[#1A332B] text-white'
-                  : 'bg-[#FDF6F0] text-[#423226] hover:bg-[#C06A35]/20'
-                }`}
-            >
-              {st === 'all' && 'Todos'}
-              {st === 'pending' && 'Pendente'}
-              {st === 'paid' && 'Pago'}
-              {st === 'delivered' && 'Entregue'}
-              {st === 'cancelled' && 'Cancelado'}
-            </button>
-          ))}
+      <div className="bg-white p-4 rounded shadow-sm border border-[#C06A35]/20 flex flex-col gap-4">
+        
+        {/* Linha 1: Status e Datas */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#423226] mr-2">Status:</span>
+            {['all', 'pending', 'paid', 'delivered', 'cancelled'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors uppercase ${statusFilter === st
+                    ? 'bg-[#1A332B] text-white'
+                    : 'bg-[#FDF6F0] text-[#423226] hover:bg-[#C06A35]/20'
+                  }`}
+              >
+                {st === 'all' && 'Todos'}
+                {st === 'pending' && 'Pendente'}
+                {st === 'paid' && 'Pago'}
+                {st === 'delivered' && 'Entregue'}
+                {st === 'cancelled' && 'Cancelado'}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 bg-[#FDF6F0] p-1.5 rounded border border-[#C06A35]/30">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase font-bold text-[#A8A29E] ml-1">De:</label>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="bg-white text-xs border border-gray-200 rounded px-2 py-1 text-[#1A332B] outline-none"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] uppercase font-bold text-[#A8A29E]">Até:</label>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="bg-white text-xs border border-gray-200 rounded px-2 py-1 text-[#1A332B] outline-none"
+              />
+            </div>
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="text-[10px] text-[#C06A35] underline px-2 font-bold hover:text-[#1A332B]"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="relative w-full md:w-80">
+        {/* Linha 2: Busca por texto */}
+        <div className="relative w-full">
           <input
             type="text"
             placeholder="Buscar por ID, cliente, telefone ou produto..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-1.5 text-xs text-[#1A332B] placeholder-gray-400 focus:outline-none focus:border-[#1A332B]"
+            className="w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-2 text-sm text-[#1A332B] placeholder-gray-400 focus:outline-none focus:border-[#1A332B]"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1.5 text-xs text-gray-400 hover:text-[#1A332B] font-bold"
+              className="absolute right-3 top-2.5 text-sm text-gray-400 hover:text-[#1A332B] font-bold"
             >
               ✕
             </button>

@@ -457,7 +457,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       }
     }
 
-    // 1. Criar o pedido (Order)
+    // Criar pedido, itens e reserva de estoque em uma única transação no banco.
     const shippingDetails = {
       firstName: formData.firstName,
       lastName: formData.lastName,
@@ -475,24 +475,36 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       shippingService: selectedRate?.name || ''
     };
 
-    const { data: orderData, error: orderError } = await supabase.from('orders').insert({
-      user_id: user?.id || null,
-      status: 'pending',
-      total_amount: total,
-      payment_method: 'mercado_pago',
-      coupon_id: appliedCoupon?.id || null,
-      discount_amount: discountAmount,
-      shipping_address: shippingDetails
-    }).select().single();
+    const { data: reservationRows, error: reservationError } = await supabase.rpc(
+      'create_order_with_stock_reservation',
+      {
+        p_items: items.map(item => ({ product_id: item.id })),
+        p_coupon_id: appliedCoupon?.id || null,
+        p_shipping_cost: shippingCost,
+        p_shipping_address: shippingDetails
+      }
+    );
 
-    if (orderError || !orderData) {
-      console.error(orderError);
-      showToast('Erro ao processar pedido. Tente novamente.', 'error');
+    const reservation = Array.isArray(reservationRows)
+      ? reservationRows[0]
+      : reservationRows;
+
+    if (reservationError || !reservation?.order_id || !reservation?.checkout_token) {
+      console.error('Erro ao criar pedido e reservar estoque:', reservationError);
+      const message = reservationError?.message?.includes('esgotado')
+        ? reservationError.message
+        : 'Não foi possível reservar os produtos. Atualize o carrinho e tente novamente.';
+      showToast(message, 'error');
       setLoading(false);
       return;
     }
 
-    // 2. Gerar Preferência do Mercado Pago ANTES de commitar os itens/cupons (com timeout de 10s)
+    const orderData = {
+      id: reservation.order_id as string,
+      checkoutToken: reservation.checkout_token as string
+    };
+
+    // Gerar preferência do Mercado Pago (com timeout de 10s)
     try {
       const discountRatio = subtotal > 0 ? discountAmount / subtotal : 0;
       
@@ -517,7 +529,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      // A Edge Function encerra a chamada externa em 10s. O navegador aguarda
+      // um pouco mais para receber a resposta de timeout já formatada.
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       let response: Response;
       try {
@@ -544,25 +558,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       }
       
       const prefData = await response.json();
-      if (prefData.init_point || prefData.sandbox_init_point) {
-         
-         // Se sucesso, criar os itens do pedido no banco
-         const orderItems = items.map(item => ({
-           order_id: orderData.id,
-           product_id: item.id,
-           price: item.price
-         }));
-         await supabase.from('order_items').insert(orderItems);
-
-         // Incrementar uso do cupom se aplicável
-         if (appliedCoupon) {
-           await supabase.rpc('increment_coupon_uses', { coupon_id: appliedCoupon.id });
-         }
-
-         // Marcar produtos como vendidos para reserva
-         for (const item of items) {
-           await supabase.from('products').update({ is_sold: true }).eq('id', item.id);
-         }
+      if (response.ok && (prefData.init_point || prefData.sandbox_init_point)) {
          
          // Marcar carrinho abandonado correspondente como recuperado
          try {
@@ -588,22 +584,31 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
          window.location.href = redirectUrl;
 
       } else {
-         throw new Error(prefData.error || `Erro inesperado da Edge Function: ${JSON.stringify(prefData)}`);
+         const paymentError = prefData?.error?.message
+           || prefData?.error
+           || 'Não foi possível iniciar o pagamento.';
+         throw new Error(paymentError);
       }
     } catch (err: any) {
       console.error("Erro completo no checkout:", err);
       let rollbackMessage = "";
       if (orderData?.id) {
-         const { error: deleteError } = await supabase.from('orders').delete().eq('id', orderData.id);
-         if (deleteError) {
-           console.error("Erro no rollback do pedido:", deleteError);
-           rollbackMessage = ` (Não foi possível limpar o pedido temporário: ${deleteError.message})`;
+         const { data: released, error: releaseError } = await supabase.rpc(
+           'release_order_stock_reservation',
+           {
+             p_order_id: orderData.id,
+             p_checkout_token: orderData.checkoutToken
+           }
+         );
+         if (releaseError || released !== true) {
+           console.error("Erro ao liberar a reserva do pedido:", releaseError);
+           rollbackMessage = ' (A reserva será revisada automaticamente)';
          } else {
-           rollbackMessage = " (Pedido temporário cancelado)";
+           rollbackMessage = " (Reserva de estoque liberada)";
          }
       }
       const errorMessage = err.name === 'AbortError'
-        ? 'Tempo limite de conexão excedido com o Mercado Pago (10s). Por favor, tente novamente.'
+        ? 'O pagamento demorou mais que o esperado. Por favor, tente novamente.'
         : (err.message || err);
       showToast(`Erro no processo de checkout: ${errorMessage}${rollbackMessage}`, 'error');
       setLoading(false);

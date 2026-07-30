@@ -9,7 +9,7 @@ import { sendMessageToGemini } from '../services/geminiService';
 
 const Assistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     { role: 'model', text: 'Welcome to Aura. I am here to help you find objects that resonate with your life. How may I assist?', timestamp: Date.now() }
   ]);
   const [inputValue, setInputValue] = useState('');
@@ -36,7 +36,7 @@ const Assistant: React.FC = () => {
       
       const aiMsg: ChatMessage = { role: 'model', text: responseText, timestamp: Date.now() };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
+    } catch {
         // Error handled in service
     } finally {
       setIsThinking(false);

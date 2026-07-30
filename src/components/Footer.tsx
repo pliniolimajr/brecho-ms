@@ -74,7 +74,7 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         setName('');
         setEmail('');
       }
-    } catch (err) {
+    } catch {
       setStatus('error');
       setMessage('Ocorreu um erro. Tente novamente mais tarde.');
     }

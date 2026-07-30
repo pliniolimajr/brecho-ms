@@ -30,7 +30,7 @@ export const sendMessageToGemini = async (history: {role: string, text: string}[
     // Robustly attempt to get the API key, handling ReferenceError if process is not defined
     try {
       apiKey = process.env.API_KEY;
-    } catch (e) {
+    } catch {
       // process is likely not defined in this environment
       console.warn("Accessing process.env failed");
     }

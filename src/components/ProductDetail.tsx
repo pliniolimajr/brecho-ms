@@ -19,7 +19,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
   const { products } = useStore();
 
   const relatedProducts = React.useMemo(() => {
-    let list = products.filter(p => p.id !== product.id && !p.isSold);
+    const list = products.filter(p => p.id !== product.id && !p.isSold);
     const sameCategory = list.filter(p => p.category === product.category);
     if (sameCategory.length > 0) {
       return sameCategory.slice(0, 3);

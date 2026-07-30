@@ -12,7 +12,7 @@ interface NavbarProps {
   onOpenCart: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onNavClick: _onNavClick, cartCount, onOpenCart }) => {
+const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);

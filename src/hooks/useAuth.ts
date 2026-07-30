@@ -28,7 +28,7 @@ export function useAuth() {
         } else {
           setIsAdmin(!!data);
         }
-      } catch (err) {
+      } catch {
         setIsAdmin(false);
       }
     }

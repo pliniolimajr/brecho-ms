@@ -171,7 +171,7 @@ export function Login() {
           } else {
             navigate(redirect);
           }
-        } catch (err) {
+        } catch {
           navigate(redirect);
         }
       }

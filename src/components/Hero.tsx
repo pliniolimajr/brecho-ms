@@ -58,7 +58,7 @@ const Hero: React.FC = () => {
 
       try {
         window.history.pushState(null, '', `#${targetId}`);
-      } catch (err) {
+      } catch {
         // Ignore SecurityError in restricted environments
       }
     } else {
