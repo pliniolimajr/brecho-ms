@@ -13,6 +13,7 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [pageOpenedAt] = useState(() => Date.now());
   const { addToCart, setIsCartOpen } = useStore();
   const { showToast } = useToast();
 
@@ -106,6 +107,12 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
     }
   };
 
+  const canContinuePayment = (order: any) => {
+    if (order.status !== 'pending' || !order.payment_url) return false;
+    if (!order.payment_expires_at) return true;
+    return new Date(order.payment_expires_at).getTime() > pageOpenedAt;
+  };
+
   return (
     <div className="bg-white p-8 md:p-10 rounded border border-[#C06A35]/20 animate-fade-in-up min-h-[400px]">
       <h2 className="text-xl font-serif text-[#1A332B] mb-8 italic border-b border-[#C06A35]/20 pb-4">Meus pedidos</h2>
@@ -149,16 +156,28 @@ export function ProfileOrders({ user }: ProfileOrdersProps) {
                     <span className="block text-xs text-[#A8A29E] uppercase tracking-widest mb-1">Total</span>
                     <span className="font-serif text-lg text-[#1A332B]">R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}</span>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleReorder(order);
-                    }}
-                    disabled={reorderingId === order.id}
-                    className="bg-[#1A332B] text-white px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:bg-[#C06A35] transition-colors disabled:opacity-50"
-                  >
-                    {reorderingId === order.id ? 'Adicionando...' : 'Comprar Novamente'}
-                  </button>
+                  {canContinuePayment(order) ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = order.payment_url;
+                      }}
+                      className="bg-[#C06A35] text-white px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:bg-[#1A332B] transition-colors"
+                    >
+                      Continuar Pagamento
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleReorder(order);
+                      }}
+                      disabled={reorderingId === order.id}
+                      className="bg-[#1A332B] text-white px-3 py-1.5 rounded text-xs font-semibold uppercase tracking-wider hover:bg-[#C06A35] transition-colors disabled:opacity-50"
+                    >
+                      {reorderingId === order.id ? 'Adicionando...' : 'Comprar Novamente'}
+                    </button>
+                  )}
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={`w-5 h-5 transition-transform ${expandedOrderId === order.id ? 'rotate-180' : ''}`}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                   </svg>

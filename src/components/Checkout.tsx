@@ -462,6 +462,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       phone: formData.phone,
+      email: formData.email,
       cpf: formData.cpf,
       pickup: false,
       postalCode: shippingAddress.zipCode.replace(/\D/g, ''),
@@ -559,6 +560,22 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       
       const prefData = await response.json();
       if (response.ok && (prefData.init_point || prefData.sandbox_init_point)) {
+         const redirectUrl = prefData.sandbox_init_point || prefData.init_point;
+         const paymentExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+         const { data: paymentAttached, error: attachError } = await supabase.rpc(
+           'attach_order_payment_url',
+           {
+             p_order_id: orderData.id,
+             p_checkout_token: orderData.checkoutToken,
+             p_payment_url: redirectUrl,
+             p_expires_at: paymentExpiresAt
+           }
+         );
+
+         if (attachError || paymentAttached !== true) {
+           console.error('Não foi possível salvar a retomada do pagamento:', attachError);
+           throw new Error('Não foi possível preparar a retomada do pagamento.');
+         }
          
          // Marcar carrinho abandonado correspondente como recuperado
          try {
@@ -580,7 +597,6 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
          clearCart();
          
          // Redirecionar para o Checkout do Mercado Pago
-         const redirectUrl = prefData.sandbox_init_point || prefData.init_point;
          window.location.href = redirectUrl;
 
       } else {

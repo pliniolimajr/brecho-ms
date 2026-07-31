@@ -6,6 +6,7 @@ const corsHeaders = {
 }
 
 const MERCADO_PAGO_TIMEOUT_MS = 10_000
+const PAYMENT_EXPIRATION_MINUTES = 30
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 interface PreferenceItem {
@@ -131,6 +132,14 @@ serve(async (req) => {
       },
       external_reference: orderId,
     }
+
+    const expirationStart = new Date()
+    const expirationEnd = new Date(
+      expirationStart.getTime() + PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
+    )
+    preferenceData.expires = true
+    preferenceData.expiration_date_from = expirationStart.toISOString()
+    preferenceData.expiration_date_to = expirationEnd.toISOString()
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '')
     if (supabaseUrl) {

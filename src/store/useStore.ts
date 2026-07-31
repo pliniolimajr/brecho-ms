@@ -48,6 +48,8 @@ export const useStore = create<StoreState>()(
       return;
     }
     set({ isLoadingProducts: true });
+    // Libera reservas vencidas antes de montar a vitrine.
+    await supabase.rpc('expire_stock_reservations');
     const { data, error } = await supabase
       .from('products')
       .select('*')
