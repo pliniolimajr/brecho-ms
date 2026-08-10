@@ -14,30 +14,38 @@ export function CustomerProfile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'favorites' | 'orders' | 'balances' | 'addresses'>('profile');
   const [customer, setCustomer] = useState<any>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      fetchCustomerProfile();
+      void fetchCustomerProfile();
+    } else if (!loading) {
+      setLoadingProfile(false);
     }
-  }, [user]);
+  }, [user, loading]);
 
   const fetchCustomerProfile = async () => {
     if (!user) return;
     setLoadingProfile(true);
-    const { data } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    setProfileError(null);
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', user.id)
+        .abortSignal(AbortSignal.timeout(10000))
+        .maybeSingle();
 
-    if (data) {
-      setCustomer(data);
-    } else {
+      if (error) throw error;
+
+      if (data) {
+        setCustomer(data);
+      } else {
       // Create profile if doesn't exist (failsafe, should be handled by trigger)
       const googleFirstName = user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.name?.split(' ')[0] || '';
       const googleLastName = user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || user.user_metadata?.name?.split(' ').slice(1).join(' ') || '';
       
-      const { data: newCustomer } = await supabase
+      const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert({ 
           user_id: user.id,
@@ -45,20 +53,30 @@ export function CustomerProfile() {
           last_name: googleLastName,
         })
         .select()
+        .abortSignal(AbortSignal.timeout(10000))
         .single();
-      if (newCustomer) {
+
+        if (insertError) throw insertError;
         setCustomer(newCustomer);
       }
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error);
+      setProfileError('Não foi possível carregar seus dados agora. Tente novamente.');
+    } finally {
+      setLoadingProfile(false);
     }
-    setLoadingProfile(false);
   };
 
-  if (loading || loadingProfile) {
+  if (loading) {
     return <div className="min-h-screen bg-[#FDF6F0] flex items-center justify-center">Carregando...</div>;
   }
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (loadingProfile) {
+    return <div className="min-h-screen bg-[#FDF6F0] flex items-center justify-center">Carregando...</div>;
   }
 
   if (isAdmin) {
@@ -122,6 +140,14 @@ export function CustomerProfile() {
 
           {/* Main Content Area */}
           <main className="flex-1 min-w-0">
+            {profileError && (
+              <div className="mb-6 rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                {profileError}{' '}
+                <button type="button" onClick={() => void fetchCustomerProfile()} className="font-semibold underline">
+                  Tentar novamente
+                </button>
+              </div>
+            )}
             {activeTab === 'profile' && <ProfileData user={user} customerData={customer} fetchProfile={fetchCustomerProfile} />}
             {activeTab === 'addresses' && <ProfileAddresses user={user} />}
             {activeTab === 'orders' && <ProfileOrders user={user} />}

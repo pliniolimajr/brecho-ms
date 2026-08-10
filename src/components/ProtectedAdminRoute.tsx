@@ -7,9 +7,9 @@ interface ProtectedAdminRouteProps {
 }
 
 export const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({ children }) => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, adminLoading } = useAuth();
 
-  if (loading) {
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen bg-[#FDF6F0] flex flex-col justify-center items-center gap-4">
         <div className="w-10 h-10 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>
