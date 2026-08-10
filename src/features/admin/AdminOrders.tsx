@@ -24,6 +24,7 @@ export function AdminOrders({
   const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null);
   const [tempTrackingCode, setTempTrackingCode] = useState<string>('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [creatingLabelId, setCreatingLabelId] = useState<string | null>(null);
 
   // Filtros de Data
   const [startDate, setStartDate] = useState<string>('');
@@ -117,29 +118,41 @@ export function AdminOrders({
     }
   };
 
-  const handleSimulateShippingLabel = async (orderId: string) => {
-    const randomDigits = Math.floor(100000000 + Math.random() * 900000000);
-    const mockTracking = `LP${randomDigits}BR`;
-    const mockPdfUrl = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
-
+  const handleCreateShippingLabel = async (orderId: string) => {
+    setCreatingLabelId(orderId);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          tracking_code: mockTracking,
-          shipping_carrier: 'Correios',
-          shipping_service: 'PAC (SuperFrete)',
-          shipping_label_url: mockPdfUrl
-        })
-        .eq('id', orderId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão administrativa expirada.');
 
-      await logStatusHistory(orderId, `Etiqueta de Envio emitida via SuperFrete`, `Rastreio: ${mockTracking}`);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-shipping-label`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ orderId }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.error?.message || 'Não foi possível emitir a etiqueta.');
+      }
+
+      await logStatusHistory(
+        orderId,
+        'Etiqueta de envio emitida via SuperFrete Sandbox',
+        `Rastreio: ${result.trackingCode || 'aguardando liberação'}`,
+      );
       fetchAdminOrders();
-      showToast(`Etiqueta de Envio emitida com sucesso via SuperFrete! Rastreamento gerado: ${mockTracking}`, 'success');
-    } catch (err: any) {
+      showToast('Etiqueta de teste emitida com sucesso!', 'success');
+    } catch (err: unknown) {
       console.error(err);
-      showToast('Erro ao emitir etiqueta.', 'error');
+      showToast(err instanceof Error ? err.message : 'Erro ao emitir etiqueta.', 'error');
+      fetchAdminOrders();
+    } finally {
+      setCreatingLabelId(null);
     }
   };
 
@@ -382,11 +395,26 @@ export function AdminOrders({
                               )}
 
                               <div className="flex gap-2 pt-1">
+                                {order.shipping_label_url && (
+                                  <a
+                                    href={order.shipping_label_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-blue-700 underline"
+                                  >
+                                    Abrir etiqueta
+                                  </a>
+                                )}
                                 <button
-                                  onClick={() => handleSimulateShippingLabel(order.id)}
-                                  className="text-[10px] bg-[#1A332B] text-white px-2 py-0.5 rounded hover:bg-[#433E38]"
+                                  onClick={() => handleCreateShippingLabel(order.id)}
+                                  disabled={creatingLabelId === order.id || !['paid', 'shipped'].includes(order.status)}
+                                  className="text-[10px] bg-[#1A332B] text-white px-2 py-0.5 rounded hover:bg-[#433E38] disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                  Emitir Etiqueta
+                                  {creatingLabelId === order.id
+                                    ? 'Processando...'
+                                    : order.shipping_provider_id && !order.shipping_label_url
+                                      ? 'Tentar Pagamento'
+                                      : 'Emitir Etiqueta Teste'}
                                 </button>
                               </div>
                             </div>

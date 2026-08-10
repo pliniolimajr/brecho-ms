@@ -6,7 +6,7 @@ const MAX_JOBS_PER_RUN = 10
 
 interface NotificationJob {
   id: string
-  type: 'welcome' | 'order_confirmed'
+  type: 'welcome' | 'order_confirmed' | 'order_shipped' | 'order_delivered'
   recipient: string
   payload: Record<string, unknown>
 }
@@ -150,6 +150,54 @@ function renderEmail(job: NotificationJob, siteUrl: string, supabaseUrl: string)
         <tr><td style="padding-top:15px"><strong>Total</strong></td>
         <td style="padding-top:15px;text-align:right"><strong>R$ ${money(payload.totalAmount)}</strong></td></tr>
         </tbody></table>
+        <a href="${escapeHtml(`${siteUrl}/minha-conta`)}" class="button">Ver meus pedidos</a>
+        <div class="footer"><p>&copy; ${year} Palm CO.</p></div>
+        </div></body></html>`,
+    }
+  }
+
+  if (job.type === 'order_shipped') {
+    const orderId = cleanText(payload.orderId, '', 36)
+    const trackingCode = cleanText(payload.trackingCode, '', 100)
+    if (!/^[0-9a-f-]{36}$/i.test(orderId) || !trackingCode) {
+      throw new Error('Dados de envio invalidos no trabalho de notificacao.')
+    }
+    const shortOrderId = escapeHtml(orderId.split('-')[0].toUpperCase())
+    const carrier = escapeHtml(cleanText(payload.shippingCarrier, 'Transportadora', 100))
+    const service = escapeHtml(cleanText(payload.shippingService, '', 100))
+    const trackingUrl = `https://linkrastreio.com.br/?codigo=${encodeURIComponent(trackingCode)}`
+
+    return {
+      subject: `Pedido enviado - #${shortOrderId}`,
+      html: `<!doctype html><html><head><meta charset="utf-8"><style>${baseStyles()}</style></head>
+        <body><div class="container"><div class="logo">PALM CO.</div>
+        <h1 class="title">Seu pedido esta a caminho!</h1>
+        <p class="text">Ola, ${name}. O pedido <strong>#${shortOrderId}</strong> foi enviado.</p>
+        <div style="margin:30px 0;padding:20px;background:#FDF6F0;text-align:center">
+          <div style="font-size:13px;color:#8C827A">CODIGO DE RASTREIO</div>
+          <strong style="font-size:22px;color:#1A332B">${escapeHtml(trackingCode)}</strong>
+          <p style="margin-bottom:0;color:#5C544E">${carrier}${service ? ` - ${service}` : ''}</p>
+        </div>
+        <a href="${escapeHtml(trackingUrl)}" class="button">Acompanhar entrega</a>
+        <div class="footer"><p>&copy; ${year} Palm CO.</p></div>
+        </div></body></html>`,
+    }
+  }
+
+  if (job.type === 'order_delivered') {
+    const orderId = cleanText(payload.orderId, '', 36)
+    if (!/^[0-9a-f-]{36}$/i.test(orderId)) {
+      throw new Error('Pedido invalido no trabalho de notificacao.')
+    }
+    const shortOrderId = escapeHtml(orderId.split('-')[0].toUpperCase())
+
+    return {
+      subject: `Pedido entregue - #${shortOrderId}`,
+      html: `<!doctype html><html><head><meta charset="utf-8"><style>${baseStyles()}</style></head>
+        <body><div class="container"><div class="logo">PALM CO.</div>
+        <h1 class="title">Pedido entregue!</h1>
+        <p class="text">Ola, ${name}. O pedido <strong>#${shortOrderId}</strong> foi marcado como entregue.</p>
+        <p class="text">Esperamos que voce aproveite muito a sua escolha. Obrigado por fazer parte da Palm CO.</p>
         <a href="${escapeHtml(`${siteUrl}/minha-conta`)}" class="button">Ver meus pedidos</a>
         <div class="footer"><p>&copy; ${year} Palm CO.</p></div>
         </div></body></html>`,

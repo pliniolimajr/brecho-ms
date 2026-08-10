@@ -473,7 +473,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       city: shippingAddress.city,
       state: shippingAddress.state,
       shippingCost: shippingCost,
-      shippingService: selectedRate?.name || ''
+      shippingService: selectedRate?.name || '',
+      shippingServiceId: selectedRate?.id || null,
+      shippingPackage: selectedRate?.package || null
     };
 
     const { data: reservationRows, error: reservationError } = await supabase.rpc(
