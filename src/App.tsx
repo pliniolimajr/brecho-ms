@@ -19,6 +19,7 @@ const Privacy = lazy(() => import('./pages/Privacy').then(module => ({ default: 
 const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess').then(module => ({ default: module.CheckoutSuccess })));
 const CheckoutFailure = lazy(() => import('./pages/CheckoutFailure').then(module => ({ default: module.CheckoutFailure })));
 const CheckoutPending = lazy(() => import('./pages/CheckoutPending').then(module => ({ default: module.CheckoutPending })));
+const NewsletterUnsubscribe = lazy(() => import('./pages/NewsletterUnsubscribe').then(module => ({ default: module.NewsletterUnsubscribe })));
 
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import { ToastProvider } from './components/Toast';
@@ -49,6 +50,7 @@ export function App() {
               <Route path="checkout-success" element={<CheckoutSuccess />} />
               <Route path="checkout-failure" element={<CheckoutFailure />} />
               <Route path="checkout-pending" element={<CheckoutPending />} />
+              <Route path="newsletter/descadastro" element={<NewsletterUnsubscribe />} />
               <Route path="login" element={<Login />} />
             </Route>
 

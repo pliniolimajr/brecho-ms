@@ -51,24 +51,6 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
           throw error;
         }
       } else {
-        // Envia o e-mail de boas-vindas via Edge Function
-        try {
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-            },
-            body: JSON.stringify({
-              type: 'welcome',
-              email: email,
-              name: name
-            })
-          }).catch(mailErr => console.error('Erro de rede ao enviar e-mail de boas-vindas:', mailErr));
-        } catch (mailErr) {
-          console.error('Erro ao enviar e-mail de boas-vindas:', mailErr);
-        }
-
         setStatus('success');
         setMessage('Cadastro realizado com sucesso!');
         setName('');

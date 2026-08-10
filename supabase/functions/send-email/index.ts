@@ -1,165 +1,258 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const RESEND_TIMEOUT_MS = 10_000
+const MAX_JOBS_PER_RUN = 10
+
+interface NotificationJob {
+  id: string
+  type: 'welcome' | 'order_confirmed'
+  recipient: string
+  payload: Record<string, unknown>
 }
 
-serve(async (req) => {
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+interface OrderItem {
+  name: string
+  size: string
+  price: number
+}
+
+function jsonResponse(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    headers: { 'Content-Type': 'application/json' },
+    status,
+  })
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function hasServiceRole(token: string | undefined, configuredKey: string | undefined) {
+  if (!token) return false
+  if (configuredKey && token === configuredKey) return true
 
   try {
-    const payload = await req.json()
-    const { type, email, name, orderId, totalAmount, items } = payload
+    const parts = token.split('.')
+    if (parts.length !== 3) return false
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const payload = JSON.parse(atob(padded)) as { role?: string }
+    // A assinatura deste JWT ja foi validada pelo gateway da Edge Function.
+    return payload.role === 'service_role'
+  } catch {
+    return false
+  }
+}
 
-    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-    if (!RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY não configurada no ambiente. E-mail simulado com sucesso.');
-      return new Response(JSON.stringify({ success: true, simulated: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      })
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
+function cleanText(value: unknown, fallback: string, maxLength: number) {
+  if (typeof value !== 'string') return fallback
+  const normalized = value.replace(/\s+/g, ' ').trim().slice(0, maxLength)
+  return normalized || fallback
+}
+
+function money(value: unknown) {
+  const amount = Number(value)
+  if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000) {
+    throw new Error('Valor monetario invalido no trabalho de notificacao.')
+  }
+  return amount.toFixed(2).replace('.', ',')
+}
+
+function orderItems(value: unknown): OrderItem[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 100) {
+    throw new Error('Itens invalidos no trabalho de notificacao.')
+  }
+
+  return value.map(item => {
+    if (!item || typeof item !== 'object') {
+      throw new Error('Item invalido no trabalho de notificacao.')
     }
+    const raw = item as Record<string, unknown>
+    return {
+      name: cleanText(raw.name, 'Produto', 150),
+      size: cleanText(raw.size, 'Unico', 50),
+      price: Number(raw.price),
+    }
+  })
+}
 
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Palm CO. <onboarding@resend.dev>'
-    
-    let subject = ''
-    let html = ''
+function baseStyles() {
+  return `
+    body { font-family: Arial, sans-serif; background: #FDF6F0; margin: 0; padding: 0; color: #423226; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 24px; background: #ffffff; }
+    .logo { text-align: center; font: 32px Georgia, serif; letter-spacing: 2px; color: #1A332B; margin-bottom: 30px; }
+    .title { font: 24px Georgia, serif; color: #1A332B; text-align: center; }
+    .text { font-size: 16px; line-height: 1.6; color: #5C544E; }
+    .button { display: block; width: 210px; margin: 30px auto; text-align: center; background: #1A332B; color: #fff !important; padding: 15px; text-decoration: none; }
+    .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #8C827A; }
+  `
+}
 
-    if (type === 'welcome') {
-      subject = 'Bem-vindo à Palm CO. - Cupom de Boas-vindas inside! 🌟'
-      html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FDF6F0; margin: 0; padding: 0; color: #423226; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #ffffff; border: 1px solid #EFEAE4; }
-            .logo { text-align: center; font-size: 32px; font-family: Georgia, serif; letter-spacing: 2px; color: #1A332B; margin-bottom: 30px; text-transform: uppercase; }
-            .hero-title { font-size: 24px; font-family: Georgia, serif; color: #1A332B; text-align: center; margin-bottom: 20px; }
-            .text { font-size: 16px; line-height: 1.6; margin-bottom: 25px; text-align: center; color: #5C544E; }
-            .coupon-box { text-align: center; border: 2px dashed #C06A35; padding: 20px; background-color: #FDF6F0; margin: 30px 0; border-radius: 4px; }
-            .coupon-title { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #C06A35; margin-bottom: 5px; }
-            .coupon-code { font-size: 28px; font-weight: bold; color: #1A332B; font-family: monospace; }
-            .btn { display: block; width: 200px; margin: 30px auto 0; text-align: center; background-color: #1A332B; color: #ffffff !important; padding: 15px 25px; text-decoration: none; font-size: 14px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
-            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #A8A29E; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="logo">Palm CO.</div>
-            <h1 class="hero-title">Olá, ${name || 'Amiga(o)'}!</h1>
-            <p class="text">Ficamos muito felizes em ter você na nossa newsletter. A partir de agora, você receberá novidades semanais sobre moda, sustentabilidade e novas curadorias em primeira mão.</p>
-            <p class="text">Para comemorar sua chegada, preparamos um presente especial para sua próxima compra:</p>
-            <div class="coupon-box">
-              <div class="coupon-title">Use o cupom na finalização</div>
-              <div class="coupon-code">BEMVINDO10</div>
-            </div>
-            <p class="text">Aproveite 10% de desconto na sua primeira compra!</p>
-            <a href="https://palm-co.com" class="btn">Explorar Loja</a>
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Palm CO. E-commerce Premium. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
-    } else if (type === 'order_confirmed') {
-      subject = `Pedido Confirmado! #${orderId?.split('-')[0]?.toUpperCase()} - Palm CO.`
-      const formattedTotal = Number(totalAmount).toFixed(2).replace('.', ',')
-      
-      let itemsListHtml = ''
-      if (items && Array.isArray(items)) {
-        itemsListHtml = items.map((item: any) => `
-          <tr style="border-bottom: 1px solid #EFEAE4;">
-            <td style="padding: 10px 0; font-size: 14px; color: #1A332B;"><strong>${item.name}</strong><br><span style="font-size: 12px; color: #8C827A;">Tamanho: ${item.size || 'Único'}</span></td>
-            <td style="padding: 10px 0; text-align: right; font-size: 14px; color: #1A332B;">R$ ${Number(item.price).toFixed(2).replace('.', ',')}</td>
-          </tr>
-        `).join('')
+function renderEmail(job: NotificationJob, siteUrl: string, supabaseUrl: string) {
+  const payload = job.payload || {}
+  const name = escapeHtml(cleanText(payload.name, 'Cliente', 100))
+  const year = new Date().getUTCFullYear()
+
+  if (job.type === 'welcome') {
+    const token = cleanText(payload.unsubscribeToken, '', 100)
+    if (!/^[0-9a-f-]{36}$/i.test(token)) {
+      throw new Error('Token de descadastro invalido.')
+    }
+    const unsubscribeUrl = `${supabaseUrl}/functions/v1/unsubscribe-newsletter?token=${encodeURIComponent(token)}`
+
+    return {
+      subject: 'Bem-vindo a Palm CO. - seu cupom de boas-vindas',
+      html: `<!doctype html><html><head><meta charset="utf-8"><style>${baseStyles()}</style></head>
+        <body><div class="container"><div class="logo">PALM CO.</div>
+        <h1 class="title">Ola, ${name}!</h1>
+        <p class="text">Seu cadastro na nossa newsletter foi realizado. Voce recebera novidades e novas curadorias em primeira mao.</p>
+        <div style="text-align:center;border:2px dashed #C06A35;padding:20px;background:#FDF6F0;margin:30px 0">
+          <div style="font-size:13px;color:#C06A35">CUPOM DE BOAS-VINDAS</div>
+          <strong style="font-size:28px;color:#1A332B">BEMVINDO10</strong>
+        </div>
+        <a href="${escapeHtml(siteUrl)}" class="button">Explorar loja</a>
+        <div class="footer"><p>&copy; ${year} Palm CO.</p>
+        <p><a href="${escapeHtml(unsubscribeUrl)}" style="color:#8C827A">Nao quero mais receber novidades</a></p></div>
+        </div></body></html>`,
+    }
+  }
+
+  if (job.type === 'order_confirmed') {
+    const orderId = cleanText(payload.orderId, '', 36)
+    if (!/^[0-9a-f-]{36}$/i.test(orderId)) {
+      throw new Error('Pedido invalido no trabalho de notificacao.')
+    }
+    const shortOrderId = escapeHtml(orderId.split('-')[0].toUpperCase())
+    const items = orderItems(payload.items)
+    const rows = items.map(item => `
+      <tr><td style="padding:10px 0;border-bottom:1px solid #EFEAE4">
+        <strong>${escapeHtml(item.name)}</strong><br><small>Tamanho: ${escapeHtml(item.size)}</small>
+      </td><td style="text-align:right;border-bottom:1px solid #EFEAE4">R$ ${money(item.price)}</td></tr>
+    `).join('')
+
+    return {
+      subject: `Pagamento confirmado - pedido #${shortOrderId}`,
+      html: `<!doctype html><html><head><meta charset="utf-8"><style>${baseStyles()}</style></head>
+        <body><div class="container"><div class="logo">PALM CO.</div>
+        <h1 class="title">Seu pagamento foi confirmado!</h1>
+        <p class="text">Ola, ${name}. Recebemos o pagamento do pedido <strong>#${shortOrderId}</strong> e iniciaremos a preparacao do envio.</p>
+        <table style="width:100%;border-collapse:collapse;margin:30px 0"><tbody>${rows}
+        <tr><td style="padding-top:15px"><strong>Total</strong></td>
+        <td style="padding-top:15px;text-align:right"><strong>R$ ${money(payload.totalAmount)}</strong></td></tr>
+        </tbody></table>
+        <a href="${escapeHtml(`${siteUrl}/minha-conta`)}" class="button">Ver meus pedidos</a>
+        <div class="footer"><p>&copy; ${year} Palm CO.</p></div>
+        </div></body></html>`,
+    }
+  }
+
+  throw new Error('Tipo de notificacao nao suportado.')
+}
+
+serve(async req => {
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Metodo nao permitido.' }, 405)
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const resendApiKey = Deno.env.get('RESEND_API_KEY')
+  const fromEmail = Deno.env.get('RESEND_FROM_EMAIL')
+  const siteUrl = (Deno.env.get('PUBLIC_SITE_URL') || 'https://palm-co.vercel.app').replace(/\/$/, '')
+  const bearerToken = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
+
+  if (!serviceRoleKey || !hasServiceRole(bearerToken, serviceRoleKey)) {
+    return jsonResponse({ error: 'Nao autorizado.' }, 401)
+  }
+
+  if (!supabaseUrl || !resendApiKey || !fromEmail) {
+    console.error('Configuracao de notificacoes incompleta.')
+    return jsonResponse({ error: 'Servico de notificacoes nao configurado.' }, 503)
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
+  const { data, error } = await supabase.rpc('claim_notification_jobs', {
+    p_limit: MAX_JOBS_PER_RUN,
+  })
+
+  if (error) {
+    console.error('Falha ao reivindicar notificacoes.', { error: error.message })
+    return jsonResponse({ error: 'Nao foi possivel acessar a fila.' }, 500)
+  }
+
+  const jobs = (data || []) as NotificationJob[]
+  let sent = 0
+  let failed = 0
+
+  for (const job of jobs) {
+    try {
+      const email = renderEmail(job, siteUrl, supabaseUrl)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), RESEND_TIMEOUT_MS)
+      let response: Response
+
+      try {
+        response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': job.id,
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [job.recipient],
+            subject: email.subject,
+            html: email.html,
+          }),
+          signal: controller.signal,
+        })
+      } finally {
+        clearTimeout(timeoutId)
       }
 
-      html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #FDF6F0; margin: 0; padding: 0; color: #423226; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #ffffff; border: 1px solid #EFEAE4; }
-            .logo { text-align: center; font-size: 32px; font-family: Georgia, serif; letter-spacing: 2px; color: #1A332B; margin-bottom: 30px; text-transform: uppercase; }
-            .hero-title { font-size: 24px; font-family: Georgia, serif; color: #1A332B; text-align: center; margin-bottom: 20px; }
-            .text { font-size: 16px; line-height: 1.6; margin-bottom: 25px; color: #5C544E; }
-            .order-details { width: 100%; border-collapse: collapse; margin: 30px 0; }
-            .order-details th { text-align: left; padding-bottom: 10px; border-bottom: 2px solid #1A332B; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #8C827A; }
-            .total-row td { padding-top: 15px; border-top: 2px solid #1A332B; font-size: 16px; font-weight: bold; color: #1A332B; }
-            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #A8A29E; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="logo">Palm CO.</div>
-            <h1 class="hero-title">Seu pagamento foi confirmado!</h1>
-            <p class="text">Olá, ${name || 'Cliente'}!</p>
-            <p class="text">Confirmamos o pagamento do seu pedido <strong>#${orderId?.split('-')[0]?.toUpperCase()}</strong> com sucesso. Nossa equipe de curadoria já está preparando seu pacote com todo o carinho e cuidado que você merece.</p>
-            
-            <table class="order-details">
-              <thead>
-                <tr>
-                  <th style="text-align: left;">Item</th>
-                  <th style="text-align: right;">Preço</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsListHtml}
-                <tr class="total-row">
-                  <td style="padding-top: 15px;"><strong>Total</strong></td>
-                  <td style="padding-top: 15px; text-align: right;"><strong>R$ ${formattedTotal}</strong></td>
-                </tr>
-              </tbody>
-            </table>
+      const responseBody = await response.text()
+      if (!response.ok) {
+        throw new Error(`Resend HTTP ${response.status}: ${responseBody.slice(0, 500)}`)
+      }
 
-            <p class="text" style="text-align: center; font-style: italic; color: #C06A35; font-size: 14px; margin-top: 30px;">
-              Assim que o seu pedido for postado nos Correios, nós enviaremos o código de rastreamento para você acompanhar a entrega.
-            </p>
-            
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} Palm CO. E-commerce Premium. Todos os direitos reservados.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
-    } else {
-      throw new Error(`Tipo de e-mail não suportado: ${type}`)
-    }
+      let providerMessageId: string | null = null
+      try {
+        providerMessageId = JSON.parse(responseBody)?.id || null
+      } catch {
+        providerMessageId = null
+      }
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [email],
-        subject: subject,
-        html: html
+      const { error: finishError } = await supabase.rpc('finish_notification_job', {
+        p_job_id: job.id,
+        p_success: true,
+        p_error: null,
+        p_provider_message_id: providerMessageId,
       })
-    })
-
-    const data = await response.json()
-    return new Response(JSON.stringify({ success: true, data }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+      if (finishError) throw finishError
+      sent++
+    } catch (error) {
+      failed++
+      const message = errorMessage(error)
+      console.error('Falha ao processar notificacao.', { jobId: job.id, error: message })
+      await supabase.rpc('finish_notification_job', {
+        p_job_id: job.id,
+        p_success: false,
+        p_error: message,
+        p_provider_message_id: null,
+      })
+    }
   }
+
+  return jsonResponse({ processed: jobs.length, sent, failed }, 200)
 })

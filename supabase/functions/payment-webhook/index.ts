@@ -232,26 +232,25 @@ serve(async req => {
             price: item.price,
           }))
 
-          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${serviceRoleKey}`,
+          const { error: notificationError } = await supabase.rpc(
+            'enqueue_notification',
+            {
+              p_type: 'order_confirmed',
+              p_recipient: customerEmail,
+              p_payload: {
+                name: customerName,
+                orderId,
+                totalAmount: orderDetails.total_amount,
+                items,
+              },
+              p_deduplication_key: `order_confirmed:${orderId}`,
             },
-            body: JSON.stringify({
-              type: 'order_confirmed',
-              email: customerEmail,
-              name: customerName,
-              orderId,
-              totalAmount: orderDetails.total_amount,
-              items,
-            }),
-          })
+          )
 
-          if (!emailResponse.ok) {
+          if (notificationError) {
             console.error('Pagamento salvo, mas o e-mail de confirmação falhou.', {
               orderId,
-              status: emailResponse.status,
+              error: notificationError.message,
             })
           }
         }
