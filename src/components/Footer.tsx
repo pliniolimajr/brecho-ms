@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
 import { BRAND_NAME } from '../constants';
 import { useAuth } from '../hooks/useAuth';
 import { firstValidationMessage, newsletterSchema } from '../utils/schemas';
+import { getApiErrorMessage } from '../utils/apiErrors';
 
 interface FooterProps {
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
@@ -47,22 +47,25 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
         setMessage(firstValidationMessage(validated.error));
         return;
       }
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .insert([validated.data]);
-      
-      if (error) {
-        if (error.code === '23505') { // Unique violation
-          setMessage('Este e-mail já está cadastrado!');
-        } else {
-          throw error;
-        }
-      } else {
-        setStatus('success');
-        setMessage('Cadastro realizado com sucesso!');
-        setName('');
-        setEmail('');
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscribe-newsletter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(validated.data),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        setStatus('error');
+        setMessage(getApiErrorMessage(result, 'Ocorreu um erro. Tente novamente mais tarde.'));
+        return;
       }
+
+      setStatus('success');
+      setMessage('Cadastro realizado com sucesso!');
+      setName('');
+      setEmail('');
     } catch {
       setStatus('error');
       setMessage('Ocorreu um erro. Tente novamente mais tarde.');

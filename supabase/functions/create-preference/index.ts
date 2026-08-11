@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { ApiError, corsHeaders, enforceRateLimit, errorResponse, jsonResponse, parseJsonBody } from '../_shared/http.ts'
 
 const MERCADO_PAGO_TIMEOUT_MS = 10_000
 const PAYMENT_EXPIRATION_MINUTES = 30
@@ -21,26 +17,9 @@ interface PreferenceRequest {
   checkoutToken: string
 }
 
-class HttpError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code: string,
-  ) {
-    super(message)
-  }
-}
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  })
-}
-
 function validatePayload(payload: PreferenceRequest) {
   if (!payload || !UUID_PATTERN.test(payload.orderId || '') || !UUID_PATTERN.test(payload.checkoutToken || '')) {
-    throw new HttpError('Pedido inválido.', 400, 'INVALID_ORDER')
+    throw new ApiError('Pedido inválido.', 400, 'INVALID_ORDER')
   }
 
   if (
@@ -48,24 +27,22 @@ function validatePayload(payload: PreferenceRequest) {
     typeof payload.payer.email !== 'string' ||
     !payload.payer.email.includes('@')
   ) {
-    throw new HttpError('E-mail do comprador inválido.', 400, 'INVALID_PAYER')
+    throw new ApiError('E-mail do comprador inválido.', 400, 'INVALID_PAYER')
   }
 }
 
 serve(async (req) => {
+  const requestId = crypto.randomUUID()
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return jsonResponse(
-      { error: { code: 'METHOD_NOT_ALLOWED', message: 'Método não permitido.' } },
-      405,
-    )
+    return errorResponse(new ApiError('Método não permitido.', 405, 'METHOD_NOT_ALLOWED'), requestId)
   }
 
   try {
-    const payload = await req.json() as PreferenceRequest
+    const payload = await parseJsonBody<PreferenceRequest>(req)
     validatePayload(payload)
 
     const { payer, origin, orderId, checkoutToken } = payload
@@ -74,7 +51,7 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
     if (!MP_ACCESS_TOKEN || !supabaseUrl || !serviceRoleKey) {
-      throw new HttpError(
+      throw new ApiError(
         'Serviço de pagamento indisponível.',
         500,
         'PAYMENT_NOT_CONFIGURED',
@@ -82,6 +59,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey)
+    await enforceRateLimit(req, supabase, 'create-preference', 10, 1800, orderId)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('id,total_amount,status,reservation_expires_at,shipping_address')
@@ -90,18 +68,18 @@ serve(async (req) => {
       .maybeSingle()
 
     if (orderError) {
-      throw new HttpError('Não foi possível validar o pedido.', 500, 'ORDER_LOOKUP_FAILED')
+      throw new ApiError('Não foi possível validar o pedido.', 500, 'ORDER_LOOKUP_FAILED')
     }
     if (!order || order.status !== 'pending') {
-      throw new HttpError('Pedido não encontrado ou indisponível para pagamento.', 404, 'ORDER_NOT_AVAILABLE')
+      throw new ApiError('Pedido não encontrado ou indisponível para pagamento.', 404, 'ORDER_NOT_AVAILABLE')
     }
     if (order.reservation_expires_at && new Date(order.reservation_expires_at).getTime() <= Date.now()) {
-      throw new HttpError('A reserva deste pedido expirou.', 409, 'ORDER_EXPIRED')
+      throw new ApiError('A reserva deste pedido expirou.', 409, 'ORDER_EXPIRED')
     }
 
     const totalAmount = Number(order.total_amount)
     if (!Number.isFinite(totalAmount) || totalAmount <= 0 || totalAmount > 1_000_000) {
-      throw new HttpError('Valor do pedido inválido.', 400, 'INVALID_ORDER_TOTAL')
+      throw new ApiError('Valor do pedido inválido.', 400, 'INVALID_ORDER_TOTAL')
     }
 
     const savedAddress = order.shipping_address && typeof order.shipping_address === 'object'
@@ -109,7 +87,7 @@ serve(async (req) => {
       : {}
     const savedEmail = String(savedAddress.email || '').trim().toLowerCase()
     if (savedEmail !== payer.email.trim().toLowerCase()) {
-      throw new HttpError('Os dados do comprador não correspondem ao pedido.', 403, 'PAYER_MISMATCH')
+      throw new ApiError('Os dados do comprador não correspondem ao pedido.', 403, 'PAYER_MISMATCH')
     }
 
     const publicSiteUrl = (Deno.env.get('PUBLIC_SITE_URL') || 'https://palm-co.vercel.app').replace(/\/$/, '')
@@ -182,14 +160,14 @@ serve(async (req) => {
       })
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new HttpError(
+        throw new ApiError(
           'Tempo limite ao criar a preferência de pagamento.',
           504,
           'PAYMENT_TIMEOUT',
         )
       }
 
-      throw new HttpError(
+      throw new ApiError(
         'Não foi possível conectar ao serviço de pagamento.',
         502,
         'PAYMENT_UNAVAILABLE',
@@ -206,31 +184,18 @@ serve(async (req) => {
         status: response.status,
         cause: data?.message || data?.error || 'unknown',
       })
-      throw new HttpError(
+      throw new ApiError(
         'O serviço de pagamento recusou a solicitação.',
         response.status >= 500 ? 502 : 400,
         'PAYMENT_REJECTED',
       )
     }
     
-    return jsonResponse(data, 200)
+    return jsonResponse(data, 200, requestId)
   } catch (error) {
-    const httpError = error instanceof HttpError
-      ? error
-      : new HttpError('Erro interno ao criar o pagamento.', 500, 'INTERNAL_ERROR')
-
-    if (!(error instanceof HttpError)) {
-      console.error('Erro inesperado ao criar preferência:', error)
+    if (!(error instanceof ApiError)) {
+      console.error('Erro inesperado ao criar preferência:', { requestId, error })
     }
-
-    return jsonResponse(
-      {
-        error: {
-          code: httpError.code,
-          message: httpError.message,
-        },
-      },
-      httpError.status,
-    )
+    return errorResponse(error, requestId)
   }
 })

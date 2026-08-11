@@ -1,42 +1,37 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ApiError, corsHeaders, enforceRateLimit, errorResponse, jsonResponse, parseJsonBody } from '../_shared/http.ts'
 const API_TIMEOUT_MS = 10_000
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status,
-  })
-}
 
 function cleanZip(value: unknown) {
   return String(value || '').replace(/\D/g, '')
 }
 
 serve(async req => {
+  const requestId = crypto.randomUUID()
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  if (req.method !== 'POST') return jsonResponse({ error: 'Método não permitido.' }, 405)
+  if (req.method !== 'POST') return errorResponse(new ApiError('Método não permitido.', 405, 'METHOD_NOT_ALLOWED'), requestId)
 
   try {
-    const { toZip, items } = await req.json() as { toZip?: string; items?: unknown[] }
+    const { toZip, items } = await parseJsonBody<{ toZip?: string; items?: unknown[] }>(req)
     const destinationZip = cleanZip(toZip)
     if (!/^\d{8}$/.test(destinationZip)) {
-      return jsonResponse({ error: 'CEP de destino inválido.' }, 400)
+      throw new ApiError('CEP de destino inválido.', 400, 'INVALID_ZIP_CODE')
     }
     if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
-      return jsonResponse({ error: 'A lista de produtos é inválida.' }, 400)
+      throw new ApiError('A lista de produtos é inválida.', 400, 'INVALID_ITEMS')
     }
 
     const token = Deno.env.get('SUPERFRETE_SANDBOX_TOKEN')
     const userAgent = Deno.env.get('SUPERFRETE_USER_AGENT') || 'Palm CO. v1 (plinio.codeba@gmail.com)'
-    if (!token) {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!token || !supabaseUrl || !serviceRoleKey) {
       console.error('SUPERFRETE_SANDBOX_TOKEN não configurado.')
-      return jsonResponse({ error: 'Cálculo de frete temporariamente indisponível.' }, 503)
+      throw new ApiError('Cálculo de frete temporariamente indisponível.', 503, 'SHIPPING_NOT_CONFIGURED')
     }
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    await enforceRateLimit(req, supabase, 'calculate-shipping', 30, 60)
 
     const itemCount = items.length
     const packageData = {
@@ -84,7 +79,7 @@ serve(async req => {
         status: response.status,
         message: String(data?.message || data?.error || raw).slice(0, 300),
       })
-      return jsonResponse({ error: 'Não foi possível calcular o frete agora. Tente novamente.' }, 502)
+      throw new ApiError('Não foi possível calcular o frete agora. Tente novamente.', 502, 'SHIPPING_PROVIDER_ERROR')
     }
 
     const rates = data
@@ -98,15 +93,15 @@ serve(async req => {
       }))
 
     if (rates.length === 0) {
-      return jsonResponse({ error: 'Nenhuma modalidade de frete disponível para este CEP.' }, 422)
+      throw new ApiError('Nenhuma modalidade de frete disponível para este CEP.', 422, 'SHIPPING_UNAVAILABLE')
     }
 
-    return jsonResponse(rates, 200)
+    return jsonResponse(rates, 200, requestId)
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return jsonResponse({ error: 'A SuperFrete demorou para responder. Tente novamente.' }, 504)
+      return errorResponse(new ApiError('A SuperFrete demorou para responder. Tente novamente.', 504, 'SHIPPING_TIMEOUT'), requestId)
     }
-    console.error('Erro inesperado no cálculo de frete:', error)
-    return jsonResponse({ error: 'Erro ao calcular frete.' }, 500)
+    if (!(error instanceof ApiError)) console.error('Erro inesperado no cálculo de frete:', { requestId, error })
+    return errorResponse(error, requestId)
   }
 })

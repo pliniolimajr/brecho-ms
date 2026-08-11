@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 import { useToast } from './Toast';
 import { addressSchema, checkoutIdentitySchema, firstValidationMessage } from '../utils/schemas';
+import { getApiErrorMessage } from '../utils/apiErrors';
 
 interface CheckoutProps {
   items: Product[];
@@ -74,7 +75,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       });
       const data = await response.json();
       if (data.error) {
-        setShippingError(data.error);
+        setShippingError(getApiErrorMessage(data, 'Erro ao calcular frete. Tente novamente.'));
         setShippingRates([]);
       } else {
         setShippingRates(data);
@@ -596,9 +597,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
          window.location.href = redirectUrl;
 
       } else {
-         const paymentError = prefData?.error?.message
-           || prefData?.error
-           || 'Não foi possível iniciar o pagamento.';
+         const paymentError = getApiErrorMessage(prefData, 'Não foi possível iniciar o pagamento.');
          throw new Error(paymentError);
       }
     } catch (err: any) {
