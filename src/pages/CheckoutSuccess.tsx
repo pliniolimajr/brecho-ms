@@ -13,17 +13,8 @@ export function CheckoutSuccess() {
   useEffect(() => {
     async function updateAndFetchOrder() {
       if (orderId) {
-        // Tentar atualizar o status no cliente (se RLS permitir, senão o webhook já fará/fez)
-        try {
-          await supabase
-            .from('orders')
-            .update({ status: 'paid' })
-            .eq('id', orderId);
-        } catch (e) {
-          console.warn('Update client-side bypass:', e);
-        }
-
-        // Buscar dados do pedido para exibir resumo
+        // O status é definido exclusivamente pelo webhook do Mercado Pago.
+        // O navegador apenas consulta os dados para montar o resumo.
         const { data, error } = await supabase
           .from('orders')
           .select('total_amount')
