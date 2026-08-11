@@ -33,6 +33,7 @@ export function Catalog() {
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [filterOptions, setFilterOptions] = useState({ brands: [] as string[], colors: [] as string[], materials: [] as string[] });
 
   // Quick View States
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -57,20 +58,21 @@ export function Catalog() {
     return () => window.clearTimeout(timeout);
   }, [searchQuery]);
 
-  const uniqueBrands = useMemo(() => {
-    const list = products.map(p => p.brand).filter(Boolean) as string[];
-    return ['Todos', ...Array.from(new Set(list))];
-  }, [products]);
+  const uniqueBrands = ['Todos', ...filterOptions.brands];
+  const uniqueColors = ['Todos', ...filterOptions.colors];
+  const uniqueMaterials = ['Todos', ...filterOptions.materials];
 
-  const uniqueColors = useMemo(() => {
-    const list = products.flatMap(p => p.color || []).filter(Boolean) as string[];
-    return ['Todos', ...Array.from(new Set(list))];
-  }, [products]);
-
-  const uniqueMaterials = useMemo(() => {
-    const list = products.map(p => p.material).filter(Boolean) as string[];
-    return ['Todos', ...Array.from(new Set(list))];
-  }, [products]);
+  useEffect(() => {
+    let active = true;
+    const loadFilterOptions = async () => {
+      const { data, error } = await supabase.rpc('catalog_filter_options');
+      if (!active || error || !data) return;
+      const options = data as { brands?: string[]; colors?: string[]; materials?: string[] };
+      setFilterOptions({ brands: options.brands || [], colors: options.colors || [], materials: options.materials || [] });
+    };
+    void loadFilterOptions();
+    return () => { active = false; };
+  }, []);
 
   const resetAllFilters = () => {
     setSearchQuery('');

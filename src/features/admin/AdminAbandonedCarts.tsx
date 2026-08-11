@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { TableSkeleton } from '../../components/LoadingStates';
 
 interface AdminAbandonedCartsProps {
   abandonedCarts: any[];
@@ -44,7 +45,7 @@ export function AdminAbandonedCarts({ abandonedCarts, loadingAbandoned }: AdminA
         </div>
 
         {loadingAbandoned ? (
-          <div className="p-8 text-center text-gray-500">Carregando carrinhos abandonados...</div>
+          <TableSkeleton rows={5} columns={5} label="Carregando carrinhos abandonados" />
         ) : filteredAbandonedCarts.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Nenhum carrinho abandonado registrado.</div>
         ) : (

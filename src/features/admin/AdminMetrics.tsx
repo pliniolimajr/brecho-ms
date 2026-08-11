@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { TableSkeleton } from '../../components/LoadingStates';
 
 interface AdminMetricsProps {
   adminOrders: any[];
@@ -366,7 +367,7 @@ export function AdminMetrics({
         )}
 
         {loadingCoupons ? (
-          <p className="text-[#A8A29E] text-sm">Buscando cupons...</p>
+          <TableSkeleton rows={4} columns={7} label="Carregando cupons" />
         ) : coupons.length === 0 ? (
           <p className="text-[#A8A29E] text-sm">Nenhum cupom promocional ativo cadastrado.</p>
         ) : (

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { TableSkeleton } from '../../components/LoadingStates';
 import { supabase } from '../../services/supabaseClient';
 import { useStore } from '../../store/useStore';
 import type { Product } from '../../types';
@@ -345,7 +346,7 @@ export function AdminInventory({
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Carregando produtos...</div>
+            <TableSkeleton rows={6} columns={6} label="Carregando estoque" />
           ) : filteredAndSortedProducts.length === 0 ? (
             <div className="p-8 text-center text-gray-500">Nenhum produto encontrado.</div>
           ) : (

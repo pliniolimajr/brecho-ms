@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { TableSkeleton } from '../../components/LoadingStates';
 
 interface AdminCustomersProps {
   crmCustomers: any[];
@@ -44,7 +45,7 @@ export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps
           </div>
 
           {loadingCRM ? (
-            <div className="p-8 text-center text-gray-500">Carregando dados dos clientes...</div>
+            <TableSkeleton rows={6} columns={5} label="Carregando clientes" />
           ) : filteredCustomers.length === 0 ? (
             <div className="p-8 text-center text-gray-500">Nenhum cliente encontrado.</div>
           ) : (
