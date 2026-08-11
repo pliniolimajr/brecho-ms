@@ -45,6 +45,24 @@ jobs:
     - name: Run Unit & Integration Tests
       run: npm run test
 
+  database-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+
+    - name: Start isolated Supabase
+      run: supabase start
+
+    - name: Run PostgreSQL integration tests
+      run: supabase test db
+
   build:
     runs-on: ubuntu-latest
 
