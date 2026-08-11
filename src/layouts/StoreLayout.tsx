@@ -3,7 +3,6 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import CartDrawer from '../components/CartDrawer';
 import CookieBanner from '../components/CookieBanner';
-// import Assistant from '../components/Assistant';
 import { useStore } from '../store/useStore';
 import { useEffect } from 'react';
 
@@ -71,7 +70,6 @@ export function StoreLayout() {
         <Outlet />
       </main>
       <Footer onLinkClick={handleNavClick} />
-      {/* <Assistant /> Stand-by */}
       <CookieBanner />
       <CartDrawer 
         isOpen={isCartOpen}

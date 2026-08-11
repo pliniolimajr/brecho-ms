@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useToast } from './Toast';
 import type { Product } from '../types';
+import { ResponsiveLocalImage } from './ResponsiveLocalImage';
 
 export const Lookbook: React.FC = () => {
   const { products, addToCart } = useStore();
@@ -102,9 +103,14 @@ export const Lookbook: React.FC = () => {
               
               {/* Campaign Image */}
               <div className="w-full lg:w-1/2 aspect-[3/4] overflow-hidden bg-[#F4E4D4] rounded-sm shadow-lg relative group">
-                <img 
-                  src="/images/lookbook_editorial_urban.png" 
+                <ResponsiveLocalImage
+                  basePath="/images/optimized/lookbook_editorial_urban"
+                  fallbackSrc="/images/lookbook_editorial_urban.png"
+                  widths={[640, 1024]}
+                  width={1024}
+                  height={1024}
                   alt="Editorial Look Minimalist Urban" 
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-[#1A332B]/10 group-hover:bg-transparent transition-colors duration-500" />
@@ -138,7 +144,7 @@ export const Lookbook: React.FC = () => {
                           className="accent-[#1A332B]"
                         />
                         <div className="w-12 h-16 bg-[#FDF6F0] rounded overflow-hidden flex-shrink-0">
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          <img src={item.imageUrl} alt={item.name} width="48" height="64" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         </div>
                         <div>
                           <span className="text-xs uppercase tracking-wider font-semibold text-[#1A332B] block">{item.name}</span>
@@ -170,9 +176,14 @@ export const Lookbook: React.FC = () => {
               
               {/* Campaign Image */}
               <div className="w-full lg:w-1/2 aspect-[3/4] overflow-hidden bg-[#F4E4D4] rounded-sm shadow-lg relative group">
-                <img 
-                  src="/images/lookbook_editorial_summer.png" 
+                <ResponsiveLocalImage
+                  basePath="/images/optimized/lookbook_editorial_summer"
+                  fallbackSrc="/images/lookbook_editorial_summer.png"
+                  widths={[640, 1024]}
+                  width={1024}
+                  height={1024}
                   alt="Editorial Look Summer Breeze" 
+                  sizes="(min-width: 1024px) 50vw, 100vw"
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-[#1A332B]/10 group-hover:bg-transparent transition-colors duration-500" />
@@ -206,7 +217,7 @@ export const Lookbook: React.FC = () => {
                           className="accent-[#1A332B]"
                         />
                         <div className="w-12 h-16 bg-[#FDF6F0] rounded overflow-hidden flex-shrink-0">
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          <img src={item.imageUrl} alt={item.name} width="48" height="64" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         </div>
                         <div>
                           <span className="text-xs uppercase tracking-wider font-semibold text-[#1A332B] block">{item.name}</span>

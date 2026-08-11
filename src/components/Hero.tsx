@@ -6,26 +6,31 @@ const HERO_SLIDES = [
   {
     id: 1,
     url: '/hero/slide_1.jpg',
+    optimizedBase: '/hero/optimized/slide_1',
     title: 'Mulher em arquitetura mediterrânea',
   },
   {
     id: 2,
     url: '/hero/slide_2.jpg',
+    optimizedBase: '/hero/optimized/slide_2',
     title: 'Textura de linho orgânico',
   },
   {
     id: 3,
     url: '/hero/slide_3.jpg',
+    optimizedBase: '/hero/optimized/slide_3',
     title: 'Sombra de palmeiras na parede',
   },
   {
     id: 4,
     url: '/hero/slide_4.jpg',
+    optimizedBase: '/hero/optimized/slide_4',
     title: 'Detalhe em couro artesanal',
   },
   {
     id: 5,
     url: '/hero/slide_5.jpg',
+    optimizedBase: '/hero/optimized/slide_5',
     title: 'Casal em passeio urbano',
   },
 ];
@@ -79,12 +84,29 @@ const Hero: React.FC = () => {
               className={`absolute inset-0 w-full h-full transition-opacity duration-2000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
             >
-              <img
-                src={slide.url}
-                alt={slide.title}
-                className={`w-full h-full object-cover object-center grayscale contrast-[0.9] brightness-[0.85] transition-transform duration-[15000ms] ease-out ${isActive ? 'scale-105' : 'scale-100'
-                  }`}
-              />
+              <picture className="block w-full h-full">
+                <source
+                  type="image/avif"
+                  srcSet={`${slide.optimizedBase}-640.avif 640w, ${slide.optimizedBase}-1024.avif 1024w`}
+                  sizes="100vw"
+                />
+                <source
+                  type="image/webp"
+                  srcSet={`${slide.optimizedBase}-640.webp 640w, ${slide.optimizedBase}-1024.webp 1024w`}
+                  sizes="100vw"
+                />
+                <img
+                  src={slide.url}
+                  alt={slide.title}
+                  width="1024"
+                  height="1024"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                  decoding="async"
+                  className={`w-full h-full object-cover object-center grayscale contrast-[0.9] brightness-[0.85] transition-transform duration-[15000ms] ease-out ${isActive ? 'scale-105' : 'scale-100'
+                    }`}
+                />
+              </picture>
             </div>
           );
         })}

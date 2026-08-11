@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BRAND_NAME } from '../constants';
 import { useAuth } from '../hooks/useAuth';
-import { firstValidationMessage, newsletterSchema } from '../utils/schemas';
+import { validateNewsletter } from '../utils/newsletterValidation';
 import { getApiErrorMessage } from '../utils/apiErrors';
 
 interface FooterProps {
@@ -41,10 +41,10 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
     setStatus('loading');
     
     try {
-      const validated = newsletterSchema.safeParse({ name, email });
+      const validated = validateNewsletter(name, email);
       if (!validated.success) {
         setStatus('error');
-        setMessage(firstValidationMessage(validated.error));
+        setMessage(validated.message);
         return;
       }
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscribe-newsletter`, {

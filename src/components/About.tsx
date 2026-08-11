@@ -1,4 +1,5 @@
 import React from 'react';
+import { ResponsiveLocalImage } from './ResponsiveLocalImage';
 
 const About: React.FC = () => {
   return (
@@ -18,9 +19,14 @@ const About: React.FC = () => {
           <p className="text-lg md:text-xl text-[#423226] font-light leading-relaxed mb-8">
             Essa origem não define um estilo específico de roupa; define um jeito de olhar. Mais do que reunir roupas, a Palm CO. seleciona peças que compartilham uma mesma visão de estilo: elegância descomplicada, qualidade, autenticidade e versatilidade. Cada peça passa pelo olhar sensível da nossa curadoria antes de chegar até você.
           </p>
-          <img
-            src="/images/curadoria2.jpg"
+          <ResponsiveLocalImage
+            basePath="/images/optimized/curadoria2"
+            fallbackSrc="/images/curadoria2.jpg"
+            widths={[640, 1200, 1920]}
+            width={1920}
+            height={1440}
             alt="Interior da Loja"
+            sizes="(min-width: 768px) 60vw, 100vw"
             className="w-full h-[400px] object-cover grayscale contrast-[0.9] brightness-110 mt-12"
           />
           <p className="text-sm font-medium uppercase tracking-widest text-[#A8A29E] mt-4">
@@ -32,9 +38,14 @@ const About: React.FC = () => {
       {/* Philosophy Blocks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[80vh]">
         <div className="order-2 lg:order-1 relative h-[500px] lg:h-auto overflow-hidden group">
-          <img
-            src="/images/curadoria3.png"
+          <ResponsiveLocalImage
+            basePath="/images/optimized/curadoria3"
+            fallbackSrc="/images/curadoria3.png"
+            widths={[640, 1200, 1357]}
+            width={1357}
+            height={903}
             alt="Tecidos e Texturas"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105"
           />
         </div>
@@ -60,9 +71,14 @@ const About: React.FC = () => {
           </p>
         </div>
         <div className="relative h-[500px] lg:h-auto overflow-hidden group">
-          <img
-            src="images/corrente1.jpg"
+          <ResponsiveLocalImage
+            basePath="/images/optimized/corrente1"
+            fallbackSrc="/images/corrente1.jpg"
+            widths={[640, 1200, 1920]}
+            width={1920}
+            height={1280}
             alt="Moda Sustentável"
+            sizes="(min-width: 1024px) 50vw, 100vw"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-105 brightness-90"
           />
         </div>

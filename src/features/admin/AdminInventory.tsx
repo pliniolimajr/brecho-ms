@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabaseClient';
 import { useStore } from '../../store/useStore';
 import type { Product } from '../../types';
 import { useToast } from '../../components/Toast';
+import { prepareProductImage, validateImageFile } from '../../utils/imageUpload';
 
 interface AdminInventoryProps {
   adminProducts: Product[];
@@ -111,44 +112,56 @@ export function AdminInventory({
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    setUploadingImage(true);
-    
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      showToast('Erro ao fazer upload: ' + uploadError.message, 'error');
-    } else {
-      const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
-      setEditingProduct({...editingProduct, imageUrl: data.publicUrl});
-      showToast('Upload de imagem realizado com sucesso!', 'success');
+    const originalFile = e.target.files[0];
+    const validationError = validateImageFile(originalFile);
+    if (validationError) {
+      showToast(validationError, 'error');
+      e.target.value = '';
+      return;
     }
-    setUploadingImage(false);
+    setUploadingImage(true);
+    try {
+      const file = await prepareProductImage(originalFile);
+      const fileName = `${crypto.randomUUID()}.webp`;
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, file, { contentType: 'image/webp', cacheControl: '31536000' });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+      setEditingProduct(current => ({ ...current, imageUrl: data.publicUrl }));
+      showToast('Imagem otimizada e enviada com sucesso!', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Erro ao enviar imagem.', 'error');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   const handleMultipleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const files = Array.from(e.target.files);
+    if (files.length > 8) {
+      showToast('Envie no máximo 8 imagens por vez.', 'error');
+      e.target.value = '';
+      return;
+    }
     setUploadingImage(true);
 
     const uploadedUrls: string[] = [];
 
     for (const file of files) {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file);
-
-      if (!uploadError) {
+      try {
+        const optimizedFile = await prepareProductImage(file);
+        const fileName = `${crypto.randomUUID()}.webp`;
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, optimizedFile, { contentType: 'image/webp', cacheControl: '31536000' });
+        if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
         uploadedUrls.push(data.publicUrl);
+      } catch (error) {
+        console.warn('Imagem ignorada:', file.name, error);
       }
     }
 
@@ -160,6 +173,7 @@ export function AdminInventory({
       showToast('Nenhuma imagem pôde ser enviada.', 'error');
     }
     setUploadingImage(false);
+    e.target.value = '';
   };
 
   const handleRemoveGalleryImage = (indexToRemove: number) => {

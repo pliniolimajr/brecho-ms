@@ -27,7 +27,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView
         <img 
           src={product.imageUrl} 
           alt={product.name} 
+          width="500"
+          height="700"
           loading="lazy"
+          decoding="async"
           className={`w-full h-full object-cover transition-all duration-700 ease-in-out group-hover:scale-105 ${
             hasSecondaryImage ? 'group-hover:opacity-0' : ''
           }`}
@@ -38,7 +41,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView
           <img 
             src={product.gallery![0]} 
             alt={`${product.name} - Vista alternativa`} 
+            width="500"
+            height="700"
             loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-700 ease-in-out group-hover:scale-105"
           />
         )}
