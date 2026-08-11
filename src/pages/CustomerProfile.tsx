@@ -7,6 +7,7 @@ import { ProfileAddresses } from '../features/customer/ProfileAddresses';
 import { ProfileOrders } from '../features/customer/ProfileOrders';
 import { ProfileFavorites } from '../features/customer/ProfileFavorites';
 import { ProfileBalances } from '../features/customer/ProfileBalances';
+import { ProfileSkeleton } from '../components/LoadingStates';
 
 export function CustomerProfile() {
   const { session, user, isAdmin, loading, supabase: sb } = useAuth();
@@ -68,7 +69,7 @@ export function CustomerProfile() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#FDF6F0] flex items-center justify-center">Carregando...</div>;
+    return <ProfileSkeleton />;
   }
 
   if (!session) {
@@ -76,7 +77,7 @@ export function CustomerProfile() {
   }
 
   if (loadingProfile) {
-    return <div className="min-h-screen bg-[#FDF6F0] flex items-center justify-center">Carregando...</div>;
+    return <ProfileSkeleton />;
   }
 
   if (isAdmin) {

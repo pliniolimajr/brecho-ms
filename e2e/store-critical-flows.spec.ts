@@ -35,7 +35,14 @@ async function mockExternalServices(page: Page) {
   await page.route('https://test.supabase.co/**', async route => {
     const url = route.request().url();
     if (url.includes('/rest/v1/products')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([product]) });
+      const decodedUrl = decodeURIComponent(url).toLowerCase();
+      const rows = decodedUrl.includes('produto inexistente') ? [] : [product];
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'content-range': rows.length ? '0-0/1' : '*/0' },
+        body: JSON.stringify(rows),
+      });
     }
     if (url.includes('/functions/v1/subscribe-newsletter')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });

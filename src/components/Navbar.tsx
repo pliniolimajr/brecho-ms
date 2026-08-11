@@ -23,7 +23,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
 
   const { session, isAdmin } = useAuth();
   const { topBar } = useStoreSettings();
-  const { products, fetchProducts } = useStore();
+  const { products } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,8 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
         console.error(e);
       }
     }
-    fetchProducts();
-  }, [fetchProducts]);
+  }, []);
 
   const saveSearchTerm = (term: string) => {
     const cleanTerm = term.trim().toLowerCase();

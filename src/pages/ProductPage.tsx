@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductDetail from '../components/ProductDetail';
 import { useStore } from '../store/useStore';
+import { ProductPageSkeleton } from '../components/LoadingStates';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -10,7 +11,7 @@ export function ProductPage() {
   const product = products.find((p) => p.id === id);
 
   if (isLoadingProducts) {
-    return <div className="pt-32 text-center h-screen bg-[#FDF6F0] text-[#1A332B]">Carregando...</div>;
+    return <ProductPageSkeleton />;
   }
 
   if (!product) {

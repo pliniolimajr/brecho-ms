@@ -1,48 +1,38 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useStore } from '../store/useStore';
 import ProductCard from '../components/ProductCard';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { QuickViewModal } from '../components/QuickViewModal';
 import type { Product } from '../types';
+import { ProductCardSkeleton } from '../components/LoadingStates';
+import { supabase } from '../services/supabaseClient';
 
 const CATEGORIES = ['Todos', 'Vestidos', 'Calças', 'Saias', 'Camisetas', 'Casacos', 'Acessórios', 'Calçados', 'Outros'];
 const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'ÚNICO', '34', '36', '38', '40', '42', '44', '46', '48'];
 const ITEMS_PER_PAGE = 12;
 
-const ProductSkeletonCard = () => (
-  <div className="animate-pulse bg-white border border-[#C06A35]/15 rounded overflow-hidden flex flex-col h-full shadow-sm">
-    <div className="w-full aspect-[3/4] bg-[#FDF6F0]/80" />
-    <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
-      <div className="space-y-2">
-        <div className="h-2.5 bg-gray-200 rounded w-1/4" />
-        <div className="h-4 bg-gray-200 rounded w-3/4" />
-      </div>
-      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-        <div className="h-4 bg-gray-200 rounded w-1/3" />
-        <div className="h-3 bg-gray-200 rounded w-1/6" />
-      </div>
-    </div>
-  </div>
-);
-
 export function Catalog() {
-  const { products, isLoadingProducts } = useStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [category, setCategory] = useState<string>('Todos');
-  const [size, setSize] = useState<string>('');
-  const [minPrice, setMinPrice] = useState<number>(0);
-  const [maxPrice, setMaxPrice] = useState<number>(1000);
-  const [sortOrder, setSortOrder] = useState<'recent' | 'price_asc' | 'price_desc'>('recent');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  const [category, setCategory] = useState<string>(searchParams.get('categoria') || 'Todos');
+  const [size, setSize] = useState<string>(searchParams.get('tamanho') || '');
+  const [minPrice, setMinPrice] = useState<number>(Number(searchParams.get('precoMin')) || 0);
+  const [maxPrice, setMaxPrice] = useState<number>(Number(searchParams.get('precoMax')) || 1000);
+  const [sortOrder, setSortOrder] = useState<'recent' | 'price_asc' | 'price_desc'>((searchParams.get('ordem') as 'recent' | 'price_asc' | 'price_desc') || 'recent');
 
-  const [selectedBrand, setSelectedBrand] = useState('Todos');
-  const [selectedColor, setSelectedColor] = useState('Todos');
-  const [selectedMaterial, setSelectedMaterial] = useState('Todos');
+  const [selectedBrand, setSelectedBrand] = useState(searchParams.get('marca') || 'Todos');
+  const [selectedColor, setSelectedColor] = useState(searchParams.get('cor') || 'Todos');
+  const [selectedMaterial, setSelectedMaterial] = useState(searchParams.get('material') || 'Todos');
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(Math.max(1, Number(searchParams.get('pagina')) || 1));
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Quick View States
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -63,8 +53,9 @@ export function Catalog() {
   }, []);
 
   useEffect(() => {
-    setSearchQuery(searchParams.get('search') || '');
-  }, [searchParams]);
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
 
   const uniqueBrands = useMemo(() => {
     const list = products.map(p => p.brand).filter(Boolean) as string[];
@@ -107,69 +98,81 @@ export function Catalog() {
     );
   }, [searchQuery, category, size, minPrice, maxPrice, selectedBrand, selectedColor, selectedMaterial, searchParams]);
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.brand?.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.material?.toLowerCase().includes(q)
-      );
-    }
-
-    if (category !== 'Todos') {
-      result = result.filter(p => p.category === category);
-    }
-
-    if (size) {
-      result = result.filter(p => p.size === size);
-    }
-
-    if (selectedBrand !== 'Todos') {
-      result = result.filter(p => p.brand === selectedBrand);
-    }
-
-    if (selectedColor !== 'Todos') {
-      result = result.filter(p => p.color?.includes(selectedColor));
-    }
-
-    if (selectedMaterial !== 'Todos') {
-      result = result.filter(p => p.material === selectedMaterial);
-    }
-
-    result = result.filter(p => p.price >= minPrice && p.price <= maxPrice);
-
-    // Filter type (e.g., promo/outlet if passed in search query)
-    const filterType = searchParams.get('filter');
-    if (filterType === 'sale') {
-      result = result.filter(p => p.price <= 50 || p.tagline?.toLowerCase().includes('promo') || p.name.toLowerCase().includes('promo'));
-    } else if (filterType === 'outlet') {
-      result = result.filter(p => p.price <= 35);
-    }
-
-    if (sortOrder === 'price_asc') {
-      result.sort((a, b) => a.price - b.price);
-    } else if (sortOrder === 'price_desc') {
-      result.sort((a, b) => b.price - a.price);
-    }
-
-    return result;
-  }, [products, category, size, minPrice, maxPrice, sortOrder, searchQuery, selectedBrand, selectedColor, selectedMaterial, searchParams]);
-
   useEffect(() => {
     setCurrentPage(1);
-  }, [category, size, minPrice, maxPrice, sortOrder, searchQuery, selectedBrand, selectedColor, selectedMaterial, searchParams]);
+  }, [category, size, minPrice, maxPrice, sortOrder, debouncedSearch, selectedBrand, selectedColor, selectedMaterial]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const filterType = searchParams.get('filter');
 
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (category !== 'Todos') params.set('categoria', category);
+    if (size) params.set('tamanho', size);
+    if (minPrice > 0) params.set('precoMin', String(minPrice));
+    if (maxPrice < 1000) params.set('precoMax', String(maxPrice));
+    if (sortOrder !== 'recent') params.set('ordem', sortOrder);
+    if (selectedBrand !== 'Todos') params.set('marca', selectedBrand);
+    if (selectedColor !== 'Todos') params.set('cor', selectedColor);
+    if (selectedMaterial !== 'Todos') params.set('material', selectedMaterial);
+    if (currentPage > 1) params.set('pagina', String(currentPage));
+    if (filterType) params.set('filter', filterType);
+    setSearchParams(params, { replace: true });
+  }, [category, currentPage, debouncedSearch, filterType, maxPrice, minPrice, selectedBrand, selectedColor, selectedMaterial, setSearchParams, size, sortOrder]);
+
+  useEffect(() => {
+    let active = true;
+    const loadPage = async () => {
+      setIsLoadingProducts(true);
+      setCatalogError(null);
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' })
+        .eq('is_sold', false)
+        .gte('price', minPrice)
+        .lte('price', maxPrice);
+
+      if (debouncedSearch) {
+        const safeSearch = debouncedSearch.replace(/[,%()]/g, ' ');
+        query = query.or(`name.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%,brand.ilike.%${safeSearch}%,category.ilike.%${safeSearch}%,material.ilike.%${safeSearch}%`);
+      }
+      if (category !== 'Todos') query = query.eq('category', category);
+      if (size) query = query.eq('size', size);
+      if (selectedBrand !== 'Todos') query = query.eq('brand', selectedBrand);
+      if (selectedColor !== 'Todos') query = query.contains('color', [selectedColor]);
+      if (selectedMaterial !== 'Todos') query = query.eq('material', selectedMaterial);
+      if (filterType === 'sale') query = query.or('price.lte.50,tagline.ilike.%promo%,name.ilike.%promo%');
+      if (filterType === 'outlet') query = query.lte('price', 35);
+
+      query = sortOrder === 'price_asc'
+        ? query.order('price', { ascending: true })
+        : sortOrder === 'price_desc'
+          ? query.order('price', { ascending: false })
+          : query.order('created_at', { ascending: false });
+
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const { data, count, error } = await query.range(from, from + ITEMS_PER_PAGE - 1);
+      if (!active) return;
+      if (error) {
+        console.error('Erro ao carregar catálogo:', error);
+        setCatalogError('Não foi possível carregar o catálogo agora.');
+      } else {
+        setProducts((data || []).map((row: any) => ({
+          id: row.id, name: row.name, tagline: row.tagline, description: row.description,
+          longDescription: row.long_description, price: Number(row.price), category: row.category,
+          imageUrl: row.image_url, gallery: row.gallery, features: row.features || [], size: row.size,
+          brand: row.brand, color: row.color, material: row.material, measurements: row.measurements,
+          stockQuantity: row.stock_quantity,
+        })));
+        setTotalProducts(count || 0);
+      }
+      setIsLoadingProducts(false);
+    };
+    void loadPage();
+    return () => { active = false; };
+  }, [category, currentPage, debouncedSearch, filterType, maxPrice, minPrice, reloadKey, selectedBrand, selectedColor, selectedMaterial, size, sortOrder]);
+
+  const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
@@ -439,15 +442,25 @@ export function Catalog() {
           <main className="flex-1 w-full">
             <header className="mb-6 flex justify-between items-end">
               <h2 className="text-2xl font-serif text-[#1A332B]">{category === 'Todos' ? 'Todas as Peças' : category}</h2>
-              <p className="text-xs text-[#A8A29E] font-medium">{filteredProducts.length} peça(s) encontrada(s)</p>
+              <p className="text-xs text-[#A8A29E] font-medium">{totalProducts} peça(s) encontrada(s)</p>
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-              {isLoadingProducts ? (
+              {isLoadingProducts && products.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
-                  <ProductSkeletonCard key={i} />
+                  <ProductCardSkeleton key={i} />
                 ))
-              ) : filteredProducts.length === 0 ? (
+              ) : catalogError ? (
+                <div className="col-span-full py-16 text-center bg-white p-8 rounded border border-red-200" role="alert">
+                  <p className="text-sm text-red-800 mb-5">{catalogError}</p>
+                  <button
+                    onClick={() => setReloadKey(value => value + 1)}
+                    className="px-6 py-2.5 bg-[#1A332B] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#C06A35] transition-colors"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : products.length === 0 ? (
                 <div className="col-span-full py-20 text-center bg-white p-8 rounded border border-[#C06A35]/20">
                   <div className="w-12 h-12 bg-[#C06A35]/10 rounded-full flex items-center justify-center text-[#C06A35] mx-auto mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
@@ -466,7 +479,7 @@ export function Catalog() {
                   </button>
                 </div>
               ) : (
-                paginatedProducts.map(product => (
+                products.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}

@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import type { Product } from '../types';
 import { useToast } from '../components/Toast';
 
 import { AdminInventory } from '../features/admin/AdminInventory';
-import { AdminOrders } from '../features/admin/AdminOrders';
+import { AdminOrders, type AdminOrderQuery } from '../features/admin/AdminOrders';
 import { AdminCustomers } from '../features/admin/AdminCustomers';
 import { AdminAbandonedCarts } from '../features/admin/AdminAbandonedCarts';
 import { AdminMetrics } from '../features/admin/AdminMetrics';
@@ -26,7 +26,16 @@ export function AdminDashboard() {
   const { storeInfo } = useStoreSettings();
   const [adminProducts, setAdminProducts] = useState<Product[]>([]);
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [totalAdminOrders, setTotalAdminOrders] = useState(0);
+  const [metricsOrders, setMetricsOrders] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string | null>>({});
+  const loadedTabs = useRef(new Set<string>());
+  const lastOrderQuery = useRef<AdminOrderQuery>({
+    page: 1, pageSize: 20, status: null, startDate: null, endDate: null,
+    minValue: null, maxValue: null, paymentMethod: null, search: null,
+  });
 
   // Abandoned Carts States
   const [abandonedCarts, setAbandonedCarts] = useState<any[]>([]);
@@ -48,9 +57,12 @@ export function AdminDashboard() {
   });
 
   const fetchAdminProducts = async () => {
-    setLoading(true);
+    setLoadingProducts(true);
+    setSectionErrors(previous => ({ ...previous, inventory: null }));
     const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
+    if (error) {
+      setSectionErrors(previous => ({ ...previous, inventory: 'Não foi possível carregar o estoque.' }));
+    } else if (data) {
       const mapped = data.map(row => ({
         id: row.id,
         name: row.name,
@@ -72,22 +84,49 @@ export function AdminDashboard() {
       }));
       setAdminProducts(mapped);
     }
-    setLoading(false);
+    setLoadingProducts(false);
   };
 
-  const fetchAdminOrders = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from('orders')
-      .select('*, order_items(price, products(name, size))')
-      .order('created_at', { ascending: false });
+  const fetchAdminOrders = useCallback(async (query?: AdminOrderQuery) => {
+    const nextQuery = query || lastOrderQuery.current;
+    lastOrderQuery.current = nextQuery;
+    setLoadingOrders(true);
+    setSectionErrors(previous => ({ ...previous, orders: null }));
+    const { data, error } = await supabase
+      .rpc('admin_list_orders', {
+        p_page: nextQuery.page,
+        p_page_size: nextQuery.pageSize,
+        p_status: nextQuery.status,
+        p_start_date: nextQuery.startDate,
+        p_end_date: nextQuery.endDate,
+        p_min_value: nextQuery.minValue,
+        p_max_value: nextQuery.maxValue,
+        p_payment_method: nextQuery.paymentMethod,
+        p_search: nextQuery.search,
+      });
 
-    if (data) setAdminOrders(data);
-    setLoading(false);
+    if (error) {
+      setSectionErrors(previous => ({ ...previous, orders: 'Não foi possível carregar os pedidos.' }));
+    } else if (data) {
+      const result = data as { orders?: any[]; total?: number };
+      setAdminOrders(result.orders || []);
+      setTotalAdminOrders(Number(result.total) || 0);
+    }
+    setLoadingOrders(false);
+  }, []);
+
+  const fetchMetricsOrders = async () => {
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) {
+      setSectionErrors(previous => ({ ...previous, metrics: 'Não foi possível carregar as métricas e cupons.' }));
+    } else {
+      setMetricsOrders(data || []);
+    }
   };
 
   const fetchCRMData = async () => {
     setLoadingCRM(true);
+    setSectionErrors(previous => ({ ...previous, customers: null }));
     try {
       const { data: customerRows, error: customerError } = await supabase.from('customers').select('*');
       const { data: orderRows, error: orderError } = await supabase.from('orders').select('*');
@@ -157,6 +196,7 @@ export function AdminDashboard() {
       setCrmCustomers(Object.values(crmMap));
     } catch (e) {
       console.error(e);
+      setSectionErrors(previous => ({ ...previous, customers: 'Não foi possível carregar os clientes.' }));
     } finally {
       setLoadingCRM(false);
     }
@@ -164,6 +204,7 @@ export function AdminDashboard() {
 
   const fetchAbandonedCarts = async () => {
     setLoadingAbandoned(true);
+    setSectionErrors(previous => ({ ...previous, abandoned: null }));
     try {
       const { data, error } = await supabase
         .from('abandoned_carts')
@@ -174,6 +215,7 @@ export function AdminDashboard() {
       if (data) setAbandonedCarts(data);
     } catch (err) {
       console.error('Erro ao buscar carrinhos abandonados:', err);
+      setSectionErrors(previous => ({ ...previous, abandoned: 'Não foi possível carregar os carrinhos.' }));
     } finally {
       setLoadingAbandoned(false);
     }
@@ -181,27 +223,43 @@ export function AdminDashboard() {
 
   const fetchCoupons = async () => {
     setLoadingCoupons(true);
-    const { data } = await supabase
+    setSectionErrors(previous => ({ ...previous, metrics: null }));
+    const { data, error } = await supabase
       .from('coupons')
       .select('*')
       .order('created_at', { ascending: false });
-    if (data) setCoupons(data);
+    if (error) {
+      setSectionErrors(previous => ({ ...previous, metrics: 'Não foi possível carregar as métricas e cupons.' }));
+    } else if (data) {
+      setCoupons(data);
+    }
     setLoadingCoupons(false);
   };
 
   useEffect(() => {
-    fetchAdminProducts();
-    fetchAdminOrders();
-    fetchCoupons();
-    fetchCRMData();
-    fetchAbandonedCarts();
-  }, []);
+    if (loadedTabs.current.has(activeTab)) return;
+    loadedTabs.current.add(activeTab);
 
-  useEffect(() => {
-    if (activeTab === 'abandoned') {
-      fetchAbandonedCarts();
+    if (activeTab === 'inventory') void fetchAdminProducts();
+    // A aba de pedidos inicia sua consulta com os filtros e a página atuais.
+    if (activeTab === 'customers') void fetchCRMData();
+    if (activeTab === 'abandoned') void fetchAbandonedCarts();
+    if (activeTab === 'metrics') {
+      void fetchCoupons();
+      void fetchMetricsOrders();
     }
   }, [activeTab]);
+
+  const retryActiveSection = () => {
+    if (activeTab === 'inventory') void fetchAdminProducts();
+    if (activeTab === 'orders') void fetchAdminOrders();
+    if (activeTab === 'customers') void fetchCRMData();
+    if (activeTab === 'abandoned') void fetchAbandonedCarts();
+    if (activeTab === 'metrics') {
+      void fetchCoupons();
+      void fetchMetricsOrders();
+    }
+  };
 
   const handleExportCSV = () => {
     if (adminOrders.length === 0) return;
@@ -437,10 +495,18 @@ export function AdminDashboard() {
 
           {/* Main Content Area */}
           <main className="flex-1 min-w-0">
+            {sectionErrors[activeTab] && (
+              <div className="mb-6 rounded border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                {sectionErrors[activeTab]}{' '}
+                <button type="button" onClick={retryActiveSection} className="font-semibold underline">
+                  Tentar novamente
+                </button>
+              </div>
+            )}
             {activeTab === 'inventory' && (
               <AdminInventory
                 adminProducts={adminProducts}
-                loading={loading}
+                loading={loadingProducts && adminProducts.length === 0}
                 fetchAdminProducts={fetchAdminProducts}
                 handleCSVImport={handleCSVImport}
               />
@@ -449,7 +515,8 @@ export function AdminDashboard() {
             {activeTab === 'orders' && (
               <AdminOrders
                 adminOrders={adminOrders}
-                loading={loading}
+                totalOrders={totalAdminOrders}
+                loading={loadingOrders && adminOrders.length === 0}
                 storeInfo={storeInfo}
                 fetchAdminOrders={fetchAdminOrders}
                 fetchCRMData={fetchCRMData}
@@ -460,22 +527,22 @@ export function AdminDashboard() {
             {activeTab === 'customers' && (
               <AdminCustomers
                 crmCustomers={crmCustomers}
-                loadingCRM={loadingCRM}
+                loadingCRM={loadingCRM && crmCustomers.length === 0}
               />
             )}
 
             {activeTab === 'abandoned' && (
               <AdminAbandonedCarts
                 abandonedCarts={abandonedCarts}
-                loadingAbandoned={loadingAbandoned}
+                loadingAbandoned={loadingAbandoned && abandonedCarts.length === 0}
               />
             )}
 
             {activeTab === 'metrics' && (
               <AdminMetrics
-                adminOrders={adminOrders}
+                adminOrders={metricsOrders}
                 coupons={coupons}
-                loadingCoupons={loadingCoupons}
+                loadingCoupons={loadingCoupons && coupons.length === 0}
                 fetchCoupons={fetchCoupons}
                 handleCreateCoupon={handleCreateCoupon}
                 handleToggleCoupon={handleToggleCoupon}

@@ -13,8 +13,12 @@ export function StoreLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    // Home e página de detalhe ainda usam o cache global. O catálogo possui
+    // paginação própria e não deve baixar o estoque inteiro.
+    if (location.pathname === '/' || location.pathname.startsWith('/produto/')) {
+      void fetchProducts();
+    }
+  }, [fetchProducts, location.pathname]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

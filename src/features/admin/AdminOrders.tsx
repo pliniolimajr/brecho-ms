@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useToast } from '../../components/Toast';
+import { TableSkeleton } from '../../components/LoadingStates';
 
 interface AdminOrdersProps {
   adminOrders: any[];
+  totalOrders: number;
   loading: boolean;
   storeInfo: any;
-  fetchAdminOrders: () => Promise<void>;
+  fetchAdminOrders: (query?: AdminOrderQuery) => Promise<void>;
   fetchCRMData: () => Promise<void>;
   handleExportCSV: () => void;
 }
 
+export interface AdminOrderQuery {
+  page: number;
+  pageSize: number;
+  status: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  minValue: number | null;
+  maxValue: number | null;
+  paymentMethod: string | null;
+  search: string | null;
+}
+
 export function AdminOrders({
   adminOrders,
+  totalOrders,
   loading,
   storeInfo,
   fetchAdminOrders,
@@ -29,6 +44,13 @@ export function AdminOrders({
   // Filtros de Data
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [minValue, setMinValue] = useState<string>('');
+  const [maxValue, setMaxValue] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
   const logStatusHistory = async (orderId: string, action: string, details?: string) => {
     try {
@@ -156,40 +178,30 @@ export function AdminOrders({
     }
   };
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
 
-  const filteredOrders = adminOrders.filter(o => {
-    if (statusFilter !== 'all' && o.status !== statusFilter) return false;
-    
-    // Filtro de Data
-    if (startDate) {
-      const orderDate = new Date(o.created_at).setHours(0, 0, 0, 0);
-      const start = new Date(startDate).setHours(0, 0, 0, 0);
-      if (orderDate < start) return false;
-    }
-    if (endDate) {
-      const orderDate = new Date(o.created_at).setHours(0, 0, 0, 0);
-      const end = new Date(endDate).setHours(23, 59, 59, 999);
-      if (orderDate > end) return false;
-    }
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, startDate, endDate, minValue, maxValue, paymentMethod, debouncedSearch]);
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const clientName = `${o.shipping_address?.firstName || ''} ${o.shipping_address?.lastName || ''}`.toLowerCase();
-      const orderId = (o.id || '').toLowerCase();
-      const phone = (o.shipping_address?.phone || '').toLowerCase();
-      const itemNames = (o.order_items || []).map((i: any) => (i.products?.name || '').toLowerCase()).join(' ');
+  useEffect(() => {
+    void fetchAdminOrders({
+      page: currentPage,
+      pageSize,
+      status: statusFilter === 'all' ? null : statusFilter,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      minValue: minValue === '' ? null : Number(minValue),
+      maxValue: maxValue === '' ? null : Number(maxValue),
+      paymentMethod: paymentMethod === 'all' ? null : paymentMethod,
+      search: debouncedSearch || null,
+    });
+  }, [currentPage, debouncedSearch, endDate, fetchAdminOrders, maxValue, minValue, paymentMethod, startDate, statusFilter]);
 
-      return (
-        clientName.includes(q) ||
-        orderId.includes(q) ||
-        phone.includes(q) ||
-        itemNames.includes(q)
-      );
-    }
-
-    return true;
-  });
+  const totalPages = Math.ceil(totalOrders / pageSize);
 
   return (
     <div className="space-y-6">
@@ -217,7 +229,7 @@ export function AdminOrders({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap gap-2 items-center">
             <span className="text-xs font-semibold uppercase tracking-widest text-[#423226] mr-2">Status:</span>
-            {['all', 'pending', 'paid', 'delivered', 'cancelled'].map((st) => (
+            {['all', 'pending', 'paid', 'shipped', 'delivered', 'cancelled'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
@@ -229,6 +241,7 @@ export function AdminOrders({
                 {st === 'all' && 'Todos'}
                 {st === 'pending' && 'Pendente'}
                 {st === 'paid' && 'Pago'}
+                {st === 'shipped' && 'Enviado'}
                 {st === 'delivered' && 'Entregue'}
                 {st === 'cancelled' && 'Cancelado'}
               </button>
@@ -265,11 +278,52 @@ export function AdminOrders({
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label className="text-[10px] uppercase font-bold text-[#A8A29E]">
+            Valor mínimo
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={minValue}
+              onChange={(event) => setMinValue(event.target.value)}
+              placeholder="R$ 0,00"
+              className="mt-1 w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-2 text-sm text-[#1A332B] font-normal normal-case outline-none"
+            />
+          </label>
+          <label className="text-[10px] uppercase font-bold text-[#A8A29E]">
+            Valor máximo
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={maxValue}
+              onChange={(event) => setMaxValue(event.target.value)}
+              placeholder="Sem limite"
+              className="mt-1 w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-2 text-sm text-[#1A332B] font-normal normal-case outline-none"
+            />
+          </label>
+          <label className="text-[10px] uppercase font-bold text-[#A8A29E]">
+            Forma de pagamento
+            <select
+              value={paymentMethod}
+              onChange={(event) => setPaymentMethod(event.target.value)}
+              className="mt-1 w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-2 text-sm text-[#1A332B] font-normal normal-case outline-none"
+            >
+              <option value="all">Todas</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="debit_card">Cartão de débito</option>
+              <option value="pix">Pix</option>
+              <option value="ticket">Boleto</option>
+            </select>
+          </label>
+        </div>
+
         {/* Linha 2: Busca por texto */}
         <div className="relative w-full">
           <input
             type="text"
-            placeholder="Buscar por ID, cliente, telefone ou produto..."
+            placeholder="Buscar por ID, cliente, e-mail, telefone, produto ou rastreio..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-[#FDF6F0] border border-[#C06A35]/30 rounded px-3 py-2 text-sm text-[#1A332B] placeholder-gray-400 focus:outline-none focus:border-[#1A332B]"
@@ -287,8 +341,8 @@ export function AdminOrders({
 
       <div className="bg-white rounded shadow-sm border border-[#C06A35]/20 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Carregando pedidos...</div>
-        ) : filteredOrders.length === 0 ? (
+          <TableSkeleton rows={6} columns={7} label="Carregando pedidos" />
+        ) : adminOrders.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Nenhum pedido encontrado.</div>
         ) : (
           <div className="overflow-x-auto">
@@ -305,7 +359,7 @@ export function AdminOrders({
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map(order => {
+                {adminOrders.map(order => {
                   const clientName = `${order.shipping_address?.firstName || ''} ${order.shipping_address?.lastName || ''}`.trim() || 'Cliente';
                   const dateStr = new Date(order.created_at).toLocaleDateString('pt-BR');
                   const history = Array.isArray(order.status_history)
@@ -489,6 +543,29 @@ export function AdminOrders({
           </div>
         )}
       </div>
+      {totalPages > 1 && (
+        <nav className="flex flex-wrap justify-center items-center gap-3" aria-label="Paginação de pedidos">
+          <button
+            type="button"
+            disabled={currentPage === 1 || loading}
+            onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+            className="px-4 py-2 border border-[#C06A35]/30 text-xs font-bold uppercase text-[#1A332B] disabled:opacity-40"
+          >
+            Anterior
+          </button>
+          <span className="text-xs text-[#423226]">
+            Página {currentPage} de {totalPages} · {totalOrders} pedido(s)
+          </span>
+          <button
+            type="button"
+            disabled={currentPage >= totalPages || loading}
+            onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+            className="px-4 py-2 border border-[#C06A35]/30 text-xs font-bold uppercase text-[#1A332B] disabled:opacity-40"
+          >
+            Próxima
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
