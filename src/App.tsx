@@ -20,14 +20,17 @@ const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess').then(module
 const CheckoutFailure = lazy(() => import('./pages/CheckoutFailure').then(module => ({ default: module.CheckoutFailure })));
 const CheckoutPending = lazy(() => import('./pages/CheckoutPending').then(module => ({ default: module.CheckoutPending })));
 const NewsletterUnsubscribe = lazy(() => import('./pages/NewsletterUnsubscribe').then(module => ({ default: module.NewsletterUnsubscribe })));
+const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
 
 import { ProtectedAdminRoute } from './components/ProtectedAdminRoute';
 import { ToastProvider } from './components/Toast';
+import { SeoRouteGuard } from './components/SeoRouteGuard';
 
 export function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
+        <SeoRouteGuard />
         <Suspense fallback={
           <div className="min-h-screen bg-[#FDF6F0] flex justify-center items-center">
             <div className="w-8 h-8 border-4 border-[#C06A35] border-t-transparent rounded-full animate-spin"></div>
@@ -52,6 +55,7 @@ export function App() {
               <Route path="checkout-pending" element={<CheckoutPending />} />
               <Route path="newsletter/descadastro" element={<NewsletterUnsubscribe />} />
               <Route path="login" element={<Login />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
 
             {/* Admin Routes */}

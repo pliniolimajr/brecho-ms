@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Seo } from '../components/Seo';
 
 export function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -13,6 +14,7 @@ export function Contact() {
 
   return (
     <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
+      <Seo title="Contato" description="Entre em contato com a Palm CO. para tirar dúvidas sobre produtos, pedidos e atendimento." path="/contato" />
       <div className="max-w-4xl mx-auto space-y-16">
         <div className="text-center space-y-4">
           <span className="text-xs uppercase tracking-widest text-[#C06A35] font-bold">Fale Conosco</span>

@@ -5,6 +5,7 @@ import { QuickViewModal } from '../components/QuickViewModal';
 import type { Product } from '../types';
 import { ProductCardSkeleton } from '../components/LoadingStates';
 import { supabase } from '../services/supabaseClient';
+import { Seo } from '../components/Seo';
 
 const CATEGORIES = ['Todos', 'Vestidos', 'Calças', 'Saias', 'Camisetas', 'Casacos', 'Acessórios', 'Calçados', 'Outros'];
 const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'ÚNICO', '34', '36', '38', '40', '42', '44', '46', '48'];
@@ -48,10 +49,6 @@ export function Catalog() {
     setIsQuickViewOpen(false);
     setQuickViewProduct(null);
   };
-
-  useEffect(() => {
-    document.title = 'Coleção & Catálogo | Palm CO.';
-  }, []);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
@@ -178,6 +175,18 @@ export function Catalog() {
 
   return (
     <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
+      <Seo
+        title="Coleção e catálogo"
+        description="Explore a curadoria Palm CO. por categoria, tamanho, marca, cor e material. Peças únicas para um consumo mais consciente."
+        path="/catalogo"
+        jsonLd={{
+          '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Início', item: 'https://palm-co.vercel.app/' },
+            { '@type': 'ListItem', position: 2, name: 'Catálogo', item: 'https://palm-co.vercel.app/catalogo' },
+          ],
+        }}
+      />
       <div className="max-w-[1800px] mx-auto px-6 md:px-12">
 
         <h1 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-3">Coleção & Curadoria</h1>

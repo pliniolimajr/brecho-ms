@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Seo } from '../components/Seo';
 
 interface FAQItem {
   question: string;
@@ -37,6 +38,7 @@ export function FAQ() {
 
   return (
     <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
+      <Seo title="Perguntas frequentes" description="Tire suas dúvidas sobre produtos, pagamentos, envios, trocas e compras na Palm CO." path="/faq" />
       <div className="max-w-3xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <span className="text-xs uppercase tracking-widest text-[#C06A35] font-bold">Dúvidas</span>

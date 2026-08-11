@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ProductDetail from '../components/ProductDetail';
 import { useStore } from '../store/useStore';
 import { ProductPageSkeleton } from '../components/LoadingStates';
+import { Seo } from '../components/Seo';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -24,11 +25,41 @@ export function ProductPage() {
   }
 
   return (
-    <ProductDetail 
-      key={product.id}
-      product={product} 
-      onBack={() => navigate('/')} 
-      onAddToCart={(p) => addToCart(p)} 
-    />
+    <>
+      <Seo
+        title={product.name}
+        description={product.description}
+        path={`/produto/${product.id}`}
+        image={product.imageUrl}
+        type="product"
+        jsonLd={[
+          {
+            '@context': 'https://schema.org', '@type': 'Product', name: product.name,
+            description: product.description, image: [product.imageUrl, ...(product.gallery || [])],
+            brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+            sku: product.id,
+            offers: {
+              '@type': 'Offer', priceCurrency: 'BRL', price: product.price.toFixed(2),
+              availability: (product.stockQuantity || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              url: `https://palm-co.vercel.app/produto/${product.id}`,
+            },
+          },
+          {
+            '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Início', item: 'https://palm-co.vercel.app/' },
+              { '@type': 'ListItem', position: 2, name: 'Catálogo', item: 'https://palm-co.vercel.app/catalogo' },
+              { '@type': 'ListItem', position: 3, name: product.name, item: `https://palm-co.vercel.app/produto/${product.id}` },
+            ],
+          },
+        ]}
+      />
+      <ProductDetail
+        key={product.id}
+        product={product}
+        onBack={() => navigate('/')}
+        onAddToCart={(p) => addToCart(p)}
+      />
+    </>
   );
 }

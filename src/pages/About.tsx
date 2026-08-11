@@ -1,6 +1,13 @@
+import { Seo } from '../components/Seo';
+
 export function About() {
   return (
     <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
+      <Seo
+        title="Sobre a Palm CO."
+        description="Conheça a origem baiana, os valores e o olhar de curadoria da Palm CO. para uma moda mais consciente e duradoura."
+        path="/sobre"
+      />
       <div className="max-w-5xl mx-auto space-y-20">
 
         {/* Editorial Header */}

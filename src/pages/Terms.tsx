@@ -1,6 +1,9 @@
+import { Seo } from '../components/Seo';
+
 export function Terms() {
   return (
     <div className="min-h-screen bg-[#FDF6F0] pt-32 pb-24 px-6 text-[#1A332B] animate-fade-in-up">
+      <Seo title="Termos de uso" description="Conheça os termos e condições para utilizar e comprar na loja Palm CO." path="/termos" />
       <div className="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded shadow-sm border border-[#C06A35]/20">
         <h1 className="text-4xl font-serif mb-6 text-center">Termos de Uso</h1>
         <p className="text-sm text-gray-500 mb-8 text-center uppercase tracking-widest">Última atualização: Julho de 2026</p>

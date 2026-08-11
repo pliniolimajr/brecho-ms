@@ -1,6 +1,9 @@
+import { Seo } from '../components/Seo';
+
 export function Policies() {
   return (
     <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
+      <Seo title="Políticas da loja" description="Consulte as políticas de compra, envio, troca e devolução da Palm CO." path="/politicas" />
       <div className="max-w-4xl mx-auto space-y-12">
         <div className="text-center space-y-4">
           <span className="text-xs uppercase tracking-widest text-[#C06A35] font-bold">Transparência</span>

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /minha-conta
+Disallow: /login
+Disallow: /newsletter/descadastro
+
+Sitemap: https://palm-co.vercel.app/sitemap.xml

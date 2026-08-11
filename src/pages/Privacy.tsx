@@ -1,6 +1,9 @@
+import { Seo } from '../components/Seo';
+
 export function Privacy() {
   return (
     <div className="min-h-screen bg-[#FDF6F0] pt-32 pb-24 px-6 text-[#1A332B] animate-fade-in-up">
+      <Seo title="Política de privacidade" description="Saiba como a Palm CO. coleta, utiliza e protege seus dados pessoais." path="/privacidade" />
       <div className="max-w-3xl mx-auto bg-white p-8 md:p-12 rounded shadow-sm border border-[#C06A35]/20">
         <h1 className="text-4xl font-serif mb-6 text-center">Política de Privacidade</h1>
         <p className="text-sm text-gray-500 mb-8 text-center uppercase tracking-widest">Última atualização: Julho de 2026</p>
