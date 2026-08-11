@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { operationalLogger } from '../_shared/logger.ts'
+
+const logger = operationalLogger('create-shipping-label')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -278,7 +281,7 @@ serve(async req => {
     const httpError = error instanceof HttpError
       ? error
       : new HttpError('Erro interno ao emitir etiqueta.', 500, 'INTERNAL_ERROR')
-    if (!(error instanceof HttpError)) console.error('Erro inesperado na etiqueta:', error)
+    if (!(error instanceof HttpError)) logger.error('unhandled_exception', { error })
     return jsonResponse({ error: { code: httpError.code, message: httpError.message } }, httpError.status)
   }
 })

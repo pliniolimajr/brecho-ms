@@ -3,11 +3,19 @@ import { useStore } from '../store/useStore';
 import Checkout from '../components/Checkout';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useEffect } from 'react';
+import { trackEvent } from '../services/analytics';
 
 export function CheckoutPage() {
   const { cart } = useStore();
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (session && cart.length > 0) {
+      trackEvent('checkout_started', { items_count: cart.length, value: cart.reduce((sum, item) => sum + item.price, 0) });
+    }
+  }, [cart, session]);
 
   if (loading) {
     return (

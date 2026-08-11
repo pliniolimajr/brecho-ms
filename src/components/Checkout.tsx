@@ -6,6 +6,8 @@ import { useStore } from '../store/useStore';
 import { useToast } from './Toast';
 import { addressSchema, checkoutIdentitySchema, firstValidationMessage } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiErrors';
+import { trackEvent } from '../services/analytics';
+import { captureOperationalError } from '../services/monitoring';
 
 interface CheckoutProps {
   items: Product[];
@@ -79,6 +81,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
         setShippingRates([]);
       } else {
         setShippingRates(data);
+        trackEvent('shipping_calculated', { options_count: data.length, items_count: items.length });
         if (data.length > 0) {
           // Escolhe automaticamente a opção mais barata
           const sorted = [...data].sort((a, b) => a.price - b.price);
@@ -355,6 +358,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     }
 
     setAppliedCoupon(data);
+    trackEvent('coupon_applied', { coupon_code: data.code, discount_type: data.discount_type });
   };
 
   const handleRemoveCoupon = () => {
@@ -592,6 +596,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
          }
 
          clearCart();
+         trackEvent('payment_redirected', { order_id: orderData.id, value: total, items_count: items.length });
          
          // Redirecionar para o Checkout do Mercado Pago
          window.location.href = redirectUrl;
@@ -602,6 +607,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       }
     } catch (err: any) {
       console.error("Erro completo no checkout:", err);
+      void captureOperationalError(err, { stage: 'checkout', order_id: orderData?.id || null });
       let rollbackMessage = "";
       if (orderData?.id) {
          const { data: released, error: releaseError } = await supabase.rpc(

@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ApiError, corsHeaders, enforceRateLimit, errorResponse, jsonResponse, parseJsonBody } from '../_shared/http.ts'
+import { operationalLogger } from '../_shared/logger.ts'
+
+const logger = operationalLogger('create-preference')
 
 const MERCADO_PAGO_TIMEOUT_MS = 10_000
 const PAYMENT_EXPIRATION_MINUTES = 30
@@ -179,7 +182,7 @@ serve(async (req) => {
     const data = await response.json()
     
     if (!response.ok) {
-      console.error('Mercado Pago recusou a criação da preferência', {
+      logger.error('provider_request_failed', {
         orderId,
         status: response.status,
         cause: data?.message || data?.error || 'unknown',
@@ -194,7 +197,7 @@ serve(async (req) => {
     return jsonResponse(data, 200, requestId)
   } catch (error) {
     if (!(error instanceof ApiError)) {
-      console.error('Erro inesperado ao criar preferência:', { requestId, error })
+      logger.error('unhandled_exception', { requestId, error })
     }
     return errorResponse(error, requestId)
   }

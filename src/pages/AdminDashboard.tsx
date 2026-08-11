@@ -9,10 +9,11 @@ import { AdminOrders, type AdminOrderQuery } from '../features/admin/AdminOrders
 import { AdminCustomers } from '../features/admin/AdminCustomers';
 import { AdminAbandonedCarts } from '../features/admin/AdminAbandonedCarts';
 import { AdminMetrics } from '../features/admin/AdminMetrics';
+import { AdminOperationalHealth } from '../features/admin/AdminOperationalHealth';
 
 export function AdminDashboard() {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health'>('inventory');
 
   const adminTabs = [
     { id: 'inventory', label: 'Estoque' },
@@ -20,6 +21,7 @@ export function AdminDashboard() {
     { id: 'customers', label: 'Clientes' },
     { id: 'abandoned', label: 'Carrinhos' },
     { id: 'metrics', label: 'Métricas' },
+    { id: 'health', label: 'Saúde' },
   ];
 
   // Store Info & Shared Data
@@ -553,6 +555,8 @@ export function AdminDashboard() {
                 setShowNewCouponForm={setShowNewCouponForm}
               />
             )}
+
+            {activeTab === 'health' && <AdminOperationalHealth />}
           </main>
         </div>
       </div>

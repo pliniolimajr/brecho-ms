@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { operationalLogger } from '../_shared/logger.ts'
+
+const logger = operationalLogger('payment-webhook')
 
 const MP_TIMEOUT_MS = 10_000
 const SIGNATURE_TOLERANCE_SECONDS = 10 * 60
@@ -128,7 +131,7 @@ serve(async req => {
 
     const webhookSecret = Deno.env.get('MP_WEBHOOK_SECRET')
     if (!webhookSecret) {
-      console.error('MP_WEBHOOK_SECRET não configurado.')
+      logger.error('configuration_missing', { setting: 'MP_WEBHOOK_SECRET' })
       return jsonResponse({ error: 'Webhook não configurado.' }, 500)
     }
 
@@ -138,7 +141,7 @@ serve(async req => {
       webhookSecret,
     )
     if (!validSignature) {
-      console.warn('Assinatura inválida recebida no webhook.', { paymentId })
+      logger.warn('invalid_signature', { paymentId })
       return jsonResponse({ error: 'Assinatura inválida.' }, 401)
     }
 
@@ -146,7 +149,7 @@ serve(async req => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!accessToken || !supabaseUrl || !serviceRoleKey) {
-      console.error('Credenciais obrigatórias ausentes no webhook.')
+      logger.error('configuration_incomplete')
       return jsonResponse({ error: 'Configuração incompleta.' }, 500)
     }
 
@@ -171,7 +174,7 @@ serve(async req => {
     }
 
     if (!paymentResponse.ok) {
-      console.error('Falha ao consultar pagamento no Mercado Pago.', {
+      logger.error('provider_request_failed', {
         paymentId,
         status: paymentResponse.status,
       })
@@ -197,7 +200,7 @@ serve(async req => {
     )
 
     if (processError) {
-      console.error('Falha transacional ao processar pagamento.', {
+      logger.error('payment_processing_failed', {
         paymentId,
         orderId,
         error: processError.message,
@@ -215,7 +218,7 @@ serve(async req => {
         .single()
 
       if (orderError) {
-        console.error('Pagamento salvo, mas pedido não pôde ser carregado para e-mail.', {
+        logger.error('paid_order_load_failed', {
           orderId,
           error: orderError.message,
         })
@@ -248,7 +251,7 @@ serve(async req => {
           )
 
           if (notificationError) {
-            console.error('Pagamento salvo, mas o e-mail de confirmação falhou.', {
+            logger.error('confirmation_enqueue_failed', {
               orderId,
               error: notificationError.message,
             })
@@ -257,12 +260,13 @@ serve(async req => {
       }
     }
 
+    logger.info('payment_processed', { paymentId, orderId, resultingStatus: result?.resulting_status })
     return jsonResponse({
       received: true,
       processed: result?.processed === true,
     }, 200)
   } catch (error) {
-    console.error('Exceção não tratada no webhook:', errorMessage(error))
+    logger.error('unhandled_exception', { error: errorMessage(error) })
     return jsonResponse({ error: 'Erro interno no webhook.' }, 500)
   }
 })

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../services/supabaseClient';
 import type { Product } from '../types';
+import { trackEvent } from '../services/analytics';
 
 interface StoreState {
   // Cart State
@@ -28,6 +29,7 @@ export const useStore = create<StoreState>()(
   addToCart: (product) => {
     const { cart } = get();
     set({ cart: [...cart, product], isCartOpen: true });
+    trackEvent('product_added_to_cart', { product_id: product.id, price: product.price, category: product.category });
   },
   
   removeFromCart: (productId) => {

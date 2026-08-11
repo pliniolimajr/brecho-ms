@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ProductDetail from '../components/ProductDetail';
 import { useStore } from '../store/useStore';
 import { ProductPageSkeleton } from '../components/LoadingStates';
 import { Seo } from '../components/Seo';
+import { trackEvent } from '../services/analytics';
 
 export function ProductPage() {
   const { id } = useParams();
@@ -10,6 +12,10 @@ export function ProductPage() {
   const { products, addToCart, isLoadingProducts } = useStore();
 
   const product = products.find((p) => p.id === id);
+
+  useEffect(() => {
+    if (product) trackEvent('product_viewed', { product_id: product.id, price: product.price, category: product.category });
+  }, [product]);
 
   if (isLoadingProducts) {
     return <ProductPageSkeleton />;

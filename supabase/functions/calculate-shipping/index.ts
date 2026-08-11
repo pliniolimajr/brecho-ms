@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { ApiError, corsHeaders, enforceRateLimit, errorResponse, jsonResponse, parseJsonBody } from '../_shared/http.ts'
+import { operationalLogger } from '../_shared/logger.ts'
+const logger = operationalLogger('calculate-shipping')
 const API_TIMEOUT_MS = 10_000
 
 function cleanZip(value: unknown) {
@@ -27,7 +29,7 @@ serve(async req => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!token || !supabaseUrl || !serviceRoleKey) {
-      console.error('SUPERFRETE_SANDBOX_TOKEN não configurado.')
+      logger.error('configuration_incomplete')
       throw new ApiError('Cálculo de frete temporariamente indisponível.', 503, 'SHIPPING_NOT_CONFIGURED')
     }
     const supabase = createClient(supabaseUrl, serviceRoleKey)
@@ -75,7 +77,7 @@ serve(async req => {
     }
 
     if (!response.ok || !Array.isArray(data)) {
-      console.error('SuperFrete recusou o cálculo.', {
+      logger.error('provider_request_failed', {
         status: response.status,
         message: String(data?.message || data?.error || raw).slice(0, 300),
       })
@@ -101,7 +103,7 @@ serve(async req => {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return errorResponse(new ApiError('A SuperFrete demorou para responder. Tente novamente.', 504, 'SHIPPING_TIMEOUT'), requestId)
     }
-    if (!(error instanceof ApiError)) console.error('Erro inesperado no cálculo de frete:', { requestId, error })
+    if (!(error instanceof ApiError)) logger.error('unhandled_exception', { requestId, error })
     return errorResponse(error, requestId)
   }
 })

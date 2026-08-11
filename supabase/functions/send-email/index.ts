@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { operationalLogger } from '../_shared/logger.ts'
+
+const logger = operationalLogger('send-email')
 
 const RESEND_TIMEOUT_MS = 10_000
 const MAX_JOBS_PER_RUN = 10
@@ -224,7 +227,7 @@ serve(async req => {
   }
 
   if (!supabaseUrl || !resendApiKey || !fromEmail) {
-    console.error('Configuracao de notificacoes incompleta.')
+    logger.error('configuration_incomplete')
     return jsonResponse({ error: 'Servico de notificacoes nao configurado.' }, 503)
   }
 
@@ -234,7 +237,7 @@ serve(async req => {
   })
 
   if (error) {
-    console.error('Falha ao reivindicar notificacoes.', { error: error.message })
+    logger.error('notification_claim_failed', { error: error.message })
     return jsonResponse({ error: 'Nao foi possivel acessar a fila.' }, 500)
   }
 
@@ -292,7 +295,7 @@ serve(async req => {
     } catch (error) {
       failed++
       const message = errorMessage(error)
-      console.error('Falha ao processar notificacao.', { jobId: job.id, error: message })
+      logger.error('notification_processing_failed', { jobId: job.id, error: message })
       await supabase.rpc('finish_notification_job', {
         p_job_id: job.id,
         p_success: false,
@@ -302,5 +305,6 @@ serve(async req => {
     }
   }
 
+  logger.info('notification_batch_completed', { processed: jobs.length, sent, failed })
   return jsonResponse({ processed: jobs.length, sent, failed }, 200)
 })

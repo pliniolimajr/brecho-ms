@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
+import { trackEvent } from '../services/analytics';
+import { captureOperationalError } from '../services/monitoring';
 
 export function CheckoutSuccess() {
   const [searchParams] = useSearchParams();
@@ -23,6 +25,13 @@ export function CheckoutSuccess() {
 
         if (!error && data) {
           setOrderTotal(data.total_amount);
+          const eventKey = `palmco_purchase_tracked_${orderId}`;
+          if (!sessionStorage.getItem(eventKey)) {
+            trackEvent('purchase_confirmed', { order_id: orderId, value: Number(data.total_amount) });
+            sessionStorage.setItem(eventKey, 'true');
+          }
+        } else if (error) {
+          void captureOperationalError(error, { stage: 'checkout_success', order_id: orderId });
         }
       }
       setLoading(false);
