@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { isValidCPF } from '../../utils/validators';
+import { checkoutIdentitySchema, firstValidationMessage } from '../../utils/schemas';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -97,9 +98,9 @@ export function Login() {
     setSuccessMsg(null);
 
     if (isSignUp) {
-      if (!isValidCPF(cpf)) {
-        setError('O CPF informado é inválido.');
-        setCpfError('CPF inválido. Verifique os dígitos digitados.');
+      const identity = checkoutIdentitySchema.safeParse({ firstName, lastName, email, phone, cpf });
+      if (!identity.success) {
+        setError(firstValidationMessage(identity.error));
         setLoading(false);
         return;
       }
@@ -125,14 +126,14 @@ export function Login() {
       }
 
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: identity.data.email,
         password,
         options: {
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            cpf,
-            phone,
+            first_name: identity.data.firstName,
+            last_name: identity.data.lastName,
+            cpf: identity.data.cpf,
+            phone: identity.data.phone,
             birth_date: birthDate,
           }
         }

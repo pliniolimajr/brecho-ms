@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { BRAND_NAME } from '../constants';
 import { useAuth } from '../hooks/useAuth';
+import { firstValidationMessage, newsletterSchema } from '../utils/schemas';
 
 interface FooterProps {
   onLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => void;
@@ -40,9 +41,15 @@ const Footer: React.FC<FooterProps> = ({ onLinkClick }) => {
     setStatus('loading');
     
     try {
+      const validated = newsletterSchema.safeParse({ name, email });
+      if (!validated.success) {
+        setStatus('error');
+        setMessage(firstValidationMessage(validated.error));
+        return;
+      }
       const { error } = await supabase
         .from('newsletter_subscribers')
-        .insert([{ name, email }]);
+        .insert([validated.data]);
       
       if (error) {
         if (error.code === '23505') { // Unique violation

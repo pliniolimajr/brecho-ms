@@ -4,7 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../store/useStore';
 import { useToast } from './Toast';
-import { isValidCPF } from '../utils/validators';
+import { addressSchema, checkoutIdentitySchema, firstValidationMessage } from '../utils/schemas';
 
 interface CheckoutProps {
   items: Product[];
@@ -219,31 +219,24 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
   const handleNextStep = () => {
     if (currentStep === 1) {
-      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.cpf) {
-        showToast('Por favor, preencha todos os campos de identificação.', 'warning');
+      const identity = checkoutIdentitySchema.safeParse(formData);
+      if (!identity.success) {
+        showToast(firstValidationMessage(identity.error), 'warning');
         return;
       }
-      if (!isValidCPF(formData.cpf)) {
-        showToast('CPF inválido. Verifique os dígitos digitados.', 'error');
-        return;
-      }
+      setFormData((previous) => ({ ...previous, ...identity.data }));
       setCurrentStep(2);
     } else if (currentStep === 2) {
-      if (
-        !shippingAddress.zipCode ||
-        !shippingAddress.street ||
-        !shippingAddress.number ||
-        !shippingAddress.neighborhood ||
-        !shippingAddress.city ||
-        !shippingAddress.state
-      ) {
-        showToast('Por favor, preencha todos os campos do endereço de entrega.', 'warning');
+      const address = addressSchema.safeParse(shippingAddress);
+      if (!address.success) {
+        showToast(firstValidationMessage(address.error), 'warning');
         return;
       }
       if (!selectedRate) {
         showToast('Por favor, selecione uma opção de envio.', 'warning');
         return;
       }
+      setShippingAddress(address.data);
       setCurrentStep(3);
     }
   };

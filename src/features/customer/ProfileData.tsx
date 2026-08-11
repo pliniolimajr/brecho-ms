@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { User } from '@supabase/supabase-js';
-import { isValidCPF } from '../../utils/validators';
+import { firstValidationMessage, profileSchema } from '../../utils/schemas';
 import { useToast } from '../../components/Toast';
 
 interface ProfileDataProps {
@@ -29,8 +29,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
     e.preventDefault();
     if (!user) return;
 
-    if (formData.cpf && !isValidCPF(formData.cpf)) {
-      showToast('CPF inválido. Por favor, verifique os dígitos informados.', 'warning');
+    const validated = profileSchema.safeParse(formData);
+    if (!validated.success) {
+      showToast(firstValidationMessage(validated.error), 'warning');
       return;
     }
     
@@ -39,11 +40,7 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
       const { error } = await supabase
         .from('customers')
         .update({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          cpf: formData.cpf,
-          birth_date: formData.birth_date,
-          phone: formData.phone,
+          ...validated.data,
         })
         .eq('user_id', user.id);
         
