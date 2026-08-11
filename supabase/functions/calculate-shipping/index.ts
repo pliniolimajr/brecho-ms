@@ -27,6 +27,9 @@ serve(async req => {
     if (!/^\d{8}$/.test(destinationZip)) {
       return jsonResponse({ error: 'CEP de destino inválido.' }, 400)
     }
+    if (!Array.isArray(items) || items.length === 0 || items.length > 100) {
+      return jsonResponse({ error: 'A lista de produtos é inválida.' }, 400)
+    }
 
     const token = Deno.env.get('SUPERFRETE_SANDBOX_TOKEN')
     const userAgent = Deno.env.get('SUPERFRETE_USER_AGENT') || 'Palm CO. v1 (plinio.codeba@gmail.com)'
@@ -35,7 +38,7 @@ serve(async req => {
       return jsonResponse({ error: 'Cálculo de frete temporariamente indisponível.' }, 503)
     }
 
-    const itemCount = Math.max(Array.isArray(items) ? items.length : 1, 1)
+    const itemCount = items.length
     const packageData = {
       width: 18,
       height: 9 + (itemCount - 1) * 3,

@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,15 +10,7 @@ const MERCADO_PAGO_TIMEOUT_MS = 10_000
 const PAYMENT_EXPIRATION_MINUTES = 30
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-interface PreferenceItem {
-  id: string
-  name: string
-  quantity?: number
-  price: number
-}
-
 interface PreferenceRequest {
-  items: PreferenceItem[]
   payer: {
     email: string
     firstName?: string
@@ -25,6 +18,7 @@ interface PreferenceRequest {
   }
   origin?: string
   orderId: string
+  checkoutToken: string
 }
 
 class HttpError extends Error {
@@ -45,29 +39,8 @@ function jsonResponse(body: unknown, status: number) {
 }
 
 function validatePayload(payload: PreferenceRequest) {
-  if (!UUID_PATTERN.test(payload.orderId || '')) {
+  if (!payload || !UUID_PATTERN.test(payload.orderId || '') || !UUID_PATTERN.test(payload.checkoutToken || '')) {
     throw new HttpError('Pedido inválido.', 400, 'INVALID_ORDER')
-  }
-
-  if (!Array.isArray(payload.items) || payload.items.length === 0) {
-    throw new HttpError('O pedido não possui itens.', 400, 'INVALID_ITEMS')
-  }
-
-  if (payload.items.length > 100) {
-    throw new HttpError('O pedido excede o limite de itens.', 400, 'TOO_MANY_ITEMS')
-  }
-
-  for (const item of payload.items) {
-    if (
-      !item ||
-      typeof item.id !== 'string' ||
-      typeof item.name !== 'string' ||
-      !Number.isFinite(item.price) ||
-      item.price <= 0 ||
-      item.price > 1_000_000
-    ) {
-      throw new HttpError('Um dos itens do pedido é inválido.', 400, 'INVALID_ITEM')
-    }
   }
 
   if (
@@ -95,10 +68,12 @@ serve(async (req) => {
     const payload = await req.json() as PreferenceRequest
     validatePayload(payload)
 
-    const { items, payer, origin, orderId } = payload
+    const { payer, origin, orderId, checkoutToken } = payload
     const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    if (!MP_ACCESS_TOKEN) {
+    if (!MP_ACCESS_TOKEN || !supabaseUrl || !serviceRoleKey) {
       throw new HttpError(
         'Serviço de pagamento indisponível.',
         500,
@@ -106,24 +81,63 @@ serve(async (req) => {
       )
     }
 
-    let backUrlBase = origin || req.headers.get('origin') || req.headers.get('Origin') || 'http://localhost:5173'
-    if (typeof backUrlBase !== 'string' || (!backUrlBase.startsWith('http://') && !backUrlBase.startsWith('https://'))) {
-      backUrlBase = 'http://localhost:5173'
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id,total_amount,status,reservation_expires_at,shipping_address')
+      .eq('id', orderId)
+      .eq('checkout_token', checkoutToken)
+      .maybeSingle()
+
+    if (orderError) {
+      throw new HttpError('Não foi possível validar o pedido.', 500, 'ORDER_LOOKUP_FAILED')
+    }
+    if (!order || order.status !== 'pending') {
+      throw new HttpError('Pedido não encontrado ou indisponível para pagamento.', 404, 'ORDER_NOT_AVAILABLE')
+    }
+    if (order.reservation_expires_at && new Date(order.reservation_expires_at).getTime() <= Date.now()) {
+      throw new HttpError('A reserva deste pedido expirou.', 409, 'ORDER_EXPIRED')
+    }
+
+    const totalAmount = Number(order.total_amount)
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0 || totalAmount > 1_000_000) {
+      throw new HttpError('Valor do pedido inválido.', 400, 'INVALID_ORDER_TOTAL')
+    }
+
+    const savedAddress = order.shipping_address && typeof order.shipping_address === 'object'
+      ? order.shipping_address as Record<string, unknown>
+      : {}
+    const savedEmail = String(savedAddress.email || '').trim().toLowerCase()
+    if (savedEmail !== payer.email.trim().toLowerCase()) {
+      throw new HttpError('Os dados do comprador não correspondem ao pedido.', 403, 'PAYER_MISMATCH')
+    }
+
+    const publicSiteUrl = (Deno.env.get('PUBLIC_SITE_URL') || 'https://palm-co.vercel.app').replace(/\/$/, '')
+    const requestedOrigin = origin || req.headers.get('origin') || req.headers.get('Origin') || ''
+    let backUrlBase = publicSiteUrl
+    try {
+      const requestedUrl = new URL(requestedOrigin)
+      const isLocalDevelopment = requestedUrl.hostname === 'localhost' || requestedUrl.hostname === '127.0.0.1'
+      if (isLocalDevelopment || requestedUrl.origin === new URL(publicSiteUrl).origin) {
+        backUrlBase = requestedUrl.origin
+      }
+    } catch {
+      backUrlBase = publicSiteUrl
     }
     backUrlBase = backUrlBase.replace(/\/$/, '') // Remove trailing slash if present
 
     const preferenceData: any = {
-      items: items.map((item: any) => ({
-        id: item.id,
-        title: item.name,
-        quantity: item.quantity || 1,
-        unit_price: item.price,
+      items: [{
+        id: orderId,
+        title: `Pedido ${orderId.slice(0, 8).toUpperCase()}`,
+        quantity: 1,
+        unit_price: totalAmount,
         currency_id: 'BRL',
-      })),
+      }],
       payer: {
-        email: payer.email,
-        name: payer.firstName,
-        surname: payer.lastName,
+        email: savedEmail,
+        name: String(savedAddress.firstName || '').slice(0, 80),
+        surname: String(savedAddress.lastName || '').slice(0, 80),
       },
       back_urls: {
         success: `${backUrlBase}/checkout-success`,
@@ -141,7 +155,6 @@ serve(async (req) => {
     preferenceData.expiration_date_from = expirationStart.toISOString()
     preferenceData.expiration_date_to = expirationEnd.toISOString()
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')?.replace(/\/$/, '')
     if (supabaseUrl) {
       preferenceData.notification_url = `${supabaseUrl}/functions/v1/payment-webhook`
     }

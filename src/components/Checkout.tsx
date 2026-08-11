@@ -545,6 +545,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
               lastName: formData.lastName
             },
             orderId: orderData.id,
+            checkoutToken: orderData.checkoutToken,
             origin: window.location.origin
           }),
           signal: controller.signal
