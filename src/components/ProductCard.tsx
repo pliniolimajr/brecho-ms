@@ -12,10 +12,9 @@ import { useToast } from './Toast';
 interface ProductCardProps {
   product: Product;
   onClick: (product: Product) => void;
-  onQuickView?: (product: Product) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
   const hasSecondaryImage = product.gallery && product.gallery.length > 0 && product.gallery[0];
   const { comparison, toggleComparison } = useStore();
   const { showToast } = useToast();
@@ -64,22 +63,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView
         {product.isSold && (
           <div className="absolute top-3 left-3 bg-[#1A332B]/90 text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
             Esgotado
-          </div>
-        )}
-
-        {/* Quick View Button on Hover — desktop only */}
-        {!product.isSold && onQuickView && (
-          <div className="hidden md:block absolute inset-x-0 bottom-0 bg-[#1A332B]/85 py-3 text-center translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-10">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onQuickView(product);
-              }}
-              className="text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest hover:text-[#C06A35] transition-colors w-full h-full block font-sans"
-            >
-              Visualização Rápida
-            </button>
           </div>
         )}
 

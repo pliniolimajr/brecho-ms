@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 
 function valueOrDash(value: unknown) {
@@ -11,7 +11,6 @@ export function ProductComparison() {
   const { comparison, toggleComparison, clearComparison } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,9 +51,16 @@ export function ProductComparison() {
                     <th className="w-32 border-b border-[#C06A35]/30 p-3">Característica</th>
                     {comparison.map(product => (
                       <th key={product.id} className="border-b border-[#C06A35]/30 p-3 align-top">
-                        <img src={product.imageUrl} alt="" className="mb-3 aspect-[5/7] w-24 rounded object-cover" />
-                        <span className="block text-[#1A332B]">{product.name}</span>
-                        <button type="button" onClick={() => toggleComparison(product)} className="mt-2 text-xs text-[#C06A35] underline">Remover</button>
+                        <Link to={`/produto/${product.id}`} onClick={() => setIsOpen(false)} className="group block w-fit">
+                          <img src={product.imageUrl} alt={product.name} className="mb-3 aspect-[5/7] w-24 rounded object-cover" />
+                          <span className="block text-[#1A332B] underline-offset-4 group-hover:underline">{product.name}</span>
+                        </Link>
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          <Link to={`/produto/${product.id}`} onClick={() => setIsOpen(false)} className="inline-flex min-h-10 items-center rounded bg-[#1A332B] px-3 text-[10px] font-bold uppercase tracking-wider text-white">
+                            Ver produto
+                          </Link>
+                          <button type="button" onClick={() => toggleComparison(product)} className="min-h-10 text-xs text-[#8A4825] underline">Remover</button>
+                        </div>
                       </th>
                     ))}
                   </tr>
@@ -62,6 +68,7 @@ export function ProductComparison() {
                 <tbody>
                   {[
                     ['Preço', (product: typeof comparison[number]) => `R$ ${product.price.toFixed(2).replace('.', ',')}`],
+                    ['Marca', (product: typeof comparison[number]) => valueOrDash(product.brand)],
                     ['Tamanho', (product: typeof comparison[number]) => valueOrDash(product.size)],
                     ['Material', (product: typeof comparison[number]) => valueOrDash(product.material)],
                     ['Cor', (product: typeof comparison[number]) => valueOrDash(product.color)],
@@ -76,9 +83,6 @@ export function ProductComparison() {
               </table>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button type="button" onClick={() => { setIsOpen(false); navigate(`/produto/${comparison[0].id}`); }} className="min-h-11 bg-[#1A332B] px-5 text-xs font-bold uppercase tracking-wider text-white">Ver primeiro produto</button>
-            </div>
           </section>
         </div>
       )}

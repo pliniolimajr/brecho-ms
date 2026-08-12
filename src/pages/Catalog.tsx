@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { QuickViewModal } from '../components/QuickViewModal';
 import type { Product } from '../types';
 import { ProductCardSkeleton } from '../components/LoadingStates';
 import { supabase } from '../services/supabaseClient';
@@ -35,20 +34,6 @@ export function Catalog() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [filterOptions, setFilterOptions] = useState({ brands: [] as string[], colors: [] as string[], materials: [] as string[] });
-
-  // Quick View States
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-
-  const handleOpenQuickView = (product: Product) => {
-    setQuickViewProduct(product);
-    setIsQuickViewOpen(true);
-  };
-
-  const handleCloseQuickView = () => {
-    setIsQuickViewOpen(false);
-    setQuickViewProduct(null);
-  };
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 350);
@@ -497,7 +482,6 @@ export function Catalog() {
                     key={product.id}
                     product={product}
                     onClick={(p) => navigate(`/produto/${p.id}`)}
-                    onQuickView={handleOpenQuickView}
                   />
                 ))
               )}
@@ -551,11 +535,6 @@ export function Catalog() {
 
       </div>
 
-      <QuickViewModal 
-        product={quickViewProduct} 
-        isOpen={isQuickViewOpen} 
-        onClose={handleCloseQuickView} 
-      />
     </div>
   );
 }
