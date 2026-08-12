@@ -232,3 +232,25 @@ test('painel administrativo sem violacoes graves de acessibilidade', async ({ pa
   await expect(page.getByRole('heading', { name: 'Painel de Controle' })).toBeVisible();
   expect(await auditPage(page)).toEqual([]);
 });
+
+for (const viewport of [
+  { name: 'mobile-320', width: 320, height: 800 },
+  { name: 'mobile-375', width: 375, height: 812 },
+  { name: 'tablet', width: 768, height: 1024 },
+  { name: 'desktop', width: 1440, height: 900 },
+]) {
+  test(`fluxo principal sem rolagem horizontal em ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await addAuthenticatedCheckoutState(page);
+    await page.route('https://test.supabase.co/rest/v1/admin_users**', route => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'admin-1' }),
+    }));
+
+    for (const path of ['/', '/catalogo', `/produto/${product.id}`, '/checkout', '/minha-conta', '/admin']) {
+      await page.goto(path);
+      await expect(page.locator('body')).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, `${path} ultrapassou a largura da tela`).toBeLessThanOrEqual(1);
+    }
+  });
+}

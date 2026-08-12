@@ -180,9 +180,13 @@ const Hero: React.FC = () => {
             key={index}
             onClick={() => setCurrentSlideIndex(index)}
             aria-label={`Slide ${index + 1}`}
-            className={`h-1 transition-all duration-500 rounded-full ${index === currentSlideIndex ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
-              }`}
-          />
+            className="group flex h-6 min-w-6 items-center justify-center rounded-full"
+          >
+            <span
+              aria-hidden="true"
+              className={`block h-1 rounded-full transition-all duration-500 ${index === currentSlideIndex ? 'w-6 bg-white' : 'w-2 bg-white/40 group-hover:bg-white/70'}`}
+            />
+          </button>
         ))}
       </div>
 
