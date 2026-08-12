@@ -20,42 +20,33 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
   const total = items.reduce((sum, item) => sum + item.price, 0);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const focusBoundary = (edge: 'first' | 'last') => {
+    const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([data-focus-guard])',
+    ) ?? []);
+    focusable[edge === 'first' ? 0 : focusable.length - 1]?.focus();
+  };
 
   useEffect(() => {
     if (!isOpen) return;
 
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeButtonRef.current?.focus();
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-
-      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ) ?? []);
-      if (!focusable.length) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current();
     };
-
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleEscape);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleEscape);
       opener?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return (
     <>
@@ -80,6 +71,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
+        <span data-focus-guard tabIndex={0} onFocus={() => focusBoundary('last')} />
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#C06A35]/30">
           <h2 id="cart-drawer-title" className="text-xl font-serif text-[#1A332B]">Seu Carrinho ({items.length})</h2>
@@ -148,6 +140,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
             Finalizar Compra
           </button>
         </div>
+        <span data-focus-guard tabIndex={0} onFocus={() => focusBoundary('first')} />
       </div>
     </>
   );

@@ -28,40 +28,44 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
 
   return (
     <div 
-      className="group flex flex-col gap-3 cursor-pointer select-none" 
-      onClick={() => onClick(product)}
+      className="group flex flex-col gap-3 select-none"
       id={`product-card-${product.id}`}
     >
       <div className="relative w-full aspect-[5/7] overflow-hidden bg-[#F4E4D4] rounded-sm">
-        {/* Main Product Image */}
-        <img 
-          src={product.imageUrl} 
-          alt={product.name} 
-          width="500"
-          height="700"
-          loading="lazy"
-          decoding="async"
-          className={`w-full h-full object-cover transition-all duration-700 ease-in-out group-hover:scale-105 ${
-            hasSecondaryImage ? 'group-hover:opacity-0' : ''
-          }`}
-        />
-        
-        {/* Secondary Gallery Image (Hover effect) */}
-        {hasSecondaryImage && (
-          <img 
-            src={product.gallery![0]} 
-            alt={`${product.name} - Vista alternativa`} 
+        <button
+          type="button"
+          onClick={() => onClick(product)}
+          aria-label={`Ver detalhes de ${product.name}`}
+          className="absolute inset-0 z-[1] h-full w-full cursor-pointer text-left"
+        >
+          {/* Main Product Image */}
+          <img
+            src={product.imageUrl}
+            alt=""
             width="500"
             height="700"
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-all duration-700 ease-in-out group-hover:scale-105"
+            className={`h-full w-full object-cover transition-all duration-700 ease-in-out group-hover:scale-105 ${hasSecondaryImage ? 'group-hover:opacity-0' : ''}`}
           />
-        )}
+
+          {/* Secondary Gallery Image (Hover effect) */}
+          {hasSecondaryImage && (
+            <img
+              src={product.gallery![0]}
+              alt=""
+              width="500"
+              height="700"
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full object-cover opacity-0 transition-all duration-700 ease-in-out group-hover:scale-105 group-hover:opacity-100"
+            />
+          )}
+        </button>
         
         {/* Sold Badge */}
         {product.isSold && (
-          <div className="absolute top-3 left-3 bg-[#1A332B]/90 text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
+          <div className="pointer-events-none absolute top-3 left-3 z-10 bg-[#1A332B]/90 text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
             Esgotado
           </div>
         )}
@@ -92,7 +96,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         </div>
 
         <h3 className="text-xs uppercase tracking-widest text-[#1A332B] font-semibold line-clamp-1 group-hover:text-[#C06A35] transition-colors">
-          {product.name}
+          <button type="button" onClick={() => onClick(product)} className="text-left hover:underline underline-offset-4">
+            {product.name}
+          </button>
         </h3>
 
         <div className="flex justify-between items-center mt-1">

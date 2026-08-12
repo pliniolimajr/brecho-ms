@@ -696,8 +696,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                     <h2 className="text-xl font-serif text-[#1A332B] mb-6">Informações de Contato & Identificação</h2>
                     <div className="space-y-6">
                       <div>
-                        <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">E-mail</label>
+                        <label htmlFor="checkout-email" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">E-mail</label>
                         <input 
+                          id="checkout-email"
                           required 
                           type="email" 
                           placeholder="Seu e-mail" 
@@ -709,8 +710,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                       
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Nome</label>
+                          <label htmlFor="checkout-first-name" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Nome</label>
                           <input 
+                            id="checkout-first-name"
                             required 
                             type="text" 
                             placeholder="Nome" 
@@ -720,8 +722,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Sobrenome</label>
+                          <label htmlFor="checkout-last-name" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Sobrenome</label>
                           <input 
+                            id="checkout-last-name"
                             required 
                             type="text" 
                             placeholder="Sobrenome" 
@@ -734,8 +737,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">WhatsApp / Telefone</label>
+                          <label htmlFor="checkout-phone" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">WhatsApp / Telefone</label>
                           <input 
+                            id="checkout-phone"
                             required 
                             type="tel" 
                             placeholder="(00) 00000-0000" 
@@ -745,8 +749,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CPF (Necessário para a entrega)</label>
+                          <label htmlFor="checkout-cpf" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CPF (Necessário para a entrega)</label>
                           <input 
+                            id="checkout-cpf"
                             required 
                             type="text" 
                             placeholder="000.000.000-00" 
@@ -781,8 +786,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                       {/* Endereço Salvo (Seleção Rápida) */}
                       {user && savedAddresses.length > 0 && (
                         <div>
-                          <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Usar Endereço Salvo</label>
+                          <label htmlFor="checkout-saved-address" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Usar Endereço Salvo</label>
                           <select 
+                            id="checkout-saved-address"
                             value={selectedAddressId} 
                             onChange={handleAddressSelect} 
                             className="w-full bg-white border border-[#C06A35]/30 rounded p-3 text-[#1A332B] text-sm focus:border-[#1A332B] outline-none"
@@ -801,8 +807,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CEP</label>
+                            <label htmlFor="checkout-zip-code" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">CEP</label>
                             <input 
+                              id="checkout-zip-code"
                               required 
                               type="text" 
                               placeholder="00000-000" 
@@ -813,8 +820,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Número</label>
+                            <label htmlFor="checkout-number" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Número</label>
                             <input 
+                              id="checkout-number"
                               required 
                               type="text" 
                               placeholder="Ex: 123" 
@@ -828,8 +836,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="col-span-2">
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Rua / Logradouro</label>
+                            <label htmlFor="checkout-street" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Rua / Logradouro</label>
                             <input 
+                              id="checkout-street"
                               required 
                               type="text" 
                               placeholder="Rua..." 
@@ -843,8 +852,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Complemento</label>
+                            <label htmlFor="checkout-complement" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Complemento</label>
                             <input 
+                              id="checkout-complement"
                               type="text" 
                               placeholder="Apto, Bloco, etc." 
                               value={shippingAddress.complement} 
@@ -854,8 +864,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Bairro</label>
+                            <label htmlFor="checkout-neighborhood" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Bairro</label>
                             <input 
+                              id="checkout-neighborhood"
                               required 
                               type="text" 
                               placeholder="Bairro..." 
@@ -869,8 +880,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Cidade</label>
+                            <label htmlFor="checkout-city" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Cidade</label>
                             <input 
+                              id="checkout-city"
                               required 
                               type="text" 
                               placeholder="Cidade..." 
@@ -881,8 +893,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Estado</label>
+                            <label htmlFor="checkout-state" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">Estado</label>
                             <input 
+                              id="checkout-state"
                               required 
                               type="text" 
                               placeholder="UF" 

@@ -109,6 +109,24 @@ async function addAuthenticatedCheckoutState(page: Page) {
   });
 }
 
+async function addComparisonState(page: Page) {
+  await page.addInitScript(({ first, second }) => {
+    localStorage.setItem('littlepalm-cart-storage', JSON.stringify({
+      state: { cart: [], comparison: [first, second] },
+      version: 0,
+    }));
+  }, {
+    first: { ...product, imageUrl: product.image_url, stockQuantity: 1 },
+    second: {
+      ...product,
+      id: '10000000-0000-4000-8000-000000000002',
+      name: 'Calça de Linho E2E',
+      imageUrl: product.image_url,
+      stockQuantity: 1,
+    },
+  });
+}
+
 function seriousViolations(results: Awaited<ReturnType<AxeBuilder['analyze']>>) {
   return results.violations.filter(item => item.impact === 'critical' || item.impact === 'serious');
 }
@@ -231,6 +249,62 @@ test('painel administrativo sem violacoes graves de acessibilidade', async ({ pa
   await page.goto('/admin');
   await expect(page.getByRole('heading', { name: 'Painel de Controle' })).toBeVisible();
   expect(await auditPage(page)).toEqual([]);
+});
+
+test('carrinho prende e restaura o foco pelo teclado', async ({ page }) => {
+  await addAuthenticatedCheckoutState(page);
+  await page.goto('/');
+  const opener = page.getByRole('button', { name: /sacola de compras/i });
+  await opener.focus();
+  await opener.press('Enter');
+
+  const dialog = page.getByRole('dialog', { name: /Seu Carrinho/ });
+  const close = dialog.getByRole('button', { name: 'Fechar carrinho' });
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect.poll(() => dialog.evaluate(element => element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('comparador prende e restaura o foco pelo teclado', async ({ page }) => {
+  await addComparisonState(page);
+  await page.goto('/catalogo');
+  const opener = page.getByRole('button', { name: 'Comparar agora' });
+  await opener.focus();
+  await opener.press('Enter');
+
+  const dialog = page.getByRole('dialog', { name: 'Comparar produtos' });
+  await expect(dialog.getByRole('button', { name: 'Fechar comparação' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: 'Remover' }).last()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test('produto e checkout expõem estrutura essencial a leitores de tela', async ({ page }) => {
+  await page.goto(`/produto/${product.id}`);
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await expect(page.getByRole('heading', { level: 1, name: product.name })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Comprar' })).toBeVisible();
+
+  await addAuthenticatedCheckoutState(page);
+  await page.goto('/checkout');
+  await expect(page.getByRole('main')).toHaveCount(1);
+  await expect(page.getByRole('heading', { level: 1, name: 'Finalizar Pedido' })).toBeVisible();
+  await expect(page.getByLabel('E-mail')).toBeVisible();
+  await expect(page.getByLabel('CPF (Necessário para a entrega)')).toBeVisible();
+});
+
+test('card de produto abre os detalhes usando apenas o teclado', async ({ page }) => {
+  await page.goto('/catalogo');
+  const productLink = page.getByRole('button', { name: `Ver detalhes de ${product.name}` });
+  await productLink.focus();
+  await productLink.press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/produto/${product.id}$`));
+  await expect(page.getByRole('heading', { level: 1, name: product.name })).toBeVisible();
 });
 
 for (const viewport of [
