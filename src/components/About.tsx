@@ -29,7 +29,7 @@ const About: React.FC = () => {
             sizes="(min-width: 768px) 60vw, 100vw"
             className="w-full h-[400px] object-cover grayscale contrast-[0.9] brightness-110 mt-12"
           />
-          <p className="text-sm font-medium uppercase tracking-widest text-[#A8A29E] mt-4">
+          <p className="text-sm font-medium uppercase tracking-widest text-[#6B625C] mt-4">
             Curadoria Palm CO.
           </p>
         </div>
@@ -50,11 +50,11 @@ const About: React.FC = () => {
           />
         </div>
         <div className="order-1 lg:order-2 flex flex-col justify-center p-12 lg:p-24 bg-[#C06A35]">
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#423226] mb-6">Confiança</span>
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[#111111] mb-6">Confiança</span>
           <h3 className="text-4xl md:text-5xl font-serif mb-8 text-[#1A332B] leading-tight">
             Curadoria antes<br />de quantidade.
           </h3>
-          <p className="text-lg text-[#423226] font-light leading-relaxed mb-12 max-w-md">
+          <p className="text-lg text-[#111111] font-light leading-relaxed mb-12 max-w-md">
             A Palm CO. não compete por preço, volume ou tendências passageiras. Nós competimos pela confiança no nosso olhar. Acreditamos que vestir-se bem não significa acumular, mas sim escolher peças bonitas, bem construídas e fáceis de incorporar ao seu dia a dia.
           </p>
         </div>

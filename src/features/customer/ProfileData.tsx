@@ -65,8 +65,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-semibold text-[#1A332B]">Nome</label>
+            <label htmlFor="profile-first-name" className="text-sm font-semibold text-[#1A332B]">Nome</label>
             <input 
+              id="profile-first-name"
               type="text" 
               name="first_name"
               value={formData.first_name}
@@ -76,8 +77,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[#1A332B]">Sobrenome</label>
+            <label htmlFor="profile-last-name" className="text-sm font-semibold text-[#1A332B]">Sobrenome</label>
             <input 
+              id="profile-last-name"
               type="text" 
               name="last_name"
               value={formData.last_name}
@@ -87,8 +89,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[#1A332B]">CPF</label>
+            <label htmlFor="profile-cpf" className="text-sm font-semibold text-[#1A332B]">CPF</label>
             <input 
+              id="profile-cpf"
               type="text" 
               name="cpf"
               value={formData.cpf}
@@ -98,8 +101,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[#1A332B]">Data de Nascimento</label>
+            <label htmlFor="profile-birth-date" className="text-sm font-semibold text-[#1A332B]">Data de Nascimento</label>
             <input 
+              id="profile-birth-date"
               type="date" 
               name="birth_date"
               value={formData.birth_date}
@@ -109,8 +113,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[#1A332B]">Celular</label>
+            <label htmlFor="profile-phone" className="text-sm font-semibold text-[#1A332B]">Celular</label>
             <input 
+              id="profile-phone"
               type="tel" 
               name="phone"
               value={formData.phone}
@@ -120,8 +125,9 @@ export function ProfileData({ user, customerData, fetchProfile }: ProfileDataPro
           </div>
           
            <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-semibold text-[#1A332B]">Email</label>
+            <label htmlFor="profile-email" className="text-sm font-semibold text-[#1A332B]">Email</label>
             <input 
+              id="profile-email"
               type="email" 
               value={user?.email || ''}
               disabled

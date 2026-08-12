@@ -650,7 +650,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
       <div className="max-w-6xl mx-auto">
         <button 
           onClick={onBack}
-          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#A8A29E] hover:text-[#1A332B] transition-colors mb-12"
+          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] hover:text-[#1A332B] transition-colors mb-12"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover:-translate-x-1 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -671,14 +671,14 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
               {currentStep > 2 ? '✓' : '2'}
             </div>
-            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 2 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Entrega</span>
+            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 2 ? 'text-[#1A332B]' : 'text-[#6B625C]'}`}>Entrega</span>
           </div>
           <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B]' : 'bg-[#EFEAE4]'}`} />
           <div className="flex flex-col items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
               3
             </div>
-            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 3 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Pagamento</span>
+            <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 3 ? 'text-[#1A332B]' : 'text-[#6B625C]'}`}>Pagamento</span>
           </div>
         </div>
 
@@ -1027,7 +1027,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                     </div>
                     <div className="flex-1">
                        <h3 className="font-serif text-[#1A332B] text-base">{item.name}</h3>
-                       <p className="text-xs text-[#A8A29E]">{item.category}</p>
+                       <p className="text-xs text-[#6B625C]">{item.category}</p>
                     </div>
                     <span className="text-sm text-[#423226]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
                  </div>
@@ -1094,7 +1094,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                <div className="flex justify-between items-center">
                  <span className="font-serif text-xl text-[#1A332B]">Total</span>
                  <div className="flex items-end gap-2">
-                   <span className="text-xs text-[#A8A29E] mb-1">BRL</span>
+                   <span className="text-xs text-[#6B625C] mb-1">BRL</span>
                    <span className="font-serif text-2xl text-[#1A332B]">R$ {total.toFixed(2).replace('.', ',')}</span>
                  </div>
                </div>

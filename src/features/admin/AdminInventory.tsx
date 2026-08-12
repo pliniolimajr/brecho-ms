@@ -343,8 +343,9 @@ export function AdminInventory({
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-              <label className="text-xs font-semibold uppercase tracking-wider text-[#423226]">Ordenar por:</label>
+              <label htmlFor="inventory-sort" className="text-xs font-semibold uppercase tracking-wider text-[#423226]">Ordenar por:</label>
               <select
+                id="inventory-sort"
                 value={inventorySort}
                 onChange={e => setInventorySort(e.target.value)}
                 className="border border-gray-300 rounded text-sm px-3 py-2 bg-white focus:outline-none focus:border-[#C06A35]"
@@ -408,7 +409,7 @@ export function AdminInventory({
                           </button>
                           <button 
                             onClick={() => handleMarkAsSold(product.id, !!product.isSold)}
-                            className="text-orange-600 hover:underline"
+                            className="text-orange-800 hover:underline"
                           >
                             {product.isSold ? 'Marcar Disponível' : 'Marcar Vendido'}
                           </button>

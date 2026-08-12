@@ -603,7 +603,7 @@ Implementar após os bloqueadores:
 
 ### 28. Acessibilidade e mobile
 
-**Situação:** em andamento. Foco global visível, nomes acessíveis, semântica de dialog e bloqueio do carrinho fechado foram corrigidos. O catálogo passou no axe sem violações graves em 320 px e desktop. Ainda falta ampliar a auditoria para produto, carrinho, checkout, conta e admin, além do Lighthouse final.
+**Situação:** em andamento. Foco global visível, nomes acessíveis, labels dos formulários principais, contraste e semântica de diálogo foram corrigidos. Carrinho e comparador prendem o foco, fecham com `Esc` e restauram o foco ao elemento de origem. Catálogo, produto em 375 px, carrinho, checkout, conta e admin passaram no axe sem violações graves. Ainda faltam a revisão manual com leitor de tela, a matriz visual completa de resoluções e o Lighthouse final.
 
 - Realizar auditoria de teclado.
 - Prender e restaurar foco em drawers e modais.

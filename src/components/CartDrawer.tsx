@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { Product } from '../types';
 
 interface CartDrawerProps {
@@ -18,11 +18,50 @@ interface CartDrawerProps {
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemoveItem, onCheckout }) => {
   const total = items.reduce((sum, item) => sum + item.price, 0);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? []);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      opener?.focus();
+    };
+  }, [isOpen, onClose]);
 
   return (
     <>
       {/* Backdrop */}
       <div 
+        ref={dialogRef}
         role="presentation"
         className={`fixed inset-0 bg-[#1A332B]/30 backdrop-blur-sm z-[60] transition-opacity duration-500 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -45,6 +84,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
         <div className="flex items-center justify-between p-6 border-b border-[#C06A35]/30">
           <h2 id="cart-drawer-title" className="text-xl font-serif text-[#1A332B]">Seu Carrinho ({items.length})</h2>
           <button 
+            ref={closeButtonRef}
             onClick={onClose} 
             className="text-[#A8A29E] hover:text-[#1A332B] transition-colors p-1"
             title="Fechar carrinho"
@@ -79,7 +119,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
                       <h3 className="font-serif text-[#1A332B] text-sm font-semibold line-clamp-1">{item.name}</h3>
                       <span className="text-[#1A332B] font-bold text-sm flex-shrink-0">R$ {item.price.toFixed(2).replace('.', ',')}</span>
                     </div>
-                    <p className="text-[10px] text-[#A8A29E] uppercase tracking-widest mt-1">{item.category} {item.size ? `• Tam: ${item.size}` : ''}</p>
+                    <p className="text-[10px] text-[#6B625C] uppercase tracking-widest mt-1">{item.category} {item.size ? `• Tam: ${item.size}` : ''}</p>
                   </div>
                   <button 
                     onClick={() => onRemoveItem(item.id)}
@@ -99,7 +139,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
             <span className="text-sm font-medium uppercase tracking-widest text-[#423226]">Subtotal</span>
             <span className="text-xl font-serif font-bold text-[#1A332B]">R$ {total.toFixed(2).replace('.', ',')}</span>
           </div>
-          <p className="text-xs text-[#A8A29E] mb-6 text-center">Frete e prazos calculados no checkout.</p>
+          <p className="text-xs text-[#6B625C] mb-6 text-center">Frete e prazos calculados no checkout.</p>
           <button 
             onClick={onCheckout}
             disabled={items.length === 0}

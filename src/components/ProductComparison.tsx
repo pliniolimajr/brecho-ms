@@ -11,15 +11,39 @@ export function ProductComparison() {
   const { comparison, toggleComparison, clearComparison } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const openButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? []);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      openButtonRef.current?.focus();
+    };
   }, [isOpen]);
 
   if (!comparison.length) return null;
@@ -30,7 +54,7 @@ export function ProductComparison() {
         <p className="text-sm"><strong>{comparison.length}/3</strong> produto(s) para comparar</p>
         <div className="flex gap-2">
           <button type="button" onClick={clearComparison} className="min-h-10 px-3 text-xs underline">Limpar</button>
-          <button type="button" onClick={() => setIsOpen(true)} disabled={comparison.length < 2} className="min-h-10 rounded bg-[#C06A35] px-4 text-xs font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50">
+          <button ref={openButtonRef} type="button" onClick={() => setIsOpen(true)} disabled={comparison.length < 2} className="min-h-10 rounded bg-[#C06A35] px-4 text-xs font-bold uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-50">
             Comparar agora
           </button>
         </div>
@@ -38,7 +62,7 @@ export function ProductComparison() {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 md:items-center md:p-6" role="presentation" onMouseDown={() => setIsOpen(false)}>
-          <section role="dialog" aria-modal="true" aria-labelledby="comparison-title" onMouseDown={event => event.stopPropagation()} className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-t-lg bg-[#FDF6F0] p-5 md:rounded-lg md:p-8">
+          <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="comparison-title" onMouseDown={event => event.stopPropagation()} className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-t-lg bg-[#FDF6F0] p-5 md:rounded-lg md:p-8">
             <header className="mb-6 flex items-center justify-between gap-4">
               <h2 id="comparison-title" className="font-serif text-2xl text-[#1A332B]">Comparar produtos</h2>
               <button ref={closeButtonRef} type="button" onClick={() => setIsOpen(false)} aria-label="Fechar comparação" className="min-h-11 min-w-11 text-2xl">&times;</button>

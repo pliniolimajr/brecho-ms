@@ -141,7 +141,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
         {/* Breadcrumb / Back */}
         <button
           onClick={onBack}
-          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#A8A29E] hover:text-[#1A332B] transition-colors mb-8"
+          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] hover:text-[#1A332B] transition-colors mb-8"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover:-translate-x-1 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -182,7 +182,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
 
           {/* Right: Details */}
           <div className="flex flex-col justify-center max-w-xl bg-[#FAF9F6] border border-[#C06A35]/15 p-8 md:p-12 shadow-sm rounded-sm">
-            <span className="text-[10px] font-bold text-[#A8A29E] uppercase tracking-[0.2em] mb-2">{product.category}</span>
+            <span className="text-[10px] font-bold text-[#6B625C] uppercase tracking-[0.2em] mb-2">{product.category}</span>
             <h1 className="text-3xl md:text-4xl font-serif italic text-[#1A332B] mb-4 leading-tight">{product.name}</h1>
             <span className="text-xl font-semibold text-[#1A332B] block border-b border-[#C06A35]/20 pb-6 mb-6">
               R$ {product.price.toFixed(2).replace('.', ',')}
@@ -229,22 +229,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   <p>{product.longDescription || product.description}</p>
                   <ul className="grid grid-cols-2 gap-x-6 gap-y-2 mt-4 pt-4 border-t border-[#C06A35]/10">
                     <li className="flex justify-between py-1">
-                      <span className="font-medium text-[#A8A29E] uppercase tracking-wider text-[9px]">Tamanho:</span>
+                      <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Tamanho:</span>
                       <span className="font-semibold">{product.size || 'Único'}</span>
                     </li>
                     <li className="flex justify-between py-1">
-                      <span className="font-medium text-[#A8A29E] uppercase tracking-wider text-[9px]">Marca:</span>
+                      <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Marca:</span>
                       <span className="font-semibold">{product.brand || 'Palm CO.'}</span>
                     </li>
                     {product.color && product.color.length > 0 && (
                       <li className="flex justify-between py-1">
-                        <span className="font-medium text-[#A8A29E] uppercase tracking-wider text-[9px]">Cor:</span>
+                        <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Cor:</span>
                         <span className="font-semibold">{product.color.join(', ')}</span>
                       </li>
                     )}
                     {product.material && (
                       <li className="flex justify-between py-1">
-                        <span className="font-medium text-[#A8A29E] uppercase tracking-wider text-[9px]">Material:</span>
+                        <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Material:</span>
                         <span className="font-semibold">{product.material}</span>
                       </li>
                     )}
@@ -350,7 +350,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                       );
                     })}
                   </div>
-                  <span className="text-xs text-[#A8A29E]">{reviews.length} avaliações</span>
+                  <span className="text-xs text-[#6B625C]">{reviews.length} avaliações</span>
                 </div>
               </div>
 
@@ -401,7 +401,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   <p className="text-sm text-[#423226] mb-4">Você precisa estar logado para avaliar este produto.</p>
                   <button
                     onClick={() => navigate('/login')}
-                    className="text-[#C06A35] font-semibold underline text-sm"
+                    className="text-[#8A4825] font-semibold underline text-sm"
                   >
                     Fazer Login
                   </button>
@@ -415,7 +415,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               {loadingReviews ? (
                 <p className="text-[#A8A29E]">Buscando avaliações...</p>
               ) : reviews.length === 0 ? (
-                <p className="text-[#A8A29E]">Ainda não há avaliações para este produto. Seja o primeiro a avaliar!</p>
+                <p className="text-[#6B625C]">Ainda não há avaliações para este produto. Seja o primeiro a avaliar!</p>
               ) : (
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                   {reviews.map((rev) => (

@@ -49,7 +49,11 @@ async function mockExternalServices(page: Page) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });
     }
     if (url.includes('/rest/v1/customers')) {
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(null) });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        id: '30000000-0000-4000-8000-000000000001',
+        user_id: '20000000-0000-4000-8000-000000000001',
+        first_name: 'Maria', last_name: 'Silva', phone: '71999999999', cpf: '12345678909',
+      }) });
     }
     if (url.includes('/rest/v1/admin_users')) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(null) });
@@ -103,6 +107,15 @@ async function addAuthenticatedCheckoutState(page: Page) {
       stockQuantity: 1,
     },
   });
+}
+
+function seriousViolations(results: Awaited<ReturnType<AxeBuilder['analyze']>>) {
+  return results.violations.filter(item => item.impact === 'critical' || item.impact === 'serious');
+}
+
+async function auditPage(page: Page) {
+  await page.addStyleTag({ content: '*,*::before,*::after{animation:none!important;transition:none!important}' });
+  return seriousViolations(await new AxeBuilder({ page }).analyze());
 }
 
 test.beforeEach(async ({ page }) => {
@@ -177,7 +190,45 @@ for (const viewport of [
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto('/catalogo');
     await expect(page.getByText('Camisa de Linho E2E')).toBeVisible();
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations.filter(item => item.impact === 'critical' || item.impact === 'serious')).toEqual([]);
+    expect(await auditPage(page)).toEqual([]);
   });
 }
+
+test('produto sem violacoes graves de acessibilidade em mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(`/produto/${product.id}`);
+  await expect(page.getByRole('heading', { name: product.name })).toBeVisible();
+  expect(await auditPage(page)).toEqual([]);
+});
+
+test('carrinho aberto sem violacoes graves de acessibilidade', async ({ page }) => {
+  await addAuthenticatedCheckoutState(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Sacola de compras' }).click();
+  await expect(page.getByRole('dialog', { name: /Seu Carrinho/ })).toBeVisible();
+  expect(await auditPage(page)).toEqual([]);
+});
+
+test('checkout sem violacoes graves de acessibilidade', async ({ page }) => {
+  await addAuthenticatedCheckoutState(page);
+  await page.goto('/checkout');
+  await expect(page.getByRole('heading', { name: 'Finalizar Pedido' })).toBeVisible();
+  expect(await auditPage(page)).toEqual([]);
+});
+
+test('minha conta sem violacoes graves de acessibilidade', async ({ page }) => {
+  await addAuthenticatedCheckoutState(page);
+  await page.goto('/minha-conta');
+  await expect(page.getByText('Dados Pessoais')).toBeVisible();
+  expect(await auditPage(page)).toEqual([]);
+});
+
+test('painel administrativo sem violacoes graves de acessibilidade', async ({ page }) => {
+  await addAuthenticatedCheckoutState(page);
+  await page.route('https://test.supabase.co/rest/v1/admin_users**', route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'admin-1' }),
+  }));
+  await page.goto('/admin');
+  await expect(page.getByRole('heading', { name: 'Painel de Controle' })).toBeVisible();
+  expect(await auditPage(page)).toEqual([]);
+});

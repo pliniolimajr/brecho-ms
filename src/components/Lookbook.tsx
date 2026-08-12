@@ -87,7 +87,7 @@ export const Lookbook: React.FC = () => {
         
         {/* Section Header */}
         <div className="text-center mb-24 max-w-2xl mx-auto">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#C06A35]">Campanha Editorial</span>
+          <span className="text-[10px] uppercase font-bold tracking-widest text-[#8A4825]">Campanha Editorial</span>
           <h2 className="text-4xl md:text-5xl font-serif text-[#1A332B] mt-3 mb-6">Compre o Look</h2>
           <p className="text-sm md:text-base text-[#423226] leading-relaxed">
             Nossos estilistas combinaram peças exclusivas da coleção para criar visuais harmônicos e atemporais. Adicione a produção completa com um clique.
@@ -119,7 +119,7 @@ export const Lookbook: React.FC = () => {
               {/* Look Details & Selection */}
               <div className="w-full lg:w-1/2 space-y-8">
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#C06A35]">Visual 01</span>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#8A4825]">Visual 01</span>
                   <h3 className="text-3xl font-serif text-[#1A332B] mt-2 mb-4">Minimalist Urban</h3>
                   <p className="text-sm text-[#423226] leading-relaxed">
                     Uma proposta contemporânea e estruturada. O casaco sobreposto cria linhas elegantes que alongam o visual, perfeitamente balanceado por calças de corte reto. Perfeito para transições do dia para a noite na cidade.
@@ -128,7 +128,7 @@ export const Lookbook: React.FC = () => {
 
                 {/* Items Checklist */}
                 <div className="space-y-4 border-t border-[#C06A35]/20 pt-6">
-                  <h4 className="text-[10px] uppercase tracking-widest font-bold text-[#A8A29E] mb-2">Peças do Visual</h4>
+                  <h4 className="text-[10px] uppercase tracking-widest font-bold text-[#6B625C] mb-2">Peças do Visual</h4>
                   
                   {urbanItems.map(item => (
                     <div 
@@ -139,6 +139,7 @@ export const Lookbook: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <input 
                           type="checkbox" 
+                          aria-label={`Selecionar ${item.name}`}
                           checked={selectedUrbanIds.has(item.id)}
                           onChange={() => {}} // Handled by outer click
                           className="accent-[#1A332B]"
@@ -148,7 +149,7 @@ export const Lookbook: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-xs uppercase tracking-wider font-semibold text-[#1A332B] block">{item.name}</span>
-                          <span className="text-[10px] text-[#A8A29E] uppercase tracking-widest">{item.category} • Tam {item.size}</span>
+                          <span className="text-[10px] text-[#6B625C] uppercase tracking-widest">{item.category} • Tam {item.size}</span>
                         </div>
                       </div>
                       <span className="font-serif text-sm font-semibold text-[#1A332B]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
@@ -201,7 +202,7 @@ export const Lookbook: React.FC = () => {
 
                 {/* Items Checklist */}
                 <div className="space-y-4 border-t border-[#C06A35]/20 pt-6">
-                  <h4 className="text-[10px] uppercase tracking-widest font-bold text-[#A8A29E] mb-2">Peças do Visual</h4>
+                  <h4 className="text-[10px] uppercase tracking-widest font-bold text-[#6B625C] mb-2">Peças do Visual</h4>
                   
                   {summerItems.map(item => (
                     <div 
@@ -212,6 +213,7 @@ export const Lookbook: React.FC = () => {
                       <div className="flex items-center gap-4">
                         <input 
                           type="checkbox" 
+                          aria-label={`Selecionar ${item.name}`}
                           checked={selectedSummerIds.has(item.id)}
                           onChange={() => {}} // Handled by outer click
                           className="accent-[#1A332B]"
@@ -221,7 +223,7 @@ export const Lookbook: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-xs uppercase tracking-wider font-semibold text-[#1A332B] block">{item.name}</span>
-                          <span className="text-[10px] text-[#A8A29E] uppercase tracking-widest">{item.category} • Tam {item.size}</span>
+                          <span className="text-[10px] text-[#6B625C] uppercase tracking-widest">{item.category} • Tam {item.size}</span>
                         </div>
                       </div>
                       <span className="font-serif text-sm font-semibold text-[#1A332B]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
