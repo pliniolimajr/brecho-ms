@@ -564,11 +564,15 @@ Entregue: logs JSON nas funções críticas, monitor de erros no Sentry e aba ad
 
 ### 24. Redes sociais
 
+**Situação:** concluído. Instagram temporário configurado como `@aperte.f1`, WhatsApp centralizado e clicável, e TikTok ocultado enquanto não houver perfil oficial.
+
 - Substituir `#` pelas URLs reais.
 - Se ainda não existirem, ocultar os ícones.
 - Usar `target="_blank"` e `rel="noopener noreferrer"`.
 
 ### 25. Assistant
+
+**Situação:** concluído. Não havia mais componente, integração ou dependência Gemini ativa; o tipo residual de mensagens do chat foi removido.
 
 Tomar uma decisão explícita:
 
@@ -579,12 +583,16 @@ A chave da API nunca deve ficar exposta no frontend.
 
 ### 26. CSS
 
+**Situação:** base concluída. O tema escuro obsoleto foi removido e a identidade atual ganhou tokens globais para cores, fontes, sombra, raio, transição e foco. A adoção dos nomes semânticos nos componentes seguirá gradualmente para evitar alterações visuais em massa.
+
 - Remover `variables.css` se estiver obsoleto; ou
 - transformar as cores atuais em tokens usados globalmente.
 - Eliminar cores repetidas hardcoded.
 - Definir tokens para cor, espaçamento, raio, sombra e tipografia.
 
 ### 27. Comparador de produtos
+
+**Situação:** concluído. Permite selecionar até três produtos, persiste a seleção localmente e compara preço, tamanho, material, cor e disponibilidade em desktop e mobile.
 
 Implementar após os bloqueadores:
 
@@ -594,6 +602,8 @@ Implementar após os bloqueadores:
 - suporte mobile.
 
 ### 28. Acessibilidade e mobile
+
+**Situação:** em andamento. Foco global visível, nomes acessíveis, semântica de dialog e bloqueio do carrinho fechado foram corrigidos. O catálogo passou no axe sem violações graves em 320 px e desktop. Ainda falta ampliar a auditoria para produto, carrinho, checkout, conta e admin, além do Lighthouse final.
 
 - Realizar auditoria de teclado.
 - Prender e restaurar foco em drawers e modais.

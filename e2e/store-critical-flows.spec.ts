@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 const product = {
   id: '10000000-0000-4000-8000-000000000001',
@@ -167,3 +168,16 @@ test('retorno de pagamento recusado permite tentar novamente', async ({ page }) 
   await page.getByRole('button', { name: 'Tentar Novamente' }).click();
   await expect(page).toHaveURL(/\/login\?redirect=(?:%2F|\/)checkout$/);
 });
+
+for (const viewport of [
+  { name: 'mobile-320', width: 320, height: 800 },
+  { name: 'desktop', width: 1440, height: 900 },
+]) {
+  test(`catalogo sem violacoes graves de acessibilidade em ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/catalogo');
+    await expect(page.getByText('Camisa de Linho E2E')).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.filter(item => item.impact === 'critical' || item.impact === 'serious')).toEqual([]);
+  });
+}

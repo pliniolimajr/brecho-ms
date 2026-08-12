@@ -40,5 +40,17 @@ describe('newsletter do rodapé', () => {
 
     await waitFor(() => expect(screen.getByText('Muitas tentativas. Aguarde um pouco e tente novamente.')).toBeInTheDocument());
   });
-});
 
+  it('exibe somente os contatos sociais configurados', () => {
+    renderFooter();
+    expect(screen.getByRole('link', { name: /Instagram @aperte\.f1/i })).toHaveAttribute(
+      'href',
+      'https://www.instagram.com/aperte.f1/',
+    );
+    expect(screen.getByRole('link', { name: /99329-0895/ })).toHaveAttribute(
+      'href',
+      'https://wa.me/5571993290895',
+    );
+    expect(screen.queryByText('TikTok')).not.toBeInTheDocument();
+  });
+});

@@ -51,13 +51,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
       <div className="absolute inset-0 cursor-default" onClick={onClose} />
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-4xl bg-[#FDF6F0] rounded shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[80vh] z-10 animate-scale-up border border-[#C06A35]/25">
+      <div role="dialog" aria-modal="true" aria-labelledby="quick-view-title" className="relative w-full max-w-4xl bg-[#FDF6F0] rounded shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[80vh] z-10 animate-scale-up border border-[#C06A35]/25">
         
         {/* Close Button */}
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-[#1A332B] hover:text-[#C06A35] z-20 transition-colors p-2 bg-[#FDF6F0]/80 rounded-full backdrop-blur-sm"
           title="Fechar"
+          aria-label="Fechar visualização rápida"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -99,7 +100,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ product, isOpen,
             </div>
 
             <div>
-              <h2 className="text-2xl font-serif text-[#1A332B] mb-2">{product.name}</h2>
+              <h2 id="quick-view-title" className="text-2xl font-serif text-[#1A332B] mb-2">{product.name}</h2>
               {product.tagline && (
                 <p className="text-xs italic text-[#C06A35] font-medium">{product.tagline}</p>
               )}

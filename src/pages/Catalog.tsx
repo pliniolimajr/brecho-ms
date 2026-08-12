@@ -221,6 +221,7 @@ export function Catalog() {
           </div>
           <div className="w-full md:w-56 flex-shrink-0 relative">
             <select
+              aria-label="Ordenar produtos"
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
               id="catalog-sort-select"
@@ -322,7 +323,7 @@ export function Catalog() {
                   <li key={cat}>
                     <button
                       onClick={() => setCategory(cat)}
-                      className={`text-sm text-left w-full transition-colors ${category === cat ? 'font-bold text-[#C06A35]' : 'text-[#423226] hover:text-[#1A332B]'}`}
+                      className={`text-sm text-left w-full transition-colors ${category === cat ? 'font-bold text-[#8A4825]' : 'text-[#423226] hover:text-[#1A332B]'}`}
                     >
                       {cat}
                     </button>
@@ -409,7 +410,7 @@ export function Catalog() {
               </h3>
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-[#A8A29E] block mb-1">Mínimo</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Mínimo</label>
                   <input
                     type="number"
                     min="0"
@@ -422,7 +423,7 @@ export function Catalog() {
                 </div>
                 <span className="text-[#A8A29E] font-medium pt-4">-</span>
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-[#A8A29E] block mb-1">Máximo</label>
+                  <label className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Máximo</label>
                   <input
                     type="number"
                     min={minPrice}
@@ -434,9 +435,10 @@ export function Catalog() {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-[#A8A29E] block">Ajuste rápido preço máx: R$ {maxPrice}</label>
+                <label className="text-[10px] text-[#6B625C] block">Ajuste rápido preço máx: R$ {maxPrice}</label>
                 <input
                   type="range"
+                  aria-label="Preço máximo"
                   min="10"
                   max="1000"
                   step="10"
@@ -453,7 +455,7 @@ export function Catalog() {
           <main className="flex-1 w-full">
             <header className="mb-6 flex justify-between items-end">
               <h2 className="text-2xl font-serif text-[#1A332B]">{category === 'Todos' ? 'Todas as Peças' : category}</h2>
-              <p className="text-xs text-[#A8A29E] font-medium">{totalProducts} peça(s) encontrada(s)</p>
+              <p className="text-xs text-[#6B625C] font-medium">{totalProducts} peça(s) encontrada(s)</p>
             </header>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">

@@ -23,6 +23,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
     <>
       {/* Backdrop */}
       <div 
+        role="presentation"
         className={`fixed inset-0 bg-[#1A332B]/30 backdrop-blur-sm z-[60] transition-opacity duration-500 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
@@ -31,17 +32,23 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, items, onRemov
 
       {/* Drawer */}
       <div 
+        role="dialog"
+        aria-modal={isOpen ? 'true' : undefined}
+        aria-hidden={!isOpen}
+        inert={!isOpen}
+        aria-labelledby="cart-drawer-title"
         className={`fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#FDF6F0] z-[70] shadow-2xl transform transition-transform duration-500 ease-in-out border-l border-[#C06A35] flex flex-col ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#C06A35]/30">
-          <h2 className="text-xl font-serif text-[#1A332B]">Seu Carrinho ({items.length})</h2>
+          <h2 id="cart-drawer-title" className="text-xl font-serif text-[#1A332B]">Seu Carrinho ({items.length})</h2>
           <button 
             onClick={onClose} 
             className="text-[#A8A29E] hover:text-[#1A332B] transition-colors p-1"
             title="Fechar carrinho"
+            aria-label="Fechar carrinho"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

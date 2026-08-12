@@ -5,6 +5,7 @@ import CartDrawer from '../components/CartDrawer';
 import CookieBanner from '../components/CookieBanner';
 import { useStore } from '../store/useStore';
 import { useEffect } from 'react';
+import { ProductComparison } from '../components/ProductComparison';
 
 export function StoreLayout() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, fetchProducts } = useStore();
@@ -71,6 +72,7 @@ export function StoreLayout() {
       </main>
       <Footer onLinkClick={handleNavClick} />
       <CookieBanner />
+      <ProductComparison />
       <CartDrawer 
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

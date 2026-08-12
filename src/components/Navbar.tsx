@@ -84,7 +84,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
   return (
     <>
       {topBar.visible && (
-        <div className="bg-[#C06A35] text-[#FDF6F0] text-center text-[10px] tracking-[0.25em] py-2.5 px-4 uppercase font-medium">
+        <div className="bg-[#8A4825] text-white text-center text-[10px] tracking-[0.25em] py-2.5 px-4 uppercase font-medium">
           {topBar.text}
         </div>
       )}

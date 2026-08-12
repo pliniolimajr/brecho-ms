@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+@theme {
+  --color-palm-forest: #1A332B;
+  --color-palm-terracotta: #C06A35;
+  --color-palm-cream: #FDF6F0;
+  --color-palm-brown: #423226;
+  --color-palm-muted: #A8A29E;
+  --color-palm-charcoal: #433E38;
+  --color-palm-sand: #F4E4D4;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: 'Playfair Display', serif;
+
+  --shadow-palm-card: 0 10px 30px rgb(26 51 43 / 0.08);
+  --radius-palm: 0.25rem;
+}
+
+:root {
+  --palm-focus-ring: #C06A35;
+  --palm-transition-fast: 150ms ease;
+  --palm-transition-normal: 300ms ease;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -7,13 +29,18 @@
   }
 
   body {
-    font-family: 'Inter', sans-serif;
-    background-color: #FDF6F0; /* Warm cream background */
-    color: #1A332B; /* Warm dark charcoal */
+    font-family: var(--font-sans);
+    background-color: var(--color-palm-cream);
+    color: var(--color-palm-forest);
   }
   
   h1, h2, h3, h4, .font-serif {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--font-serif);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--palm-focus-ring);
+    outline-offset: 3px;
   }
 }
 

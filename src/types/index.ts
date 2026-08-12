@@ -35,10 +35,4 @@ export interface Order {
   items?: Product[];
 }
 
-export interface ChatMessage {
-  role: 'user' | 'model';
-  text: string;
-  timestamp: number;
-}
-
 export type LoadingState = 'IDLE' | 'LOADING' | 'ERROR' | 'SUCCESS';

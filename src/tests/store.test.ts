@@ -39,6 +39,7 @@ const mockProduct2: Product = {
 describe('useStore Zustand Store', () => {
   beforeEach(() => {
     useStore.getState().clearCart();
+    useStore.getState().clearComparison();
     useStore.setState({ products: [], lastFetched: null });
   });
 
@@ -76,5 +77,20 @@ describe('useStore Zustand Store', () => {
 
     const state = useStore.getState();
     expect(state.cart).toEqual([]);
+  });
+
+  it('adiciona e remove produtos da comparacao', () => {
+    expect(useStore.getState().toggleComparison(mockProduct1)).toBe('added');
+    expect(useStore.getState().comparison).toEqual([mockProduct1]);
+    expect(useStore.getState().toggleComparison(mockProduct1)).toBe('removed');
+    expect(useStore.getState().comparison).toEqual([]);
+  });
+
+  it('limita a comparacao a tres produtos', () => {
+    useStore.getState().toggleComparison(mockProduct1);
+    useStore.getState().toggleComparison(mockProduct2);
+    useStore.getState().toggleComparison({ ...mockProduct1, id: 'prod-3' });
+    expect(useStore.getState().toggleComparison({ ...mockProduct1, id: 'prod-4' })).toBe('limit');
+    expect(useStore.getState().comparison).toHaveLength(3);
   });
 });

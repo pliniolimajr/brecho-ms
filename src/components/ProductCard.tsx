@@ -6,6 +6,8 @@
 import React from 'react';
 import type { Product } from '../types';
 import { WishlistButton } from './WishlistButton';
+import { useStore } from '../store/useStore';
+import { useToast } from './Toast';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +17,15 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView }) => {
   const hasSecondaryImage = product.gallery && product.gallery.length > 0 && product.gallery[0];
+  const { comparison, toggleComparison } = useStore();
+  const { showToast } = useToast();
+  const isCompared = comparison.some(item => item.id === product.id);
+
+  const handleComparison = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const result = toggleComparison(product);
+    if (result === 'limit') showToast('Você pode comparar no máximo três produtos.', 'error');
+  };
 
   return (
     <div 
@@ -79,11 +90,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick, onQuickView
             className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-sm text-[#1A332B] hover:text-[#C06A35] opacity-80 group-hover:opacity-100"
           />
         </div>
+
+        <button
+          type="button"
+          aria-pressed={isCompared}
+          onClick={handleComparison}
+          className={`absolute left-3 bottom-3 z-20 min-h-9 rounded px-3 text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors ${isCompared ? 'bg-[#C06A35] text-white' : 'bg-white/90 text-[#1A332B] hover:bg-[#1A332B] hover:text-white'}`}
+        >
+          {isCompared ? 'Comparando' : 'Comparar'}
+        </button>
       </div>
       
       {/* Product Details */}
       <div className="flex flex-col gap-1 px-1">
-        <div className="flex justify-between items-center text-[10px] font-medium text-[#A8A29E] uppercase tracking-widest">
+        <div className="flex justify-between items-center text-[10px] font-medium text-[#6B625C] uppercase tracking-widest">
           <span>{product.category}</span>
           {product.brand && <span>{product.brand}</span>}
         </div>

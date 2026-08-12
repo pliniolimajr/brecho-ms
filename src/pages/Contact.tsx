@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Seo } from '../components/Seo';
+import { STORE_CONTACT } from '../config/contact';
 
 export function Contact() {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -78,7 +79,9 @@ export function Contact() {
           <div className="space-y-8 flex flex-col justify-center">
             <div className="space-y-2">
               <h3 className="text-xs uppercase tracking-widest text-[#C06A35] font-bold">WhatsApp</h3>
-              <p className="text-lg font-serif text-[#1A332B]">(11) 98765-4321</p>
+              <a href={STORE_CONTACT.whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-lg font-serif text-[#1A332B] underline underline-offset-4 hover:text-[#C06A35]">
+                {STORE_CONTACT.whatsappDisplay}
+              </a>
               <p className="text-xs text-[#A8A29E]">Atendimento de Segunda a Sexta, das 9h às 18h.</p>
             </div>
             <div className="space-y-2">

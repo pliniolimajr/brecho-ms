@@ -12,6 +12,10 @@ interface StoreState {
   removeFromCart: (productId: string) => void;
   clearCart: () => void;
   setIsCartOpen: (isOpen: boolean) => void;
+
+  comparison: Product[];
+  toggleComparison: (product: Product) => 'added' | 'removed' | 'limit';
+  clearComparison: () => void;
   
   // Products State
   products: Product[];
@@ -39,6 +43,19 @@ export const useStore = create<StoreState>()(
   clearCart: () => set({ cart: [] }),
   
   setIsCartOpen: (isOpen) => set({ isCartOpen: isOpen }),
+
+  comparison: [],
+  toggleComparison: (product) => {
+    const { comparison } = get();
+    if (comparison.some(item => item.id === product.id)) {
+      set({ comparison: comparison.filter(item => item.id !== product.id) });
+      return 'removed';
+    }
+    if (comparison.length >= 3) return 'limit';
+    set({ comparison: [...comparison, product] });
+    return 'added';
+  },
+  clearComparison: () => set({ comparison: [] }),
 
   products: [],
   isLoadingProducts: false,
@@ -88,7 +105,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: 'littlepalm-cart-storage',
-      partialize: (state) => ({ cart: state.cart }),
+      partialize: (state) => ({ cart: state.cart, comparison: state.comparison }),
     }
   )
 );
