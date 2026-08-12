@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 import { useToast } from './Toast';
 import { addressSchema, checkoutIdentitySchema, firstValidationMessage } from '../utils/schemas';
 import { getApiErrorMessage } from '../utils/apiErrors';
-import { trackEvent } from '../services/analytics';
+import { completeCheckoutJourney, trackEvent } from '../services/analytics';
 import { captureOperationalError } from '../services/monitoring';
 
 interface CheckoutProps {
@@ -597,6 +597,7 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
 
          clearCart();
          trackEvent('payment_redirected', { order_id: orderData.id, value: total, items_count: items.length });
+         completeCheckoutJourney();
          
          // Redirecionar para o Checkout do Mercado Pago
          window.location.href = redirectUrl;

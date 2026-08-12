@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
-import { trackEvent } from '../services/analytics';
+import { completeCheckoutJourney, trackEvent } from '../services/analytics';
 import { captureOperationalError } from '../services/monitoring';
 
 export function CheckoutSuccess() {
@@ -13,6 +13,7 @@ export function CheckoutSuccess() {
   const [orderTotal, setOrderTotal] = useState<number | null>(null);
 
   useEffect(() => {
+    completeCheckoutJourney();
     async function updateAndFetchOrder() {
       if (orderId) {
         // O status é definido exclusivamente pelo webhook do Mercado Pago.

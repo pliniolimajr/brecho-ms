@@ -501,6 +501,8 @@ O bundle principal encontrado durante a auditoria estava próximo de 477 kB ante
 
 ## Fase 7 — Monitoramento e operação
 
+**Situação em 11/08/2026:** implementada e validada no código. O Sentry recebeu um erro real do frontend e o monitor de alta prioridade foi acionado. O envio de e-mail depende das preferências de notificação da conta no Sentry. O upload de source maps fica ativo automaticamente quando `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT` estiverem cadastradas no build da Vercel.
+
 ### 21. Sentry
 
 Configurar no frontend e nas Edge Functions:
@@ -511,6 +513,8 @@ Configurar no frontend e nas Edge Functions:
 - ambiente;
 - performance sampling;
 - remoção de CPF, e-mail, token e endereço dos eventos.
+
+Entregue: captura global e operacional no frontend, ambiente, amostragem, versão baseada no commit da Vercel, redação recursiva de dados sensíveis e source maps privados com upload condicional. As Edge Functions usam logs JSON seguros no Supabase; elas não carregam o SDK de navegador do Sentry.
 
 ### 22. Analytics
 
@@ -524,6 +528,8 @@ Implementar ferramenta que respeite o consentimento do usuário:
 - redirecionar ao pagamento;
 - compra confirmada;
 - abandonar checkout.
+
+Entregue: todos os eventos acima respeitam a escolha de cookies. O abandono é registrado ao sair da página, mas é descartado quando o fluxo segue corretamente para o Mercado Pago ou chega à confirmação.
 
 ### 23. Logs e alertas
 
@@ -549,6 +555,8 @@ Alertas essenciais:
 - timeout do Mercado Pago;
 - erro de reserva de estoque;
 - aumento de respostas 5xx.
+
+Entregue: logs JSON nas funções críticas, monitor de erros no Sentry e aba administrativa **Saúde** para e-mails falhos/atrasados, pedidos vencidos e etiquetas falhas/travadas. Falhas de webhook, timeout do Mercado Pago, reserva de estoque e respostas 5xx aparecem com eventos padronizados nos logs das Edge Functions. Alertas externos sobre esses logs dependem de uma integração de logs/alertas do Supabase e não bloqueiam o beta.
 
 ---
 

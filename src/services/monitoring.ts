@@ -16,7 +16,7 @@ export async function initializeMonitoring() {
   Sentry.init({
     dsn,
     environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
-    release: import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA || undefined,
+    release: __APP_RELEASE__ === 'local' ? undefined : __APP_RELEASE__,
     sendDefaultPii: false,
     tracesSampleRate: Number(import.meta.env.VITE_SENTRY_TRACES_SAMPLE_RATE || 0.05),
     beforeSend(event) {

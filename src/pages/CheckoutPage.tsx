@@ -4,7 +4,7 @@ import Checkout from '../components/Checkout';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useEffect } from 'react';
-import { trackEvent } from '../services/analytics';
+import { beginCheckoutJourney, trackCheckoutAbandonment } from '../services/analytics';
 
 export function CheckoutPage() {
   const { cart } = useStore();
@@ -13,9 +13,15 @@ export function CheckoutPage() {
 
   useEffect(() => {
     if (session && cart.length > 0) {
-      trackEvent('checkout_started', { items_count: cart.length, value: cart.reduce((sum, item) => sum + item.price, 0) });
+      beginCheckoutJourney({ items_count: cart.length, value: cart.reduce((sum, item) => sum + item.price, 0) });
     }
   }, [cart, session]);
+
+  useEffect(() => {
+    const handlePageExit = () => { trackCheckoutAbandonment(); };
+    window.addEventListener('pagehide', handlePageExit);
+    return () => window.removeEventListener('pagehide', handlePageExit);
+  }, []);
 
   if (loading) {
     return (
@@ -29,5 +35,5 @@ export function CheckoutPage() {
     return <Navigate to="/login?redirect=/checkout" replace />;
   }
 
-  return <Checkout items={cart} onBack={() => navigate('/')} />;
+  return <Checkout items={cart} onBack={() => { trackCheckoutAbandonment(); navigate('/'); }} />;
 }
