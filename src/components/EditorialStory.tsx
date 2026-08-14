@@ -25,7 +25,7 @@ export function EditorialStory() {
                 className="palm-product-image grayscale-[20%] contrast-[0.95]"
               />
             </div>
-            <p className="palm-eyebrow mt-4 lg:absolute lg:-right-8 lg:bottom-12 lg:mt-0 lg:-rotate-90 lg:bg-[#F4E4D4] lg:px-4 lg:py-2">
+            <p className="palm-eyebrow mt-4 text-right lg:absolute lg:-right-8 lg:bottom-12 lg:mt-0 lg:-rotate-90 lg:bg-[#F4E4D4] lg:px-4 lg:py-2">
               Bahia · Brasil
             </p>
           </div>

@@ -212,6 +212,26 @@ for (const viewport of [
     await expect(page.getByText('Camisa de Linho E2E')).toBeVisible();
     expect(await auditPage(page)).toEqual([]);
   });
+
+  test(`sobre sem violacoes graves de acessibilidade em ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await page.goto('/sobre');
+    await expect(page.getByRole('heading', { level: 1, name: /Raízes baianas/ })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Tecidos e texturas/ })).toBeVisible();
+    await expect(page.getByRole('img', { name: /Detalhe de corrente/ })).toBeVisible();
+    if (viewport.name === 'desktop') {
+      const titleBox = await page.getByRole('heading', { level: 1, name: /Raízes baianas/ }).boundingBox();
+      const imageBox = await page.getByRole('img', { name: /Tecidos e texturas/ }).boundingBox();
+      expect(titleBox).not.toBeNull();
+      expect(imageBox).not.toBeNull();
+      expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(imageBox!.x);
+      expect(Math.abs(titleBox!.y - imageBox!.y)).toBeLessThanOrEqual(180);
+      const locationBox = await page.getByText('Palmeirinha · Bahia').boundingBox();
+      expect(locationBox).not.toBeNull();
+      expect(locationBox!.y).toBeGreaterThanOrEqual(imageBox!.y + imageBox!.height);
+    }
+    expect(await auditPage(page)).toEqual([]);
+  });
 }
 
 test('produto sem violacoes graves de acessibilidade em mobile', async ({ page }) => {
@@ -311,6 +331,32 @@ test('card de produto abre os detalhes usando apenas o teclado', async ({ page }
   await expect(page.getByRole('heading', { level: 1, name: product.name })).toBeVisible();
 });
 
+test('card permite comprar no hover sem duplicar a peça e mantém favorito centralizado', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/catalogo');
+  const card = page.locator(`#product-card-${product.id}`);
+  await card.hover();
+
+  const buyButton = card.getByRole('button', { name: 'Comprar' });
+  await expect(buyButton).toBeVisible();
+  await buyButton.click();
+  const cartDialog = page.getByRole('dialog', { name: 'Seu Carrinho (1)' });
+  await expect(cartDialog).toBeVisible();
+  await cartDialog.getByRole('button', { name: 'Fechar carrinho' }).click();
+
+  await card.hover();
+  await buyButton.click();
+  await expect(page.getByRole('dialog', { name: 'Seu Carrinho (1)' })).toBeVisible();
+
+  const favorite = card.getByRole('button', { name: 'Salvar nos favoritos' });
+  const favoriteBox = await favorite.boundingBox();
+  const iconBox = await favorite.locator('svg').boundingBox();
+  expect(favoriteBox).not.toBeNull();
+  expect(iconBox).not.toBeNull();
+  expect(Math.abs((favoriteBox!.x + favoriteBox!.width / 2) - (iconBox!.x + iconBox!.width / 2))).toBeLessThanOrEqual(1);
+  expect(Math.abs((favoriteBox!.y + favoriteBox!.height / 2) - (iconBox!.y + iconBox!.height / 2))).toBeLessThanOrEqual(1);
+});
+
 for (const viewport of [
   { name: 'mobile-320', width: 320, height: 800 },
   { name: 'mobile-375', width: 375, height: 812 },
@@ -324,7 +370,7 @@ for (const viewport of [
       status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'admin-1' }),
     }));
 
-    for (const path of ['/', '/catalogo', `/produto/${product.id}`, '/checkout', '/minha-conta', '/admin']) {
+    for (const path of ['/', '/catalogo', '/sobre', `/produto/${product.id}`, '/checkout', '/minha-conta', '/admin']) {
       await page.goto(path);
       await expect(page.locator('body')).toBeVisible();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

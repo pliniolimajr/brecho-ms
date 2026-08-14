@@ -16,7 +16,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
   const hasSecondaryImage = product.gallery && product.gallery.length > 0 && product.gallery[0];
-  const { comparison, toggleComparison } = useStore();
+  const { cart, comparison, addToCart, setIsCartOpen, toggleComparison } = useStore();
   const { showToast } = useToast();
   const isCompared = comparison.some(item => item.id === product.id);
 
@@ -24,6 +24,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
     event.stopPropagation();
     const result = toggleComparison(product);
     if (result === 'limit') showToast('Você pode comparar no máximo três produtos.', 'error');
+  };
+
+  const handleBuy = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (product.isSold || product.stockQuantity === 0) return;
+    if (cart.some(item => item.id === product.id)) {
+      setIsCartOpen(true);
+      showToast('Esta peça já está na sua sacola.', 'info');
+      return;
+    }
+    addToCart(product);
   };
 
   return (
@@ -74,7 +85,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         <div className="absolute right-3 top-3 z-10 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
           <WishlistButton
             productId={product.id}
-            className="min-h-10 min-w-10 rounded-full bg-white/85 p-2 text-[#1A332B] shadow-sm backdrop-blur-sm hover:text-[#8A4825]"
+            className="h-11 w-11 rounded-full bg-white/90 p-0 leading-none text-[#1A332B] shadow-sm backdrop-blur-sm hover:text-[#8A4825]"
           />
         </div>
 
@@ -86,6 +97,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         >
           {isCompared ? 'Comparando' : 'Comparar'}
         </button>
+
+        {!product.isSold && product.stockQuantity !== 0 && (
+          <button
+            type="button"
+            onClick={handleBuy}
+            className="absolute bottom-3 right-3 z-20 min-h-9 bg-[#1A332B] px-3 text-[9px] font-bold uppercase tracking-[0.14em] text-white shadow-sm transition-all hover:bg-[#8A4825] md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100"
+          >
+            Comprar
+          </button>
+        )}
       </div>
       
       {/* Product Details */}

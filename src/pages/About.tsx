@@ -1,118 +1,153 @@
+import { Link } from 'react-router-dom';
+import { ResponsiveLocalImage } from '../components/ResponsiveLocalImage';
 import { Seo } from '../components/Seo';
+
+const PRINCIPLES = [
+  ['01', 'Escolher com calma', 'Menos opções, mais intenção em cada peça que entra na curadoria.'],
+  ['02', 'Valorizar o que permanece', 'Design, qualidade e versatilidade acima de tendências passageiras.'],
+  ['03', 'Comprar com confiança', 'Informação honesta, cuidado no envio e uma experiência sem excesso.'],
+];
 
 export function About() {
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
+    <div className="min-h-screen overflow-hidden bg-[#FDF6F0] pb-24 pt-24 animate-fade-in-up">
       <Seo
         title="Sobre a Palm CO."
         description="Conheça a origem baiana, os valores e o olhar de curadoria da Palm CO. para uma moda mais consciente e duradoura."
         path="/sobre"
       />
-      <div className="max-w-5xl mx-auto space-y-20">
 
-        {/* Editorial Header */}
-        <div className="text-center space-y-6 max-w-2xl mx-auto">
-          <span className="text-[10px] uppercase tracking-[0.25em] text-[#C06A35] font-bold">Nossa Essência</span>
-          <h1 className="text-4xl md:text-5xl font-serif italic text-[#1A332B] leading-tight">Raízes baianas. Alma contemporânea.</h1>
-          <div className="w-12 h-[1px] bg-[#C06A35]/30 mx-auto my-6"></div>
-          <p className="text-[#423226] font-light text-lg md:text-xl leading-relaxed italic">
-            "Acreditamos que vestir-se bem não significa seguir tendências, mas construir um guarda-roupa que reflita personalidade, conforto e confiança."
+      <section className="palm-shell pb-20 pt-6 sm:pt-10" aria-labelledby="about-title">
+        <div className="grid items-start gap-12 lg:grid-cols-12 lg:gap-8">
+          <div className="min-w-0 lg:col-span-6 lg:pb-10 lg:pr-8">
+            <p className="palm-eyebrow mb-7">Nossa essência</p>
+            <h1 id="about-title" className="palm-display max-w-3xl text-5xl sm:text-6xl lg:text-7xl">
+              Raízes baianas.<br />Olhar contemporâneo.
+            </h1>
+            <p className="mt-8 max-w-md text-base font-light leading-8 text-[#423226]">
+              A Palm CO. nasceu de um jeito de olhar: reconhecer beleza, qualidade e presença sem precisar de excesso.
+            </p>
+
+            <dl className="mt-12 grid max-w-lg grid-cols-2 gap-x-8 gap-y-6 border-t border-[#C06A35]/20 pt-6 text-sm sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <dt className="palm-eyebrow mb-2">Origem</dt>
+                <dd className="text-[#1A332B]">Bahia, Brasil</dd>
+              </div>
+              <div>
+                <dt className="palm-eyebrow mb-2">Escolha</dt>
+                <dd className="text-[#1A332B]">Curadoria independente</dd>
+              </div>
+              <div>
+                <dt className="palm-eyebrow mb-2">Propósito</dt>
+                <dd className="text-[#1A332B]">Moda circular</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="relative min-w-0 lg:col-span-6 lg:pl-8">
+            <div className="palm-product-media aspect-[4/5] lg:aspect-[4/3] lg:max-h-[620px]">
+              <ResponsiveLocalImage
+                basePath="/images/optimized/curadoria3"
+                fallbackSrc="/images/curadoria3.png"
+                widths={[640, 1200, 1357]}
+                width={1357}
+                height={903}
+                alt="Tecidos e texturas selecionados pela curadoria Palm CO."
+                sizes="(min-width: 1024px) 58vw, 100vw"
+                loading="eager"
+                fetchPriority="high"
+                className="palm-product-image grayscale-[15%] contrast-[0.95]"
+              />
+            </div>
+            <p className="palm-eyebrow mt-4 text-right">
+              Palmeirinha · Bahia
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-[#C06A35]/15 bg-[#F4E4D4]" aria-labelledby="origin-title">
+        <div className="palm-shell grid gap-12 py-20 lg:grid-cols-12 lg:gap-20 lg:py-28">
+          <div className="lg:col-span-4">
+            <p className="palm-eyebrow mb-6">A origem</p>
+            <h2 id="origin-title" className="palm-display text-4xl sm:text-5xl">Um ritmo mais humano.</h2>
+          </div>
+          <div className="grid gap-7 text-base font-light leading-8 text-[#423226] lg:col-span-7 lg:col-start-6 lg:grid-cols-2">
+            <p>
+              Nossa inspiração vem de Palmeirinha, no interior da Bahia — um lugar onde o tempo convida a perceber o valor das coisas bem-feitas.
+            </p>
+            <p>
+              Essa origem não determina um estilo de roupa. Ela orienta nossas escolhas: peças autênticas, duradouras e fáceis de levar para a vida real.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid min-h-[75vh] lg:grid-cols-2" aria-labelledby="curation-title">
+        <div className="relative min-h-[520px] overflow-hidden lg:min-h-[760px]">
+          <ResponsiveLocalImage
+            basePath="/images/optimized/corrente1"
+            fallbackSrc="/images/corrente1.jpg"
+            widths={[640, 1200, 1920]}
+            width={1920}
+            height={1280}
+            alt="Detalhe de corrente que representa permanência e continuidade"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="absolute inset-0 h-full w-full object-cover brightness-[0.82] grayscale-[10%]"
+          />
+          <p className="absolute bottom-6 left-6 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/85 sm:bottom-10 sm:left-10">
+            Matéria · detalhe · permanência
           </p>
         </div>
 
-        {/* Brand Story and Curation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <h2 className="text-2xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">A Nossa Origem</h2>
-              <p className="text-sm text-[#423226] leading-relaxed font-light">
-                A Palm CO. nasceu inspirada em Palmeirinha, um pequeno distrito do interior da Bahia onde o tempo parece seguir outro ritmo. Foi nesse ambiente de simplicidade, acolhimento e autenticidade que surgiu a inspiração para construir uma marca que valorizasse escolhas feitas com calma e intenção.
-              </p>
-              <p className="text-sm text-[#423226] leading-relaxed font-light">
-                Essa origem não define um estilo específico de roupa, define um jeito de olhar. Assim como no interior aprendemos a reconhecer o valor das coisas bem feitas, a Palm CO. acredita que uma boa peça merece ser escolhida pela sua qualidade, pelo seu caimento e pela forma como faz alguém se sentir.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-2xl font-serif text-[#1A332B] border-b border-[#C06A35]/20 pb-2">A Curadoria</h2>
-              <p className="text-sm text-[#423226] leading-relaxed font-light">
-                A Palm CO. não compete por preço, volume ou tendências passageiras. Nós competimos pela confiança no nosso olhar.
-              </p>
-              <p className="text-sm text-[#423226] leading-relaxed font-light">
-                Cada peça passa pelo olhar rigoroso e sensível da nossa curadoria antes de chegar à cliente. Não importa sua origem; importa que ela faça sentido dentro do universo Palm CO.: elegante, autêntica, duradoura e fácil de incorporar ao seu dia a dia.
-              </p>
-            </div>
-          </div>
-
-          {/* Premium Manifesto Box */}
-          <div className="bg-[#FAF9F6] p-10 md:p-12 border border-[#C06A35]/15 shadow-sm space-y-6">
-            <span className="text-[9px] uppercase tracking-[0.2em] text-[#A8A29E] font-bold block">O Manifesto</span>
-            <h3 className="font-serif text-[#1A332B] text-2xl italic leading-snug">
-              Não acreditamos que estilo seja excesso.
-            </h3>
-
-            <div className="w-8 h-[1px] bg-[#C06A35]/30"></div>
-
-            <ul className="space-y-4 text-sm text-[#423226] font-light leading-relaxed">
-              <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 bg-[#C06A35] rounded-full mt-2"></span>
-                <span>Acreditamos em escolhas.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 bg-[#C06A35] rounded-full mt-2"></span>
-                <span>Acreditamos em roupas que permanecem.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 bg-[#C06A35] rounded-full mt-2"></span>
-                <span>Em peças que acompanham histórias.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 bg-[#C06A35] rounded-full mt-2"></span>
-                <span>Em descobrir beleza sem precisar procurar entre milhares de opções.</span>
-              </li>
-            </ul>
-
-            <p className="text-xs text-[#C06A35] uppercase tracking-widest font-semibold pt-4">
-              Nós fazemos essa escolha por você.
+        <div className="flex items-center bg-[#1A332B] px-6 py-20 text-[#FDF6F0] sm:px-12 lg:px-20">
+          <div className="max-w-xl">
+            <p className="mb-7 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D49A75]">O olhar Palm CO.</p>
+            <h2 id="curation-title" className="font-serif text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
+              Curadoria antes de quantidade.
+            </h2>
+            <p className="mt-8 max-w-lg text-base font-light leading-8 text-[#FDF6F0]/78">
+              Não queremos reunir tudo. Selecionamos aquilo que tem personalidade, boa construção e liberdade para atravessar diferentes momentos.
             </p>
+
+            <blockquote className="mt-12 border-l border-[#D49A75] pl-6 font-serif text-2xl italic leading-9 text-[#FDF6F0]">
+              “Estilo não é excesso. É reconhecer o que merece permanecer.”
+            </blockquote>
           </div>
         </div>
+      </section>
 
-        {/* Experience & Packaging */}
-        <div className="border-t border-[#C06A35]/20 pt-16 space-y-8">
-          <div className="text-center space-y-4 max-w-xl mx-auto mb-12">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-[#A8A29E] font-bold block">A Experiência</span>
-            <h2 className="text-3xl font-serif text-[#1A332B]">O Jeito Palm CO.</h2>
-            <p className="text-sm text-[#423226] font-light leading-relaxed">
-              Acreditamos que a experiência de compra deve ir muito além do produto. Cada etapa é desenhada para transmitir refinamento e atenção.
-            </p>
+      <section className="bg-[#FDF6F0] pb-10 pt-20 lg:pb-12 lg:pt-28" aria-labelledby="principles-title">
+        <div className="palm-shell">
+          <div className="mb-14 max-w-2xl">
+            <p className="palm-eyebrow mb-5">O jeito Palm CO.</p>
+            <h2 id="principles-title" className="palm-display text-4xl sm:text-5xl">Três escolhas que orientam tudo.</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 border border-gray-100 space-y-4 rounded-sm">
-              <h3 className="font-serif text-[#1A332B] text-lg">Curadoria com Intenção</h3>
-              <p className="text-xs text-[#423226] font-light leading-relaxed">
-                Não escolhemos peças apenas porque estão em alta. Cada item é selecionado pelo design, qualidade, caimento e pela forma como conversa com o universo da Palm CO.
-              </p>
-            </div>
+          <ol className="grid border-t border-[#C06A35]/25 md:grid-cols-3">
+            {PRINCIPLES.map(([number, title, description]) => (
+              <li key={number} className="border-b border-[#C06A35]/25 py-8 md:border-r md:px-8 md:first:pl-0 md:last:border-r-0 md:last:pr-0">
+                <span className="font-serif text-sm italic text-[#8A4825]">{number}</span>
+                <h3 className="mt-8 font-serif text-2xl text-[#1A332B]">{title}</h3>
+                <p className="mt-4 max-w-sm text-sm font-light leading-7 text-[#423226]">{description}</p>
+              </li>
+            ))}
+          </ol>
 
-            <div className="bg-white p-8 border border-gray-100 space-y-4 rounded-sm">
-              <h3 className="font-serif text-[#1A332B] text-lg">Estilo que Permanece</h3>
-              <p className="text-xs text-[#423226] font-light leading-relaxed">
-                Acreditamos em um guarda-roupa construído ao longo do tempo. Por isso, buscamos peças que acompanham diferentes momentos, tendências e versões de quem as veste.
-              </p>
-            </div>
-
-            <div className="bg-white p-8 border border-gray-100 space-y-4 rounded-sm">
-              <h3 className="font-serif text-[#1A332B] text-lg">Experiência que Acolhe</h3>
-              <p className="text-xs text-[#423226] font-light leading-relaxed">
-                Comprar na Palm CO. deve ser leve, intuitivo e prazeroso. Cada detalhe da jornada é pensado para transmitir confiança, cuidado e a sensação de ter feito uma boa escolha.
-              </p>
-            </div>
+          <div className="mt-12 flex flex-col items-start justify-between gap-8 sm:flex-row sm:items-end">
+            <p className="max-w-xl font-serif text-3xl leading-tight text-[#1A332B] sm:text-4xl">
+              Peças escolhidas para viver novas histórias.
+            </p>
+            <Link
+              to="/catalogo"
+              className="inline-flex min-h-12 items-center gap-4 border-b border-[#1A332B] py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#1A332B] transition-colors hover:border-[#8A4825] hover:text-[#8A4825]"
+            >
+              Conhecer a curadoria
+              <span aria-hidden="true" className="text-base">→</span>
+            </Link>
           </div>
         </div>
-
-      </div>
+      </section>
     </div>
   );
 }
