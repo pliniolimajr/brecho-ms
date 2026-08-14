@@ -646,54 +646,60 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-24 px-6 bg-[#FDF6F0] animate-fade-in-up">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[#FDF6F0] pb-24 pt-24 animate-fade-in-up">
+      <div className="palm-shell max-w-7xl">
         <button 
           onClick={onBack}
-          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] hover:text-[#1A332B] transition-colors mb-12"
+          className="group mb-10 flex min-h-11 items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] transition-colors hover:text-[#1A332B]"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover:-translate-x-1 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
-          Voltar para a Loja
+          Voltar para a loja
         </button>
 
+        <div className="mb-10 max-w-2xl">
+          <p className="palm-eyebrow mb-4">Checkout seguro</p>
+          <h1 className="palm-display mb-4 text-4xl sm:text-5xl">Finalizar Pedido</h1>
+          <p className="max-w-xl text-sm leading-6 text-[#6B625C]">Revise seus dados, escolha o envio e confirme o valor antes de seguir para o ambiente protegido do Mercado Pago.</p>
+        </div>
+
         {/* Step Progress Bar */}
-        <div className="mb-14 flex items-center justify-between max-w-lg mx-auto lg:mx-0 border-b border-[#C06A35]/10 pb-6">
+        <div className="mb-12 flex max-w-xl items-start justify-between border-b border-[#C06A35]/10 pb-7">
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 1 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${currentStep >= 1 ? 'bg-[#1A332B] text-white' : 'bg-[#EFEAE4] text-[#6B625C]'}`}>
               {currentStep > 1 ? '✓' : '1'}
             </div>
             <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 1 ? 'text-[#1A332B]' : 'text-[#A8A29E]'}`}>Identificação</span>
           </div>
           <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B]' : 'bg-[#EFEAE4]'}`} />
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${currentStep >= 2 ? 'bg-[#1A332B] text-white' : 'bg-[#EFEAE4] text-[#6B625C]'}`}>
               {currentStep > 2 ? '✓' : '2'}
             </div>
             <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 2 ? 'text-[#1A332B]' : 'text-[#6B625C]'}`}>Entrega</span>
           </div>
           <div className={`flex-1 h-[2px] mx-4 transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B]' : 'bg-[#EFEAE4]'}`} />
           <div className="flex flex-col items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B] text-white shadow-md' : 'bg-[#EFEAE4] text-[#A8A29E]'}`}>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${currentStep >= 3 ? 'bg-[#1A332B] text-white' : 'bg-[#EFEAE4] text-[#6B625C]'}`}>
               3
             </div>
             <span className={`text-[10px] uppercase tracking-wider font-bold mt-2 ${currentStep >= 3 ? 'text-[#1A332B]' : 'text-[#6B625C]'}`}>Pagamento</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+        <div className="grid grid-cols-1 gap-14 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)] lg:gap-20">
           
           {/* Left Column: Step Content */}
           <div className="flex-1">
-            <h1 className="text-3xl font-serif text-[#1A332B] mb-8">Finalizar Pedido</h1>
-            
             <form onSubmit={handleSubmit} className="space-y-12">
               {/* Step 1: Identificação */}
               {currentStep === 1 && (
                 <div className="space-y-8 animate-fade-in-up">
                   <div>
-                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Informações de Contato & Identificação</h2>
+                    <p className="palm-eyebrow mb-3">Etapa 1 de 3</p>
+                    <h2 className="mb-2 font-serif text-2xl text-[#1A332B]">Seus dados</h2>
+                    <p className="mb-7 text-sm leading-6 text-[#6B625C]">Usaremos estas informações apenas para identificar o pedido e manter você informado.</p>
                     <div className="space-y-6">
                       <div>
                         <label htmlFor="checkout-email" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-1">E-mail</label>
@@ -780,7 +786,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
               {currentStep === 2 && (
                 <div className="space-y-8 animate-fade-in-up">
                   <div>
-                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Endereço de Entrega</h2>
+                    <p className="palm-eyebrow mb-3">Etapa 2 de 3</p>
+                    <h2 className="mb-2 font-serif text-2xl text-[#1A332B]">Endereço de entrega</h2>
+                    <p className="mb-7 text-sm leading-6 text-[#6B625C]">O valor e o prazo serão calculados para o CEP informado antes do pagamento.</p>
 
                     <div className="space-y-6">
                       {/* Endereço Salvo (Seleção Rápida) */}
@@ -978,15 +986,17 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
               {currentStep === 3 && (
                 <div className="space-y-8 animate-fade-in-up">
                   <div>
-                    <h2 className="text-xl font-serif text-[#1A332B] mb-6">Pagamento Seguro (Mercado Pago)</h2>
-                    <div className="p-6 border border-[#C06A35]/30 bg-white space-y-4 rounded-sm">
+                    <p className="palm-eyebrow mb-3">Etapa 3 de 3</p>
+                    <h2 className="mb-2 font-serif text-2xl text-[#1A332B]">Revisão e pagamento</h2>
+                    <p className="mb-7 text-sm leading-6 text-[#6B625C]">Confira a entrega e o total. A forma de pagamento será escolhida no Mercado Pago.</p>
+                    <div className="space-y-4 border border-[#C06A35]/30 bg-white p-6">
                       <p className="text-sm text-[#423226] leading-relaxed">
-                        Ao clicar em finalizar, você será redirecionado para o ambiente seguro do **Mercado Pago** para escolher sua forma de pagamento preferida:
+                        Ao clicar em finalizar, você será redirecionado para o ambiente seguro do <strong className="text-[#1A332B]">Mercado Pago</strong> para escolher sua forma de pagamento:
                       </p>
                       <ul className="text-xs text-[#423226] space-y-2 pl-4 list-disc">
                         <li><strong>PIX:</strong> Confirmação imediata e preparação de envio mais rápida.</li>
                         <li><strong>Cartão de Crédito:</strong> Parcelamento disponível conforme taxas vigentes.</li>
-                        <li><strong>Boleto Bancário:</strong> Vencimento em até 3 dias úteis.</li>
+                        <li><strong>Boleto:</strong> Quando disponível para esta compra.</li>
                       </ul>
                     </div>
 
@@ -1028,19 +1038,19 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
           </div>
 
           {/* Right Column: Summary */}
-          <div className="lg:pl-12 lg:border-l border-[#C06A35]">
-            <h2 className="text-xl font-serif text-[#1A332B] mb-8">Resumo do Pedido</h2>
+          <aside aria-labelledby="checkout-summary-title" className="self-start border border-[#C06A35]/20 bg-white/55 p-6 sm:p-8 lg:sticky lg:top-28">
+            <p className="palm-eyebrow mb-3">Sua seleção</p>
+            <h2 id="checkout-summary-title" className="mb-8 font-serif text-2xl text-[#1A332B]">Resumo do Pedido</h2>
             
             <div className="space-y-6 mb-8">
                {items.map((item, idx) => (
-                 <div key={idx} className="flex gap-4">
-                    <div className="w-16 h-16 bg-[#F4E4D4] relative">
-                       <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-                       <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#1A332B] text-white text-[10px] flex items-center justify-center rounded-full">1</span>
+                 <div key={idx} className="flex gap-4 border-b border-[#C06A35]/15 pb-5 last:border-b-0">
+                    <div className="palm-product-media aspect-[5/7] w-16 flex-shrink-0">
+                       <img src={item.imageUrl} alt={item.name} className="palm-product-image" />
                     </div>
                     <div className="flex-1">
                        <h3 className="font-serif text-[#1A332B] text-base">{item.name}</h3>
-                       <p className="text-xs text-[#6B625C]">{item.category}</p>
+                       <p className="mt-1 text-xs text-[#6B625C]">{item.size ? `Tam. ${item.size}` : item.category}</p>
                     </div>
                     <span className="text-sm text-[#423226]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
                  </div>
@@ -1111,8 +1121,9 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
                    <span className="font-serif text-2xl text-[#1A332B]">R$ {total.toFixed(2).replace('.', ',')}</span>
                  </div>
                </div>
+               <p className="mt-5 text-xs leading-5 text-[#6B625C]">Pagamento processado pelo Mercado Pago. A Palm CO. não recebe os dados completos do seu cartão.</p>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../services/supabaseClient';
@@ -12,6 +12,14 @@ interface ProductDetailProps {
   onBack: () => void;
   onAddToCart: (product: Product) => void;
 }
+
+const CONDITION_LABELS: Record<NonNullable<Product['condition']>, string> = {
+  new_with_tags: 'Novo com etiqueta',
+  new_without_tags: 'Novo sem etiqueta',
+  excellent: 'Excelente estado',
+  very_good: 'Muito bom estado',
+  good: 'Bom estado',
+};
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
   const navigate = useNavigate();
@@ -29,6 +37,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
 
   const allImages = [product.imageUrl, ...(product.gallery || [])].filter(Boolean);
   const [currentImage, setCurrentImage] = useState(allImages[0]);
+  const isUnavailable = product.isSold || product.stockQuantity === 0;
+  const isUniquePiece = !isUnavailable && product.stockQuantity === 1;
+  const hasStandardSizing = !['Acessórios', 'Calçados', 'Outros'].includes(product.category);
+  const conditionLabel = product.condition ? CONDITION_LABELS[product.condition] : null;
 
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -135,13 +147,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
   };
 
   return (
-    <div className="pt-24 min-h-screen bg-[#FDF6F0] animate-fade-in-up">
-      <div className="max-w-[1800px] mx-auto px-6 md:px-12 pb-24">
+    <div className="min-h-screen bg-[#FDF6F0] pt-24 animate-fade-in-up md:pt-28">
+      <div className="palm-shell pb-24">
 
         {/* Breadcrumb / Back */}
         <button
           onClick={onBack}
-          className="group flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] hover:text-[#1A332B] transition-colors mb-8"
+          className="group mb-8 flex min-h-11 items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] transition-colors hover:text-[#1A332B]"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover:-translate-x-1 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -149,20 +161,24 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
           Voltar para a Loja
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-16 xl:gap-24">
 
           {/* Left: Image Gallery */}
-          <div className="flex flex-col gap-4">
-            <div className="w-full aspect-[4/5] bg-[#F4E4D4] overflow-hidden relative">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="palm-product-media aspect-[4/5] w-full">
               <img
                 src={currentImage}
                 alt={product.name}
-                loading="lazy"
-                className="w-full h-full object-cover animate-fade-in-up"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+                className="palm-product-image animate-fade-in-up"
               />
-              <span className="absolute top-4 right-4 bg-[#FDF6F0] text-[#1A332B] text-xs font-bold uppercase tracking-widest px-3 py-1 shadow-md">
-                Novidade
-              </span>
+              {isUniquePiece && (
+                <span className="absolute right-4 top-4 bg-[#FDF6F0]/95 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A332B] shadow-sm backdrop-blur-sm">
+                  Peça única
+                </span>
+              )}
             </div>
 
             {allImages.length > 1 && (
@@ -171,9 +187,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(img)}
-                    className={`flex-shrink-0 w-24 aspect-[4/5] overflow-hidden border-2 transition-colors ${currentImage === img ? 'border-[#1A332B]' : 'border-transparent hover:border-[#1A332B]/50'}`}
+                    aria-label={`Exibir imagem ${idx + 1} de ${product.name}`}
+                    aria-pressed={currentImage === img}
+                    className={`palm-product-media aspect-[4/5] w-20 flex-shrink-0 border-2 transition-colors sm:w-24 ${currentImage === img ? 'border-[#1A332B]' : 'border-transparent hover:border-[#1A332B]/50'}`}
                   >
-                    <img src={img} alt={`Thumb ${idx}`} loading="lazy" className="w-full h-full object-cover" />
+                    <img src={img} alt={`${product.name} — imagem ${idx + 1}`} loading="lazy" className="palm-product-image" />
                   </button>
                 ))}
               </div>
@@ -181,24 +199,49 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
           </div>
 
           {/* Right: Details */}
-          <div className="flex flex-col justify-center max-w-xl bg-[#FAF9F6] border border-[#C06A35]/15 p-8 md:p-12 shadow-sm rounded-sm">
-            <span className="text-[10px] font-bold text-[#6B625C] uppercase tracking-[0.2em] mb-2">{product.category}</span>
-            <h1 className="text-3xl md:text-4xl font-serif italic text-[#1A332B] mb-4 leading-tight">{product.name}</h1>
-            <span className="text-xl font-semibold text-[#1A332B] block border-b border-[#C06A35]/20 pb-6 mb-6">
+          <div className="flex max-w-xl flex-col lg:sticky lg:top-28 lg:self-start">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <span className="palm-eyebrow">{product.category}</span>
+              <span className={`palm-eyebrow inline-flex items-center gap-2 ${isUnavailable ? 'text-red-700' : 'text-[#1A332B]'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${isUnavailable ? 'bg-red-700' : 'bg-emerald-700'}`} aria-hidden="true" />
+                {isUnavailable ? 'Esgotado' : 'Disponível'}
+              </span>
+            </div>
+            {product.brand && <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#8A4825]">{product.brand}</p>}
+            <h1 className="palm-display mb-5 text-4xl sm:text-5xl lg:text-6xl">{product.name}</h1>
+            {product.tagline && <p className="mb-6 max-w-md text-sm leading-6 text-[#423226]">{product.tagline}</p>}
+            <span className="mb-6 block border-b border-[#C06A35]/20 pb-6 font-serif text-2xl text-[#1A332B]">
               R$ {product.price.toFixed(2).replace('.', ',')}
             </span>
 
+            <dl className="mb-7 grid grid-cols-2 gap-x-6 gap-y-5 border-b border-[#C06A35]/20 pb-7 text-sm">
+              <div><dt className="palm-eyebrow mb-1">Tamanho</dt><dd className="font-medium text-[#1A332B]">{product.size || 'Único'}</dd></div>
+              {product.material && <div><dt className="palm-eyebrow mb-1">Material</dt><dd className="font-medium text-[#1A332B]">{product.material}</dd></div>}
+              {product.color?.length ? <div><dt className="palm-eyebrow mb-1">Cor</dt><dd className="font-medium text-[#1A332B]">{product.color.join(', ')}</dd></div> : null}
+              {conditionLabel && <div><dt className="palm-eyebrow mb-1">Estado</dt><dd className="font-medium text-[#1A332B]">{conditionLabel}</dd></div>}
+              <div><dt className="palm-eyebrow mb-1">Seleção</dt><dd className="font-medium text-[#1A332B]">Curadoria Palm CO.</dd></div>
+            </dl>
+
+            {product.conditionNotes && (
+              <div className="mb-7 border-l-2 border-[#C06A35] bg-white/55 px-4 py-3 text-sm leading-6 text-[#423226]">
+                <strong className="mb-1 block text-xs uppercase tracking-[0.14em] text-[#1A332B]">Observações da peça</strong>
+                <p>{product.conditionNotes}</p>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            <div className="flex gap-4 w-full mb-8">
+            <div className="mb-5 flex w-full gap-3">
               <button
                 onClick={() => onAddToCart(product)}
-                className="flex-1 py-4 bg-black text-white hover:bg-[#C06A35] transition-colors text-xs font-bold uppercase tracking-[0.25em] flex items-center justify-center shadow-md hover:shadow-lg"
+                disabled={isUnavailable}
+                className="flex min-h-14 flex-1 items-center justify-center bg-[#1A332B] px-6 py-4 text-xs font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-[#8A4825] disabled:cursor-not-allowed disabled:bg-[#6B625C]"
               >
-                Comprar
+                {isUnavailable ? 'Produto esgotado' : 'Adicionar à sacola'}
               </button>
               <button
                 onClick={handleWishlistToggle}
-                className={`px-5 border flex items-center justify-center transition-colors shadow-sm hover:shadow-md ${isWishlisted ? 'bg-red-50 text-red-500 border-red-500' : 'border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5'}`}
+                aria-label={isWishlisted ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
+                className={`flex min-h-14 min-w-14 items-center justify-center border px-4 transition-colors ${isWishlisted ? 'border-red-700 bg-red-50 text-red-700' : 'border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5'}`}
                 title={isWishlisted ? 'Remover da Wishlist' : 'Adicionar à Wishlist'}
               >
                 <svg
@@ -214,11 +257,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               </button>
             </div>
 
+            <ul className="mb-8 grid grid-cols-1 gap-3 border-y border-[#C06A35]/20 py-5 text-xs leading-5 text-[#423226] sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              <li><strong className="block text-[#1A332B]">Envio nacional</strong>Frete calculado no checkout</li>
+              <li><strong className="block text-[#1A332B]">Postagem ágil</strong>Em até 2 dias úteis</li>
+              <li><strong className="block text-[#1A332B]">Compra tranquila</strong>Devolução em até 7 dias</li>
+            </ul>
+
             {/* Collapsible details inspired by Shoulder */}
             <div className="space-y-4 mb-8">
               <details className="group border-b border-[#C06A35]/10 pb-3" open>
                 <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
-                  <span>Composição e Medidas</span>
+                  <span>Detalhes da peça</span>
                   <span className="transition-transform group-open:rotate-180">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -253,11 +302,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
 
                   {product.measurements && Object.keys(product.measurements).length > 0 && (
                     <div className="mt-4 pt-4 border-t border-[#C06A35]/10">
-                      <span className="font-medium text-[#A8A29E] uppercase tracking-wider text-[9px] block mb-2">Medidas Detalhadas:</span>
+                      <span className="mb-2 block text-[9px] font-medium uppercase tracking-wider text-[#6B625C]">Medidas detalhadas</span>
                       <ul className="grid grid-cols-2 gap-x-6 gap-y-1">
                         {Object.entries(product.measurements).map(([key, val]) => (
                           <li key={key} className="flex justify-between py-1">
-                            <span className="text-[#A8A29E]">{key}:</span>
+                            <span className="text-[#6B625C]">{key}:</span>
                             <span className="font-semibold">{val as string}</span>
                           </li>
                         ))}
@@ -267,9 +316,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                 </div>
               </details>
 
-              <details className="group border-b border-[#C06A35]/10 pb-3">
+              {hasStandardSizing && <details className="group border-b border-[#C06A35]/10 pb-3">
                 <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
-                  <span>Tabela de Medidas Padrão</span>
+                  <span>Referência geral de tamanhos</span>
                   <span className="transition-transform group-open:rotate-180">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -295,7 +344,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                     </tbody>
                   </table>
                 </div>
-              </details>
+                <p className="mt-3 text-[10px] leading-relaxed text-[#6B625C]">As medidas podem variar conforme a marca e a modelagem. Priorize as medidas específicas da peça quando disponíveis.</p>
+              </details>}
 
               <details className="group border-b border-[#C06A35]/10 pb-3">
                 <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
@@ -309,6 +359,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                 <div className="mt-4 text-xs font-light text-[#423226] leading-relaxed space-y-2">
                   <p>Entregamos para todo o Brasil via Correios (PAC e SEDEX) ou transportadora parceira. O cálculo do frete é feito no momento do checkout.</p>
                   <p>As devoluções podem ser solicitadas em até 7 dias após o recebimento do produto, seguindo as diretrizes do Código de Defesa do Consumidor.</p>
+                  <Link to="/politicas" className="inline-flex min-h-10 items-center font-semibold text-[#8A4825] underline underline-offset-4">Consultar política completa</Link>
                 </div>
               </details>
             </div>
@@ -359,13 +410,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   <h3 className="font-serif text-lg text-[#1A332B]">Escrever Avaliação</h3>
 
                   <div>
-                    <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Nota</label>
+                    <span className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Nota</span>
                     <div className="flex gap-2">
                       {[1, 2, 3, 4, 5].map((num) => (
                         <button
                           key={num}
                           type="button"
                           onClick={() => setNewRating(num)}
+                          aria-label={`${num} ${num === 1 ? 'estrela' : 'estrelas'}`}
+                          aria-pressed={num === newRating}
                           className="text-amber-500 hover:scale-110 transition-transform"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" fill={num <= newRating ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
@@ -377,8 +430,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   </div>
 
                   <div>
-                    <label className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Comentário</label>
+                    <label htmlFor="product-review-comment" className="block text-xs uppercase tracking-widest text-[#423226] font-bold mb-2">Comentário</label>
                     <textarea
+                      id="product-review-comment"
                       rows={3}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}

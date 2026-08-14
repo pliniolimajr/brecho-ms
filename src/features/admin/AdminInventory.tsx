@@ -95,7 +95,9 @@ export function AdminInventory({
       color: editingProduct.color || [],
       material: editingProduct.material || null,
       measurements: editingProduct.measurements || null,
-      stock_quantity: editingProduct.stockQuantity || 1,
+      stock_quantity: editingProduct.stockQuantity ?? 1,
+      condition: editingProduct.condition || null,
+      condition_notes: editingProduct.conditionNotes?.trim() || null,
     };
 
     if (editingProduct.id) {
@@ -250,6 +252,22 @@ export function AdminInventory({
             <input placeholder="Cores (ex: Preto, Branco, Cinza)" className="border p-2" value={editingProduct.color?.join(', ') || ''} onChange={e => setEditingProduct({...editingProduct, color: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} />
             <input placeholder="Material (ex: Algodão, Linho)" className="border p-2" value={editingProduct.material || ''} onChange={e => setEditingProduct({...editingProduct, material: e.target.value})} />
             <input placeholder="Estoque" type="number" min="0" className="border p-2" value={editingProduct.stockQuantity ?? 1} onChange={e => setEditingProduct({...editingProduct, stockQuantity: Number(e.target.value)})} />
+            <select aria-label="Estado de conservação" className="border p-2" value={editingProduct.condition || ''} onChange={e => setEditingProduct({...editingProduct, condition: (e.target.value || undefined) as Product['condition']})}>
+              <option value="">Estado de conservação</option>
+              <option value="new_with_tags">Novo com etiqueta</option>
+              <option value="new_without_tags">Novo sem etiqueta</option>
+              <option value="excellent">Excelente estado</option>
+              <option value="very_good">Muito bom estado</option>
+              <option value="good">Bom estado</option>
+            </select>
+            <textarea
+              aria-label="Observações sobre o estado da peça"
+              placeholder="Observações de conservação, marcas de uso ou detalhes relevantes"
+              className="border p-2 md:col-span-2"
+              rows={3}
+              value={editingProduct.conditionNotes || ''}
+              onChange={e => setEditingProduct({...editingProduct, conditionNotes: e.target.value})}
+            />
             
             <input 
               placeholder="Medidas (ex: Comprimento: 70cm, Busto: 100cm)" 

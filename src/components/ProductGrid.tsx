@@ -22,19 +22,23 @@ const ProductGrid: React.FC<ProductGridProps> = ({ onProductClick }) => {
   }, [products]);
 
   return (
-    <section id="products" className="py-32 px-6 md:px-12 bg-[#FDF6F0]">
-      <div className="max-w-[1800px] mx-auto">
-        <header className="mb-20 flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <section id="products" className="palm-section bg-[#FDF6F0]">
+      <div className="palm-shell">
+        <header className="mb-14 flex flex-col justify-between gap-8 md:mb-20 md:flex-row md:items-end">
           <div className="max-w-2xl">
-            <h2 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-6">Últimas Novidades</h2>
-            <p className="text-lg text-[#423226]">
-              Roupas incríveis que acabaram de chegar. Se apaixonou? Leva!
+            <span className="palm-eyebrow mb-4 block">Seleção recente</span>
+            <h2 className="palm-display mb-6 text-4xl md:text-6xl">Recém-chegadas</h2>
+            <p className="max-w-xl text-base leading-relaxed text-[#423226] md:text-lg">
+              Peças escolhidas uma a uma, com atenção à presença, à versatilidade e aos detalhes que permanecem.
             </p>
           </div>
+          <p className="hidden max-w-xs text-right text-xs uppercase leading-relaxed tracking-[0.16em] text-[#6B625C] md:block">
+            Edições limitadas.<br />Quando uma peça vai, ela não se repete.
+          </p>
         </header>
 
         {/* Large Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20">
+        <div className="grid grid-cols-1 gap-x-7 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-24">
           {isLoadingProducts ? (
             <div className="col-span-full py-20 text-center text-[#423226]">Carregando produtos...</div>
           ) : recentProducts.length === 0 ? (
@@ -46,12 +50,13 @@ const ProductGrid: React.FC<ProductGridProps> = ({ onProductClick }) => {
           )}
         </div>
 
-        <div className="mt-20 text-center">
+        <div className="mt-16 flex justify-center md:mt-24">
           <button 
             onClick={() => navigate('/catalogo')}
-            className="inline-block border border-[#1A332B] text-[#1A332B] px-12 py-4 uppercase tracking-widest text-sm font-medium hover:bg-[#1A332B] hover:text-[#FDF6F0] transition-colors"
+            className="group inline-flex min-h-12 items-center gap-4 border-b border-[#1A332B] px-1 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#1A332B] transition-colors hover:border-[#C06A35] hover:text-[#8A4825]"
           >
-            Ver Catálogo Completo
+            Ver catálogo completo
+            <span aria-hidden="true" className="text-base transition-transform group-hover:translate-x-1">→</span>
           </button>
         </div>
       </div>

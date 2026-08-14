@@ -98,6 +98,8 @@ export const useStore = create<StoreState>()(
       material: row.material,
       measurements: row.measurements,
       stockQuantity: row.stock_quantity,
+      condition: row.condition,
+      conditionNotes: row.condition_notes,
     }));
 
     set({ products: mappedProducts, isLoadingProducts: false, lastFetched: Date.now() });

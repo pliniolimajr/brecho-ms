@@ -28,9 +28,9 @@ export const STORE_SETTINGS = {
   hero: {
     imageUrl: "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?auto=format&fit=crop&q=80&w=2000",
     title: "Palm CO.",
-    subtitle: "Peças criadas para acompanhar seu dia com conforto, qualidade e um design que permanece atual.",
-    tagline: "DESIGN ATEMPORAL",
-    buttonText: "Explorar coleção"
+    subtitle: "Uma curadoria de peças singulares para vestir com intenção, presença e liberdade.",
+    tagline: "CURADORIA BAIANA",
+    buttonText: "Descobrir peças"
   } as HeroSettings,
   storeInfo: {
     name: "Palm CO.",

@@ -82,6 +82,8 @@ export function AdminDashboard() {
         material: row.material,
         measurements: row.measurements,
         stockQuantity: row.stock_quantity,
+        condition: row.condition,
+        conditionNotes: row.condition_notes,
         size: row.size
       }));
       setAdminProducts(mapped);

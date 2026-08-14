@@ -82,6 +82,11 @@ export function Catalog() {
     );
   }, [searchQuery, category, size, minPrice, maxPrice, selectedBrand, selectedColor, selectedMaterial, searchParams]);
 
+  const activeFilterCount = [
+    searchQuery !== '', category !== 'Todos', size !== '', minPrice > 0, maxPrice < 1000,
+    selectedBrand !== 'Todos', selectedColor !== 'Todos', selectedMaterial !== 'Todos', !!searchParams.get('filter'),
+  ].filter(Boolean).length;
+
   useEffect(() => {
     setCurrentPage(1);
   }, [category, size, minPrice, maxPrice, sortOrder, debouncedSearch, selectedBrand, selectedColor, selectedMaterial]);
@@ -147,6 +152,8 @@ export function Catalog() {
           imageUrl: row.image_url, gallery: row.gallery, features: row.features || [], size: row.size,
           brand: row.brand, color: row.color, material: row.material, measurements: row.measurements,
           stockQuantity: row.stock_quantity,
+          condition: row.condition,
+          conditionNotes: row.condition_notes,
         })));
         setTotalProducts(count || 0);
       }
@@ -159,7 +166,7 @@ export function Catalog() {
   const totalPages = Math.ceil(totalProducts / ITEMS_PER_PAGE);
 
   return (
-    <div className="min-h-screen pt-24 pb-24 bg-[#FDF6F0]">
+    <div className="min-h-screen bg-[#FDF6F0] pb-24 pt-28 md:pt-32">
       <Seo
         title="Coleção e catálogo"
         description="Explore a curadoria Palm CO. por categoria, tamanho, marca, cor e material. Peças únicas para um consumo mais consciente."
@@ -172,15 +179,20 @@ export function Catalog() {
           ],
         }}
       />
-      <div className="max-w-[1800px] mx-auto px-6 md:px-12">
+      <div className="palm-shell">
 
-        <h1 className="text-4xl md:text-5xl font-serif text-[#1A332B] mb-3">Coleção & Curadoria</h1>
-        <p className="text-[#423226] mb-8 max-w-2xl text-sm md:text-base leading-relaxed">
-          Peças atemporais selecionadas com olhar criterioso. Explore nosso catálogo por categoria, tamanho, cor ou tecido.
-        </p>
+        <header className="mb-10 border-b border-[#C06A35]/20 pb-10 md:mb-12 md:flex md:items-end md:justify-between md:gap-12 md:pb-12">
+          <div>
+            <span className="palm-eyebrow mb-4 block">Acervo Palm CO.</span>
+            <h1 className="palm-display text-5xl sm:text-6xl md:text-7xl">Coleção & Curadoria</h1>
+          </div>
+          <p className="mt-6 max-w-xl text-sm leading-7 text-[#423226] md:mt-0 md:text-base">
+            Peças singulares selecionadas com olhar criterioso. Descubra por categoria, tamanho, marca ou material.
+          </p>
+        </header>
 
         {/* Search & Sort Header Bar */}
-        <div className="mb-8 flex flex-col md:flex-row gap-4 max-w-4xl">
+        <div className="mb-7 flex flex-col gap-3 border-b border-[#C06A35]/20 pb-7 md:flex-row">
           <div className="relative flex-1">
             <input
               type="text"
@@ -188,18 +200,19 @@ export function Catalog() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="catalog-search-input"
-              className="w-full bg-white border border-[#C06A35]/30 py-3 pl-4 pr-12 text-[#1A332B] placeholder-[#A8A29E] outline-none focus:border-[#1A332B] transition-colors rounded-sm text-sm"
+              className="w-full border-0 border-b border-[#1A332B]/35 bg-transparent py-3 pl-0 pr-12 text-sm text-[#1A332B] outline-none transition-colors placeholder:text-[#6B625C] focus:border-[#1A332B]"
             />
             {searchQuery ? (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-3 text-[#A8A29E] hover:text-[#1A332B] font-bold text-sm"
+                className="absolute right-1 top-1 min-h-10 min-w-10 text-sm font-bold text-[#6B625C] hover:text-[#1A332B]"
                 title="Limpar busca"
+                aria-label="Limpar busca"
               >
                 &times;
               </button>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 absolute right-4 top-3.5 text-[#A8A29E]">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="absolute right-2 top-3.5 h-5 w-5 text-[#6B625C]">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
             )}
@@ -210,7 +223,7 @@ export function Catalog() {
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as any)}
               id="catalog-sort-select"
-              className="w-full bg-white border border-[#C06A35]/30 py-3 px-4 text-[#1A332B] outline-none focus:border-[#1A332B] transition-colors appearance-none cursor-pointer pr-10 rounded-sm text-sm"
+              className="w-full cursor-pointer appearance-none border-0 border-b border-[#1A332B]/35 bg-transparent px-0 py-3 pr-10 text-sm text-[#1A332B] outline-none transition-colors focus:border-[#1A332B]"
             >
               <option value="recent">Mais Recentes</option>
               <option value="price_asc">Menor Preço</option>
@@ -226,8 +239,8 @@ export function Catalog() {
 
         {/* Active Filter Chips / Pills */}
         {hasActiveFilters && (
-          <div className="flex flex-wrap items-center gap-2 mb-8 bg-white p-3 rounded border border-[#C06A35]/20 text-xs">
-            <span className="font-semibold text-[#A8A29E] uppercase tracking-wider text-[10px]">Filtros Ativos:</span>
+          <div className="mb-8 flex flex-wrap items-center gap-2 text-xs" aria-label="Filtros ativos">
+            <span className="palm-eyebrow mr-1">Filtros ativos</span>
             {searchQuery && (
               <span className="bg-[#FDF6F0] text-[#1A332B] border border-[#C06A35]/30 px-2.5 py-1 rounded-full flex items-center gap-1.5">
                 Busca: "{searchQuery}"
@@ -278,37 +291,40 @@ export function Catalog() {
             )}
             <button
               onClick={resetAllFilters}
-              className="text-[#C06A35] underline hover:text-[#1A332B] font-medium ml-auto text-xs"
+              className="ml-auto min-h-10 px-2 text-xs font-medium text-[#8A4825] underline underline-offset-4 hover:text-[#1A332B]"
             >
               Limpar Todos
             </button>
           </div>
         )}
 
-        <div className="md:hidden mb-6">
+        <div className="mb-7 md:hidden">
           <button
             onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className="w-full bg-[#1A332B] text-white py-3 uppercase tracking-widest text-sm font-medium flex items-center justify-center gap-2 rounded-sm"
+            className="flex min-h-12 w-full items-center justify-between border-y border-[#1A332B]/30 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#1A332B]"
+            aria-expanded={showMobileFilters}
+            aria-controls="catalog-filters"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
             </svg>
-            {showMobileFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+            <span>{showMobileFilters ? 'Ocultar filtros' : 'Filtrar peças'}</span>
+            {activeFilterCount > 0 && <span className="rounded-full bg-[#1A332B] px-2 py-0.5 text-[10px] text-white">{activeFilterCount}</span>}
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-12 items-start">
+        <div className="flex flex-col items-start gap-10 md:flex-row lg:gap-16">
 
           {/* Sidebar - Filtros */}
-          <aside className={`w-full md:w-64 flex-shrink-0 space-y-8 ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
+          <aside id="catalog-filters" className={`w-full flex-shrink-0 space-y-8 border-b border-[#C06A35]/20 pb-9 md:sticky md:top-28 md:block md:w-56 md:border-b-0 md:pb-0 ${showMobileFilters ? 'block' : 'hidden'}`} aria-label="Filtros do catálogo">
             <div>
-              <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Categorias</h3>
+              <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">Categorias</h2>
               <ul className="space-y-1.5">
                 {CATEGORIES.map(cat => (
                   <li key={cat}>
                     <button
                       onClick={() => setCategory(cat)}
-                      className={`text-sm text-left w-full transition-colors ${category === cat ? 'font-bold text-[#8A4825]' : 'text-[#423226] hover:text-[#1A332B]'}`}
+                      className={`min-h-9 w-full text-left text-sm transition-colors ${category === cat ? 'font-bold text-[#8A4825]' : 'text-[#423226] hover:text-[#1A332B]'}`}
                     >
                       {cat}
                     </button>
@@ -318,11 +334,11 @@ export function Catalog() {
             </div>
 
             <div>
-              <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Tamanho</h3>
+              <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">Tamanho</h2>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setSize('')}
-                  className={`px-3 py-1 text-xs border rounded-sm transition-colors ${!size ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
+                  className={`min-h-9 min-w-9 border px-3 py-1 text-xs transition-colors ${!size ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                 >
                   Todos
                 </button>
@@ -330,7 +346,7 @@ export function Catalog() {
                   <button
                     key={s}
                     onClick={() => setSize(s)}
-                    className={`px-3 py-1 text-xs border rounded-sm transition-colors ${size === s ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
+                    className={`min-h-9 min-w-9 border px-3 py-1 text-xs transition-colors ${size === s ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                   >
                     {s}
                   </button>
@@ -340,13 +356,13 @@ export function Catalog() {
 
             {uniqueBrands.length > 1 && (
               <div>
-                <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Marca</h3>
+                <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">Marca</h2>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueBrands.map(b => (
                     <button
                       key={b}
                       onClick={() => setSelectedBrand(b)}
-                      className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedBrand === b ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
+                      className={`min-h-9 border px-2.5 py-1 text-xs transition-colors ${selectedBrand === b ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                     >
                       {b}
                     </button>
@@ -357,13 +373,13 @@ export function Catalog() {
 
             {uniqueColors.length > 1 && (
               <div>
-                <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Cor</h3>
+                <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">Cor</h2>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueColors.map(c => (
                     <button
                       key={c}
                       onClick={() => setSelectedColor(c)}
-                      className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedColor === c ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
+                      className={`min-h-9 border px-2.5 py-1 text-xs transition-colors ${selectedColor === c ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                     >
                       {c}
                     </button>
@@ -374,13 +390,13 @@ export function Catalog() {
 
             {uniqueMaterials.length > 1 && (
               <div>
-                <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">Material</h3>
+                <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">Material</h2>
                 <div className="flex flex-wrap gap-1.5">
                   {uniqueMaterials.map(m => (
                     <button
                       key={m}
                       onClick={() => setSelectedMaterial(m)}
-                      className={`px-2.5 py-1 text-xs border rounded-sm transition-colors ${selectedMaterial === m ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
+                      className={`min-h-9 border px-2.5 py-1 text-xs transition-colors ${selectedMaterial === m ? 'bg-[#1A332B] text-white border-[#1A332B]' : 'border-[#C06A35]/40 text-[#423226] hover:border-[#1A332B]'}`}
                     >
                       {m}
                     </button>
@@ -390,13 +406,14 @@ export function Catalog() {
             )}
 
             <div>
-              <h3 className="font-serif text-lg text-[#1A332B] mb-3 border-b border-[#C06A35]/30 pb-2">
+              <h2 className="palm-eyebrow mb-4 border-b border-[#C06A35]/25 pb-3">
                 Faixa de Preço (R$)
-              </h3>
+              </h2>
               <div className="flex items-center gap-2 mb-3">
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Mínimo</label>
+                  <label htmlFor="catalog-min-price" className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Mínimo</label>
                   <input
+                    id="catalog-min-price"
                     type="number"
                     min="0"
                     max={maxPrice}
@@ -408,8 +425,9 @@ export function Catalog() {
                 </div>
                 <span className="text-[#A8A29E] font-medium pt-4">-</span>
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Máximo</label>
+                  <label htmlFor="catalog-max-price" className="text-[10px] uppercase font-bold text-[#6B625C] block mb-1">Máximo</label>
                   <input
+                    id="catalog-max-price"
                     type="number"
                     min={minPrice}
                     placeholder="1000"
@@ -420,8 +438,9 @@ export function Catalog() {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] text-[#6B625C] block">Ajuste rápido preço máx: R$ {maxPrice}</label>
+                <label htmlFor="catalog-price-range" className="text-[10px] text-[#6B625C] block">Ajuste rápido preço máx: R$ {maxPrice}</label>
                 <input
+                  id="catalog-price-range"
                   type="range"
                   aria-label="Preço máximo"
                   min="10"
@@ -437,13 +456,13 @@ export function Catalog() {
           </aside>
 
           {/* Product Grid & States */}
-          <main className="flex-1 w-full">
-            <header className="mb-6 flex justify-between items-end">
-              <h2 className="text-2xl font-serif text-[#1A332B]">{category === 'Todos' ? 'Todas as Peças' : category}</h2>
-              <p className="text-xs text-[#6B625C] font-medium">{totalProducts} peça(s) encontrada(s)</p>
+          <section className="w-full flex-1" aria-labelledby="catalog-results-title">
+            <header className="mb-7 flex items-end justify-between border-b border-[#C06A35]/20 pb-4">
+              <h2 id="catalog-results-title" className="font-serif text-2xl text-[#1A332B]">{category === 'Todos' ? 'Todas as peças' : category}</h2>
+              <p className="palm-eyebrow text-right">{totalProducts} {totalProducts === 1 ? 'peça' : 'peças'}</p>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-16 sm:grid-cols-2 xl:grid-cols-3 xl:gap-x-8 xl:gap-y-20">
               {isLoadingProducts && products.length === 0 ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />
@@ -530,7 +549,7 @@ export function Catalog() {
                 </button>
               </div>
             )}
-          </main>
+          </section>
         </div>
 
       </div>

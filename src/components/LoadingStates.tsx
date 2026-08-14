@@ -22,10 +22,10 @@ export function TableSkeleton({ rows = 5, columns = 5, label = 'Carregando dados
 
 export function ProductCardSkeleton() {
   return (
-    <div className="animate-pulse bg-white border border-[#C06A35]/15 rounded overflow-hidden flex flex-col h-full shadow-sm" role="status">
+    <div className="flex h-full flex-col overflow-hidden animate-pulse" role="status">
       <span className="sr-only">Carregando produto</span>
-      <div className="w-full aspect-[3/4] bg-[#FDF6F0]/80" />
-      <div className="p-4 space-y-3 flex-1">
+      <div className="palm-product-media aspect-[5/7] w-full" />
+      <div className="flex-1 space-y-3 py-4">
         <div className="h-3 bg-gray-200 rounded w-1/4" />
         <div className="h-4 bg-gray-200 rounded w-3/4" />
         <div className="h-4 bg-gray-200 rounded w-1/3 mt-6" />

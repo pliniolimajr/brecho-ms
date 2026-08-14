@@ -41,6 +41,7 @@ const Hero: React.FC = () => {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const timer = setInterval(() => {
       setCurrentSlideIndex((prevIndex) => (prevIndex + 1) % HERO_SLIDES.length);
     }, 15000); // 15 segundos por imagem
@@ -48,7 +49,7 @@ const Hero: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+  const handleNavClick = (e: React.MouseEvent<HTMLElement>, targetId: string) => {
     e.preventDefault();
     const element = document.getElementById(targetId);
     if (element) {
@@ -72,7 +73,7 @@ const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative w-full h-screen min-h-[750px] overflow-hidden bg-[#111111]">
+    <section className="relative h-[100svh] min-h-[680px] w-full overflow-hidden bg-[#111111]" aria-label="Apresentação Palm CO.">
 
       {/* Background Slider Container */}
       <div className="absolute inset-0 w-full h-full">
@@ -81,6 +82,7 @@ const Hero: React.FC = () => {
           return (
             <div
               key={slide.id}
+              aria-hidden={!isActive}
               className={`absolute inset-0 w-full h-full transition-opacity duration-2000 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
             >
@@ -97,7 +99,7 @@ const Hero: React.FC = () => {
                 />
                 <img
                   src={slide.url}
-                  alt={slide.title}
+                  alt={isActive ? slide.title : ''}
                   width="1024"
                   height="1024"
                   loading={index === 0 ? 'eager' : 'lazy'}
@@ -118,24 +120,24 @@ const Hero: React.FC = () => {
       </div>
 
       {/* Hero Content Area */}
-      <div className="relative z-20 h-full max-w-[1400px] mx-auto px-6 flex flex-col justify-center items-center text-center">
-        <div className="max-w-3xl flex flex-col items-center animate-fade-in-up">
+      <div className="relative z-20 mx-auto flex h-full max-w-[1400px] flex-col items-center justify-center px-6 text-center">
+        <div className="flex max-w-4xl flex-col items-center animate-fade-in-up">
 
           {/* Microtag: Editorial style with lines */}
           <div className="flex items-center gap-4 text-[11px] font-medium tracking-[0.3em] uppercase text-white/80 mb-6">
             <span className="w-8 h-[1px] bg-white/40"></span>
-            <span>{hero.tagline || 'DESIGN ATEMPORAL'}</span>
+            <span>{hero.tagline || 'CURADORIA BAIANA'}</span>
             <span className="w-8 h-[1px] bg-white/40"></span>
           </div>
 
           {/* Title */}
-          <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif font-normal text-[#FDF6F0] tracking-tight mb-6 drop-shadow-sm">
+          <h1 className="mb-6 font-serif text-[clamp(4rem,14vw,9rem)] font-normal leading-[0.88] tracking-[-0.055em] text-[#FDF6F0] drop-shadow-sm">
             {hero.title || 'Palm CO.'}
           </h1>
 
           {/* Subtitle */}
           <p className="max-w-xl text-base sm:text-lg md:text-xl text-white/85 font-light leading-relaxed mb-10 tracking-wide font-sans">
-            {hero.subtitle || 'Peças criadas para acompanhar seu dia com conforto, qualidade e um design que permanece atual.'}
+            {hero.subtitle || 'Uma curadoria de peças singulares para vestir com intenção, presença e liberdade.'}
           </p>
 
           {/* Buttons Area */}
@@ -146,7 +148,7 @@ const Hero: React.FC = () => {
               onClick={(e) => handleNavClick(e, 'products')}
               className="group h-[52px] px-8 sm:px-9 bg-[#F4EFE9] text-[#111111] border border-[#F4EFE9] rounded-none text-xs font-semibold uppercase tracking-[0.18em] hover:bg-[#C06A35] hover:text-white hover:border-[#C06A35] hover:-translate-y-[2px] transition-all duration-250 ease-out shadow-sm hover:shadow-xl inline-flex items-center justify-center gap-3"
             >
-              <span>{hero.buttonText || 'Explorar coleção'}</span>
+              <span>{hero.buttonText || 'Descobrir peças'}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -180,6 +182,7 @@ const Hero: React.FC = () => {
             key={index}
             onClick={() => setCurrentSlideIndex(index)}
             aria-label={`Slide ${index + 1}`}
+            aria-current={index === currentSlideIndex ? 'true' : undefined}
             className="group flex h-6 min-w-6 items-center justify-center rounded-full"
           >
             <span
@@ -191,13 +194,15 @@ const Hero: React.FC = () => {
       </div>
 
       {/* Subtle Scroll Indicator */}
-      <div
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2.5 opacity-50 hover:opacity-90 transition-opacity cursor-pointer text-white"
-        onClick={(e) => handleNavClick(e as any, 'products')}
+      <button
+        type="button"
+        className="absolute bottom-8 left-1/2 z-20 hidden -translate-x-1/2 flex-col items-center gap-2.5 text-white opacity-60 transition-opacity hover:opacity-100 sm:flex"
+        onClick={(e) => handleNavClick(e, 'products')}
+        aria-label="Scroll — ir para as novidades"
       >
         <span className="text-[9px] uppercase tracking-[0.25em] font-light">Scroll</span>
         <div className="w-[1px] h-6 bg-gradient-to-b from-white via-white/50 to-transparent animate-pulse"></div>
-      </div>
+      </button>
 
     </section>
   );

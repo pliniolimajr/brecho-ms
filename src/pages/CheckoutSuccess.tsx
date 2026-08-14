@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { completeCheckoutJourney, trackEvent } from '../services/analytics';
 import { captureOperationalError } from '../services/monitoring';
+import { CheckoutStatusLayout } from '../components/CheckoutStatusLayout';
 
 export function CheckoutSuccess() {
   const [searchParams] = useSearchParams();
@@ -49,42 +50,44 @@ export function CheckoutSuccess() {
   }
 
   return (
-    <div className="min-h-screen pt-32 pb-24 px-6 bg-[#FDF6F0] flex flex-col items-center justify-center text-center animate-fade-in-up">
-      <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-green-800">
+    <CheckoutStatusLayout
+      eyebrow="Compra confirmada"
+      title="Pagamento Aprovado!"
+      description="Sua compra foi confirmada. A Palm CO. agora confere a peça com cuidado e prepara o envio para o endereço informado."
+      tone="success"
+      note="Você receberá as próximas atualizações por e-mail e também poderá acompanhar o pedido pela sua conta."
+      icon={
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-11 w-11">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-      </div>
-      <h1 className="text-4xl font-serif text-[#1A332B] mb-4">Pagamento Aprovado!</h1>
-      <p className="text-[#423226] max-w-md mb-8">
-        Obrigado pela sua compra! O seu pagamento foi confirmado com sucesso e já estamos preparando o seu envio.
-      </p>
-
+      }
+      actions={
+        <button
+          onClick={() => navigate('/minha-conta')}
+          className="min-h-12 bg-[#1A332B] px-7 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#8A4825]"
+        >
+          Ver Meus Pedidos
+        </button>
+      }
+    >
       {orderId && (
-        <div className="bg-white/50 border border-[#C06A35]/20 p-6 rounded max-w-sm w-full mb-8 text-left space-y-2">
-          <div className="flex justify-between text-xs text-[#A8A29E] uppercase tracking-wider font-bold">
+        <div className="mt-8 w-full border-y border-[#C06A35]/20 py-5 text-left space-y-2">
+          <div className="flex justify-between text-xs text-[#6B625C] uppercase tracking-wider font-bold">
             <span>Pedido</span>
             <span>Valor</span>
           </div>
-          <div className="flex justify-between text-sm font-medium text-[#1A332B]">
-            <span className="truncate max-w-[200px]">{orderId}</span>
-            <span>R$ {orderTotal?.toFixed(2).replace('.', ',')}</span>
+          <div className="flex justify-between gap-4 text-sm font-medium text-[#1A332B]">
+            <span className="truncate">{orderId.slice(0, 8).toUpperCase()}</span>
+            <span>{orderTotal === null ? 'Confirmando valor' : `R$ ${orderTotal.toFixed(2).replace('.', ',')}`}</span>
           </div>
           {paymentId && (
-            <p className="text-[10px] text-[#A8A29E] pt-2 border-t border-[#C06A35]/10">
+            <p className="break-all border-t border-[#C06A35]/10 pt-2 text-[10px] text-[#6B625C]">
               ID da Transação: {paymentId}
             </p>
           )}
         </div>
       )}
-
-      <button 
-        onClick={() => navigate('/minha-conta')} 
-        className="bg-[#1A332B] text-white px-8 py-3 rounded uppercase tracking-widest text-sm hover:bg-[#433E38] transition-colors"
-      >
-        Ver Meus Pedidos
-      </button>
-    </div>
+    </CheckoutStatusLayout>
   );
 }
 

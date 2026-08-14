@@ -18,6 +18,8 @@ const product = {
   color: ['Branco'],
   material: 'Linho',
   stock_quantity: 1,
+  condition: 'excellent',
+  condition_notes: 'Sem marcas aparentes de uso.',
 };
 
 async function mockExternalServices(page: Page) {
@@ -36,7 +38,7 @@ async function mockExternalServices(page: Page) {
   await page.route('https://test.supabase.co/**', async route => {
     const url = route.request().url();
     if (url.includes('/rest/v1/products')) {
-      const decodedUrl = decodeURIComponent(url).toLowerCase();
+      const decodedUrl = decodeURIComponent(url).replace(/\+/g, ' ').toLowerCase();
       const rows = decodedUrl.includes('produto inexistente') ? [] : [product];
       return route.fulfill({
         status: 200,
@@ -193,11 +195,11 @@ test('newsletter usa a função protegida e confirma o cadastro', async ({ page 
   await expect(page.getByText('Cadastro realizado com sucesso!')).toBeVisible();
 });
 
-test('retorno de pagamento recusado permite tentar novamente', async ({ page }) => {
+test('retorno de pagamento recusado leva ao pedido existente', async ({ page }) => {
   await page.goto('/checkout-failure');
   await expect(page.getByRole('heading', { name: 'Pagamento Recusado' })).toBeVisible();
-  await page.getByRole('button', { name: 'Tentar Novamente' }).click();
-  await expect(page).toHaveURL(/\/login\?redirect=(?:%2F|\/)checkout$/);
+  await page.getByRole('button', { name: 'Ver pedido e tentar novamente' }).click();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 for (const viewport of [
@@ -288,7 +290,9 @@ test('produto e checkout expõem estrutura essencial a leitores de tela', async 
   await page.goto(`/produto/${product.id}`);
   await expect(page.getByRole('main')).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 1, name: product.name })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Comprar' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Adicionar à sacola' })).toBeVisible();
+  await expect(page.getByText('Excelente estado')).toBeVisible();
+  await expect(page.getByText('Sem marcas aparentes de uso.')).toBeVisible();
 
   await addAuthenticatedCheckoutState(page);
   await page.goto('/checkout');

@@ -82,15 +82,15 @@ export const Lookbook: React.FC = () => {
   if (products.length === 0) return null;
 
   return (
-    <section className="py-32 bg-[#FAF6F0] px-6 md:px-12 border-t border-[#C06A35]/15">
-      <div className="max-w-[1400px] mx-auto">
+    <section className="palm-section border-t border-[#C06A35]/15 bg-[#FAF6F0]">
+      <div className="palm-shell max-w-[1400px]">
         
         {/* Section Header */}
         <div className="text-center mb-24 max-w-2xl mx-auto">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#8A4825]">Campanha Editorial</span>
-          <h2 className="text-4xl md:text-5xl font-serif text-[#1A332B] mt-3 mb-6">Compre o Look</h2>
+          <span className="palm-eyebrow text-[#8A4825]">Caderno de estilo</span>
+          <h2 className="palm-display mt-4 mb-6 text-4xl md:text-6xl">Peças em diálogo</h2>
           <p className="text-sm md:text-base text-[#423226] leading-relaxed">
-            Nossos estilistas combinaram peças exclusivas da coleção para criar visuais harmônicos e atemporais. Adicione a produção completa com um clique.
+            Nossa curadoria aproxima texturas, formas e proporções para mostrar novas maneiras de vestir cada descoberta.
           </p>
         </div>
 
@@ -120,7 +120,7 @@ export const Lookbook: React.FC = () => {
               <div className="w-full lg:w-1/2 space-y-8">
                 <div>
                   <span className="text-[10px] uppercase font-bold tracking-widest text-[#8A4825]">Visual 01</span>
-                  <h3 className="text-3xl font-serif text-[#1A332B] mt-2 mb-4">Minimalist Urban</h3>
+                  <h3 className="text-3xl font-serif text-[#1A332B] mt-2 mb-4">Cidade Essencial</h3>
                   <p className="text-sm text-[#423226] leading-relaxed">
                     Uma proposta contemporânea e estruturada. O casaco sobreposto cria linhas elegantes que alongam o visual, perfeitamente balanceado por calças de corte reto. Perfeito para transições do dia para a noite na cidade.
                   </p>
@@ -193,8 +193,8 @@ export const Lookbook: React.FC = () => {
               {/* Look Details & Selection */}
               <div className="w-full lg:w-1/2 space-y-8">
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#C06A35]">Visual 02</span>
-                  <h3 className="text-3xl font-serif text-[#1A332B] mt-2 mb-4">Summer Breeze</h3>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#8A4825]">Visual 02</span>
+                  <h3 className="text-3xl font-serif text-[#1A332B] mt-2 mb-4">Brisa de Verão</h3>
                   <p className="text-sm text-[#423226] leading-relaxed">
                     Leveza e fluidez sob o sol de fim de tarde. Tecidos orgânicos naturais como linho trazem frescor e sofisticação discreta, complementados por acessórios selecionados de couro macio e design artesanal.
                   </p>

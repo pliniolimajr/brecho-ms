@@ -12,6 +12,11 @@ export function ProductPage() {
   const { products, addToCart, isLoadingProducts } = useStore();
 
   const product = products.find((p) => p.id === id);
+  const itemCondition = product?.condition
+    ? ['new_with_tags', 'new_without_tags'].includes(product.condition)
+      ? 'https://schema.org/NewCondition'
+      : 'https://schema.org/UsedCondition'
+    : undefined;
 
   useEffect(() => {
     if (product) trackEvent('product_viewed', { product_id: product.id, price: product.price, category: product.category });
@@ -44,6 +49,7 @@ export function ProductPage() {
             description: product.description, image: [product.imageUrl, ...(product.gallery || [])],
             brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
             sku: product.id,
+            itemCondition,
             offers: {
               '@type': 'Offer', priceCurrency: 'BRL', price: product.price.toFixed(2),
               availability: (product.stockQuantity || 0) > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',

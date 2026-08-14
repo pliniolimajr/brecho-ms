@@ -616,6 +616,100 @@ Implementar após os bloqueadores:
 
 ---
 
+## Fase 9 — Direção de arte e experiência premium
+
+**Objetivo:** elevar a percepção de valor da Palm CO. sem prejudicar velocidade, acessibilidade ou clareza de compra. A referência é uma experiência editorial de moda com identidade própria, e não a reprodução visual de outra marca.
+
+**Premissas:**
+
+- trabalhar com as fotografias comerciais autorizadas pelos fornecedores;
+- não alterar digitalmente cor, tecido, modelagem ou caimento real das peças;
+- criar consistência por enquadramento, proporção, fundo, espaçamento e hierarquia;
+- projetar primeiro para celular e validar depois em tablet e desktop;
+- cada mudança deve aumentar desejo, confiança ou facilidade de compra.
+
+### 29. Sistema de direção visual
+
+**Situação:** base implementada. Tokens de layout, tipografia editorial, mídia de produto e movimento foram centralizados; cards e galeria de produto já usam o padrão fotográfico. O modo de redução de movimento é respeitado globalmente e o fluxo de tratamento de imagens está documentado em `DIRECAO_VISUAL_FOTOGRAFIA.md`. A adoção nos demais componentes seguirá junto aos blocos correspondentes, evitando uma troca visual indiscriminada.
+
+- consolidar escala tipográfica, espaçamento, largura de conteúdo e ritmo vertical;
+- reduzir cores e medidas repetidas diretamente nos componentes;
+- definir tratamentos oficiais para títulos, legendas, categorias, preços e chamadas;
+- padronizar animações e respeitar `prefers-reduced-motion`;
+- criar regras para fundos, proporções e enquadramentos das imagens de produto.
+
+### 30. Página inicial editorial
+
+**Situação:** implementada tecnicamente. A home passou a ter uma narrativa mais curta e editorial: hero com mensagem de curadoria, abertura institucional assimétrica, novidades com hierarquia refinada e caderno de estilo em português. O conteúdo institucional completo permanece na página Sobre, reduzindo o peso e a extensão da entrada. Falta apenas confirmação visual humana após o deploy.
+
+- transformar o hero em abertura de campanha com mensagem mais curta e segura;
+- organizar novidades, curadoria e manifesto como uma narrativa contínua;
+- variar o ritmo da grade sem esconder informações essenciais de compra;
+- melhorar transições entre seções e chamadas para o catálogo;
+- revisar textos genéricos e reforçar a personalidade da Palm CO.
+
+### 31. Catálogo com percepção premium
+
+**Situação:** implementada tecnicamente. A abertura do acervo, busca, ordenação, painel fixo de filtros e contagem de resultados ganharam hierarquia editorial. No mobile, filtros são recolhíveis e exibem a quantidade ativa. Os cards priorizam fotografia, marca, nome, preço e tamanho; comparação e favoritos permanecem acessíveis, mas visualmente discretos. Skeletons usam a mesma proporção final e o marco principal duplicado foi removido. Falta apenas confirmação visual humana após o deploy.
+
+- equilibrar densidade de produtos e respiro em cada resolução;
+- reforçar hierarquia entre fotografia, nome, marca e preço;
+- refinar filtros, ordenação, estados vazios e carregamento;
+- manter comparação e favoritos discretos, porém acessíveis;
+- garantir que imagens heterogêneas pareçam parte da mesma curadoria.
+
+### 32. Página de produto e confiança
+
+**Situação:** implementada tecnicamente. A galeria ganhou mais espaço e a área de decisão permanece visível no desktop. Disponibilidade, marca, tamanho, material, cor e caráter de peça única aparecem antes da ação principal. O estado de conservação e suas observações agora são campos estruturados, preenchidos manualmente no painel e exibidos sem inventar dados para o acervo antigo. Envio nacional, prazo de postagem e devolução em sete dias ficaram visíveis sem depender de acordeões; a política completa está ligada à página correspondente. A referência genérica de tamanhos é omitida para acessórios e calçados e não substitui medidas específicas. Produto esgotado não pode ser adicionado à sacola. Falta apenas confirmação visual humana após o deploy e aplicação da migration `31_product_condition.sql` no Supabase.
+
+- dar protagonismo à galeria sem comprometer informações de compra;
+- aprimorar composição, medidas, estado da peça, marca e materiais;
+- tornar frete, disponibilidade e política de devolução mais fáceis de encontrar;
+- revisar avaliações e produtos relacionados;
+- preservar fidelidade visual entre fotografia e produto entregue.
+
+### 33. Carrinho, checkout e pós-compra
+
+**Situação:** implementada tecnicamente. A sacola ganhou hierarquia mais limpa, fotografia no padrão editorial e explicação do que será revisado no checkout. O checkout agora apresenta contexto antes das etapas, resumo fixo no desktop, imagens proporcionais, total e proteção do Mercado Pago com maior clareza. Os retornos aprovado, pendente e recusado compartilham uma linguagem visual consistente e mensagens objetivas. Em especial, uma recusa leva o cliente ao pedido existente em `Minha conta`, evitando encaminhá-lo para um checkout vazio depois que a sacola já foi limpa no redirecionamento. Falta apenas confirmação visual humana após o deploy.
+
+- alinhar carrinho e checkout à linguagem editorial sem adicionar distrações;
+- reforçar total, frete, prazo e próxima ação;
+- revisar mensagens de erro, pagamento pendente, aprovado e recusado;
+- manter a experiência rápida, previsível e acessível.
+
+### 34. Fluxo de tratamento fotográfico
+
+**Situação:** implementada. O padrão de proporções, resolução, formatos, peso, recorte, ordem das imagens, tratamentos permitidos e tratamentos proibidos está documentado em `DIRECAO_VISUAL_FOTOGRAFIA.md`. O painel converte os arquivos enviados para WebP e aplica validação de tipo e tamanho. A confirmação de autorização de uso continua sendo uma responsabilidade operacional antes de cada publicação.
+
+- documentar dimensões, proporções, formatos e peso máximo;
+- criar um processo repetível de recorte, margem e compressão;
+- separar imagem principal, imagem em modelo e detalhes da peça;
+- registrar autorização de uso das imagens fornecidas;
+- rejeitar edições que alterem características comerciais do produto.
+
+### 35. Validação da experiência premium
+
+**Situação:** validação técnica concluída. Lint, 46 testes unitários, build e os 21 fluxos Playwright foram aprovados. Axe não encontrou violações graves nas telas auditadas; teclado, foco, estrutura para leitores de tela e ausência de rolagem horizontal foram verificados em 320 px, 375 px, tablet e desktop. No Lighthouse local final, a home atingiu 79 em desempenho e 100 em acessibilidade, boas práticas e SEO, com LCP de 4,3 s, TBT de 10 ms e CLS igual a zero. Permanecem como validações humanas: revisão visual após deploy, teste com pessoas externas e acompanhamento contínuo das métricas reais de produção.
+
+- comparar antes e depois em 320 px, 375 px, tablet e desktop;
+- validar contraste, teclado, leitor de tela e redução de movimento;
+- repetir Lighthouse, axe, testes e build;
+- realizar teste com pessoas externas antes do lançamento definitivo;
+- acompanhar conversão, abandono de checkout e erros no Sentry.
+
+### Ordem dos blocos da Fase 9
+
+| Bloco | Entrega |
+|---|---|
+| 1 | Sistema visual e regras fotográficas |
+| 2 | Página inicial editorial |
+| 3 | Catálogo e cards de produto |
+| 4 | Página de produto |
+| 5 | Carrinho, checkout e pós-compra |
+| 6 | Validação visual, acessibilidade e desempenho |
+
+---
+
 ## Ordem recomendada de execução
 
 | Ciclo | Entregas |

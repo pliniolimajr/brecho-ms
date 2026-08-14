@@ -34,17 +34,17 @@ describe('páginas de retorno do pagamento', () => {
     expect(screen.getByText('Minha conta')).toBeInTheDocument();
   });
 
-  it('permite retornar ao checkout depois de falha', () => {
+  it('leva o pagamento recusado ao pedido para uma nova tentativa segura', () => {
     render(
       <MemoryRouter initialEntries={['/checkout-failure']}>
         <Routes>
           <Route path="/checkout-failure" element={<CheckoutFailure />} />
-          <Route path="/checkout" element={<div>Novo checkout</div>} />
+          <Route path="/minha-conta" element={<div>Minha conta</div>} />
         </Routes>
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Tentar Novamente' }));
-    expect(screen.getByText('Novo checkout')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver pedido e tentar novamente' }));
+    expect(screen.getByText('Minha conta')).toBeInTheDocument();
   });
 
   it('consulta o pedido aprovado sem tentar alterar seu status', async () => {

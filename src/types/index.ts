@@ -23,6 +23,8 @@ export interface Product {
   material?: string;
   measurements?: any;
   stockQuantity?: number;
+  condition?: 'new_with_tags' | 'new_without_tags' | 'excellent' | 'very_good' | 'good';
+  conditionNotes?: string;
 }
 
 export interface Order {
