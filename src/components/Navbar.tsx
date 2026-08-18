@@ -147,7 +147,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, onOpenCart }) => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     navigate('/');
                 }}
-                className="text-3xl font-serif tracking-wide text-[#1A332B] transition-opacity hover:opacity-75"
+                className="whitespace-nowrap text-[1.65rem] font-serif tracking-wide text-[#1A332B] transition-opacity hover:opacity-75 sm:text-3xl"
               >
                 {BRAND_NAME}
               </a>
