@@ -76,7 +76,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         
         {/* Sold Badge */}
         {product.isSold && (
-          <div className="pointer-events-none absolute top-3 left-3 z-10 bg-[#1A332B]/90 text-[#FDF6F0] text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded">
+          <div className="pointer-events-none absolute left-3 top-14 z-10 rounded bg-[#1A332B]/90 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-[#FDF6F0]">
             Esgotado
           </div>
         )}
@@ -93,20 +93,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           type="button"
           aria-pressed={isCompared}
           onClick={handleComparison}
-          className={`absolute bottom-3 left-3 z-20 min-h-9 px-3 text-[9px] font-bold uppercase tracking-[0.14em] shadow-sm transition-all md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 ${isCompared ? 'bg-[#8A4825] text-white md:opacity-100' : 'bg-white/90 text-[#1A332B] hover:bg-[#1A332B] hover:text-white'}`}
+          className={`absolute left-3 top-3 z-20 min-h-9 border px-3 text-[9px] font-bold uppercase tracking-[0.16em] shadow-sm backdrop-blur-sm transition-all md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 ${isCompared ? 'border-[#8A4825] bg-[#8A4825] text-white md:opacity-100' : 'border-white/70 bg-white/75 text-[#1A332B] hover:border-[#1A332B] hover:bg-white'}`}
         >
-          {isCompared ? 'Comparando' : 'Comparar'}
+          {isCompared ? 'Comparando' : 'Compare'}
         </button>
 
-        {!product.isSold && product.stockQuantity !== 0 && (
-          <button
-            type="button"
-            onClick={handleBuy}
-            className="absolute bottom-3 right-3 z-20 min-h-9 bg-[#1A332B] px-3 text-[9px] font-bold uppercase tracking-[0.14em] text-white shadow-sm transition-all hover:bg-[#8A4825] md:translate-y-1 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-within:translate-y-0 md:group-focus-within:opacity-100"
-          >
-            Comprar
-          </button>
-        )}
       </div>
       
       {/* Product Details */}
@@ -128,6 +119,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           </span>
           {product.size && <span className="palm-eyebrow">Tam. {product.size}</span>}
         </div>
+
+        {!product.isSold && product.stockQuantity !== 0 && (
+          <button
+            type="button"
+            onClick={handleBuy}
+            className="mt-2 min-h-11 w-full bg-[#1A332B] px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#8A4825] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1A332B]"
+          >
+            Adicionar à sacola
+          </button>
+        )}
       </div>
     </div>
   );

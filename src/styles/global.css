@@ -12,7 +12,7 @@
   --color-palm-surface: #FAF9F6;
 
   --font-sans: 'Inter', sans-serif;
-  --font-serif: 'Playfair Display', serif;
+  --font-serif: 'Bodoni Moda', serif;
 
   --shadow-palm-card: 0 10px 30px rgb(26 51 43 / 0.08);
   --radius-palm: 0.25rem;
@@ -45,6 +45,17 @@
   
   h1, h2, h3, h4, .font-serif {
     font-family: var(--font-serif);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   :focus-visible {

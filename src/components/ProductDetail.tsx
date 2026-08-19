@@ -21,6 +21,12 @@ const CONDITION_LABELS: Record<NonNullable<Product['condition']>, string> = {
   good: 'Bom estado',
 };
 
+const normalizeFeature = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim()
+  .toLowerCase();
+
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToCart }) => {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -41,6 +47,23 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
   const isUniquePiece = !isUnavailable && product.stockQuantity === 1;
   const hasStandardSizing = !['Acessórios', 'Calçados', 'Outros'].includes(product.category);
   const conditionLabel = product.condition ? CONDITION_LABELS[product.condition] : null;
+  const uniqueFeatures = React.useMemo(() => {
+    const attributeValues = [
+      product.size,
+      product.brand,
+      product.material,
+      ...(product.color || []),
+      'Curadoria Palm CO.',
+    ].filter(Boolean).map(value => normalizeFeature(String(value)));
+
+    return (product.features || []).filter((feature) => {
+      const normalized = normalizeFeature(feature);
+      const repeatsAttribute = attributeValues.includes(normalized);
+      const repeatsLabeledAttribute = ['tamanho:', 'marca:', 'material:', 'cor:', 'curadoria']
+        .some(prefix => normalized.startsWith(prefix));
+      return normalized && !repeatsAttribute && !repeatsLabeledAttribute;
+    });
+  }, [product]);
 
   const { user } = useAuth();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -147,13 +170,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF6F0] pt-24 animate-fade-in-up md:pt-28">
+    <div className="min-h-screen bg-[#FDF6F0] pt-8 animate-fade-in-up md:pt-10">
       <div className="palm-shell pb-24">
 
         {/* Breadcrumb / Back */}
         <button
           onClick={onBack}
-          className="group mb-8 flex min-h-11 items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] transition-colors hover:text-[#1A332B]"
+          className="group mb-6 flex min-h-11 items-center gap-2 text-xs font-medium uppercase tracking-widest text-[#6B625C] transition-colors hover:text-[#1A332B]"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 group-hover:-translate-x-1 transition-transform">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -161,18 +184,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
           Voltar para a Loja
         </button>
 
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] lg:gap-16 xl:gap-24">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-12 xl:gap-20">
 
           {/* Left: Image Gallery */}
-          <div className="flex min-w-0 flex-col gap-4">
-            <div className="palm-product-media aspect-[4/5] w-full">
+          <div className="flex min-w-0 flex-col gap-4 lg:grid lg:grid-cols-[64px_minmax(0,1fr)] lg:items-start lg:gap-4">
+            <div className="palm-product-media mx-auto aspect-[4/5] w-full lg:col-start-2 lg:row-start-1 lg:aspect-auto lg:w-fit lg:max-w-full lg:bg-transparent">
               <img
                 src={currentImage}
                 alt={product.name}
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
-                className="palm-product-image animate-fade-in-up"
+                className="palm-product-image animate-fade-in-up lg:h-[min(74vh,760px)] lg:w-auto lg:max-w-full lg:object-contain"
               />
               {isUniquePiece && (
                 <span className="absolute right-4 top-4 bg-[#FDF6F0]/95 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-[#1A332B] shadow-sm backdrop-blur-sm">
@@ -182,14 +205,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
             </div>
 
             {allImages.length > 1 && (
-              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide lg:col-start-1 lg:row-start-1 lg:flex-col lg:gap-3 lg:overflow-visible lg:pb-0">
                 {allImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setCurrentImage(img)}
                     aria-label={`Exibir imagem ${idx + 1} de ${product.name}`}
                     aria-pressed={currentImage === img}
-                    className={`palm-product-media aspect-[4/5] w-20 flex-shrink-0 border-2 transition-colors sm:w-24 ${currentImage === img ? 'border-[#1A332B]' : 'border-transparent hover:border-[#1A332B]/50'}`}
+                    className={`palm-product-media aspect-[4/5] w-20 flex-shrink-0 border transition-colors sm:w-24 lg:w-16 ${currentImage === img ? 'border-[#1A332B]' : 'border-transparent hover:border-[#1A332B]/50'}`}
                   >
                     <img src={img} alt={`${product.name} — imagem ${idx + 1}`} loading="lazy" className="palm-product-image" />
                   </button>
@@ -199,27 +222,26 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
           </div>
 
           {/* Right: Details */}
-          <div className="flex max-w-xl flex-col lg:sticky lg:top-28 lg:self-start">
-            <div className="mb-5 flex items-center justify-between gap-4">
+          <div className="mx-auto flex w-full max-w-xl flex-col lg:sticky lg:top-24 lg:max-w-[500px] lg:self-start lg:pt-4">
+            <div className="mb-4 flex items-center justify-between gap-4">
               <span className="palm-eyebrow">{product.category}</span>
               <span className={`palm-eyebrow inline-flex items-center gap-2 ${isUnavailable ? 'text-red-700' : 'text-[#1A332B]'}`}>
                 <span className={`h-1.5 w-1.5 rounded-full ${isUnavailable ? 'bg-red-700' : 'bg-emerald-700'}`} aria-hidden="true" />
                 {isUnavailable ? 'Esgotado' : 'Disponível'}
               </span>
             </div>
-            {product.brand && <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#8A4825]">{product.brand}</p>}
-            <h1 className="palm-display mb-5 text-4xl sm:text-5xl lg:text-6xl">{product.name}</h1>
-            {product.tagline && <p className="mb-6 max-w-md text-sm leading-6 text-[#423226]">{product.tagline}</p>}
-            <span className="mb-6 block border-b border-[#C06A35]/20 pb-6 font-serif text-2xl text-[#1A332B]">
+            {product.brand && <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A4825]">{product.brand}</p>}
+            <h1 className="palm-display mb-4 text-3xl sm:text-4xl lg:text-[2.4rem] xl:text-[2.75rem]">{product.name}</h1>
+            {product.tagline && <p className="mb-5 max-w-md text-xs leading-5 text-[#423226]">{product.tagline}</p>}
+            <span className="mb-5 block border-b border-[#C06A35]/20 pb-5 font-serif text-xl text-[#1A332B]">
               R$ {product.price.toFixed(2).replace('.', ',')}
             </span>
 
-            <dl className="mb-7 grid grid-cols-2 gap-x-6 gap-y-5 border-b border-[#C06A35]/20 pb-7 text-sm">
+            <dl className="mb-6 grid grid-cols-2 gap-x-6 gap-y-4 border-b border-[#C06A35]/20 pb-6 text-xs">
               <div><dt className="palm-eyebrow mb-1">Tamanho</dt><dd className="font-medium text-[#1A332B]">{product.size || 'Único'}</dd></div>
               {product.material && <div><dt className="palm-eyebrow mb-1">Material</dt><dd className="font-medium text-[#1A332B]">{product.material}</dd></div>}
               {product.color?.length ? <div><dt className="palm-eyebrow mb-1">Cor</dt><dd className="font-medium text-[#1A332B]">{product.color.join(', ')}</dd></div> : null}
               {conditionLabel && <div><dt className="palm-eyebrow mb-1">Estado</dt><dd className="font-medium text-[#1A332B]">{conditionLabel}</dd></div>}
-              <div><dt className="palm-eyebrow mb-1">Seleção</dt><dd className="font-medium text-[#1A332B]">Curadoria Palm CO.</dd></div>
             </dl>
 
             {product.conditionNotes && (
@@ -234,14 +256,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               <button
                 onClick={() => onAddToCart(product)}
                 disabled={isUnavailable}
-                className="flex min-h-14 flex-1 items-center justify-center bg-[#1A332B] px-6 py-4 text-xs font-bold uppercase tracking-[0.22em] text-white transition-colors hover:bg-[#8A4825] disabled:cursor-not-allowed disabled:bg-[#6B625C]"
+                className="flex min-h-12 flex-1 items-center justify-center bg-[#1A332B] px-5 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-[#8A4825] disabled:cursor-not-allowed disabled:bg-[#6B625C]"
               >
                 {isUnavailable ? 'Produto esgotado' : 'Adicionar à sacola'}
               </button>
               <button
                 onClick={handleWishlistToggle}
                 aria-label={isWishlisted ? 'Remover da lista de desejos' : 'Adicionar à lista de desejos'}
-                className={`flex min-h-14 min-w-14 items-center justify-center border px-4 transition-colors ${isWishlisted ? 'border-red-700 bg-red-50 text-red-700' : 'border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5'}`}
+                className={`flex min-h-12 min-w-12 items-center justify-center border px-3 transition-colors ${isWishlisted ? 'border-red-700 bg-red-50 text-red-700' : 'border-[#1A332B] text-[#1A332B] hover:bg-[#1A332B]/5'}`}
                 title={isWishlisted ? 'Remover da Wishlist' : 'Adicionar à Wishlist'}
               >
                 <svg
@@ -250,23 +272,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-6 h-6"
+                  className="h-5 w-5"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
                 </svg>
               </button>
             </div>
 
-            <ul className="mb-8 grid grid-cols-1 gap-3 border-y border-[#C06A35]/20 py-5 text-xs leading-5 text-[#423226] sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              <li><strong className="block text-[#1A332B]">Envio nacional</strong>Frete calculado no checkout</li>
-              <li><strong className="block text-[#1A332B]">Postagem ágil</strong>Em até 2 dias úteis</li>
-              <li><strong className="block text-[#1A332B]">Compra tranquila</strong>Devolução em até 7 dias</li>
-            </ul>
-
             {/* Collapsible details inspired by Shoulder */}
-            <div className="space-y-4 mb-8">
+            <div className="mb-8 space-y-3">
               <details className="group border-b border-[#C06A35]/10 pb-3" open>
-                <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
+                <summary className="flex list-none items-center justify-between font-serif text-sm text-[#1A332B]">
                   <span>Detalhes da peça</span>
                   <span className="transition-transform group-open:rotate-180">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -276,29 +292,17 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
                 </summary>
                 <div className="mt-4 text-xs font-light text-[#423226] leading-relaxed space-y-2">
                   <p>{product.longDescription || product.description}</p>
-                  <ul className="grid grid-cols-2 gap-x-6 gap-y-2 mt-4 pt-4 border-t border-[#C06A35]/10">
-                    <li className="flex justify-between py-1">
-                      <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Tamanho:</span>
-                      <span className="font-semibold">{product.size || 'Único'}</span>
-                    </li>
-                    <li className="flex justify-between py-1">
-                      <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Marca:</span>
-                      <span className="font-semibold">{product.brand || 'Palm CO.'}</span>
-                    </li>
-                    {product.color && product.color.length > 0 && (
-                      <li className="flex justify-between py-1">
-                        <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Cor:</span>
-                        <span className="font-semibold">{product.color.join(', ')}</span>
-                      </li>
-                    )}
-                    {product.material && (
-                      <li className="flex justify-between py-1">
-                        <span className="font-medium text-[#6B625C] uppercase tracking-wider text-[9px]">Material:</span>
-                        <span className="font-semibold">{product.material}</span>
-                      </li>
-                    )}
 
-                  </ul>
+                  {uniqueFeatures.length > 0 && (
+                    <ul className="mt-4 space-y-1.5 border-t border-[#C06A35]/10 pt-4">
+                      {uniqueFeatures.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5">
+                          <span className="mt-2 h-1 w-1 flex-none rounded-full bg-[#C06A35]" aria-hidden="true" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
 
                   {product.measurements && Object.keys(product.measurements).length > 0 && (
                     <div className="mt-4 pt-4 border-t border-[#C06A35]/10">
@@ -317,7 +321,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               </details>
 
               {hasStandardSizing && <details className="group border-b border-[#C06A35]/10 pb-3">
-                <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
+                <summary className="flex list-none items-center justify-between font-serif text-sm text-[#1A332B]">
                   <span>Referência geral de tamanhos</span>
                   <span className="transition-transform group-open:rotate-180">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -348,7 +352,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               </details>}
 
               <details className="group border-b border-[#C06A35]/10 pb-3">
-                <summary className="flex justify-between items-center font-serif text-base text-[#1A332B] cursor-pointer list-none">
+                <summary className="flex list-none items-center justify-between font-serif text-sm text-[#1A332B]">
                   <span>Envio e Devoluções</span>
                   <span className="transition-transform group-open:rotate-180">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
@@ -364,17 +368,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onAddToC
               </details>
             </div>
 
-            <div className="flex flex-col gap-4">
-
-              <ul className="mt-6 space-y-2 text-xs text-[#423226]">
-                {product.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
-                    <span className="w-1.5 h-1.5 bg-[#C06A35] rounded-full"></span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         </div>
 
