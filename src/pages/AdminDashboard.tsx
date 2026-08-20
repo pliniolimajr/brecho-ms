@@ -154,74 +154,21 @@ export function AdminDashboard() {
     setLoadingCRM(true);
     setSectionErrors(previous => ({ ...previous, customers: null }));
     try {
-      const { data: customerRows, error: customerError } = await supabase.from('customers').select('*');
-      const { data: orderRows, error: orderError } = await supabase.from('orders').select('*');
-
-      if (customerError) throw customerError;
-      if (orderError) throw orderError;
-
-      const orders = orderRows || [];
-      const profiles = customerRows || [];
-      const crmMap: Record<string, any> = {};
-
-      profiles.forEach(p => {
-        const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Sem Nome';
-        crmMap[p.user_id] = {
-          id: p.id,
-          name,
-          phone: p.phone || 'N/A',
-          cpf: p.cpf || 'N/A',
-          birthDate: p.birth_date || 'N/A',
-          ordersCount: 0,
-          totalSpent: 0,
-          lastPurchaseDate: null,
-          type: 'customer',
-          userId: p.user_id,
-          createdAt: p.created_at
-        };
-      });
-
-      orders.forEach(order => {
-        const isPaid = order.payment_status
-          ? ['paid', 'partially_refunded'].includes(order.payment_status)
-          : ['paid', 'shipped', 'delivered'].includes(order.status);
-        const total = Number(order.total_amount) || 0;
-
-        if (order.user_id && crmMap[order.user_id]) {
-          const c = crmMap[order.user_id];
-          c.ordersCount += 1;
-          if (isPaid) c.totalSpent += total;
-          if (!c.lastPurchaseDate || new Date(order.created_at) > new Date(c.lastPurchaseDate)) {
-            c.lastPurchaseDate = order.created_at;
-          }
-        } else {
-          const address = order.shipping_address || {};
-          const name = `${address.firstName || ''} ${address.lastName || ''}`.trim() || 'Visitante';
-          const phone = address.phone || 'N/A';
-          const guestKey = `guest_${name}_${phone}`;
-
-          if (!crmMap[guestKey]) {
-            crmMap[guestKey] = {
-              id: guestKey,
-              name,
-              phone,
-              ordersCount: 0,
-              totalSpent: 0,
-              lastPurchaseDate: null,
-              type: 'guest',
-              createdAt: order.created_at
-            };
-          }
-          const g = crmMap[guestKey];
-          g.ordersCount += 1;
-          if (isPaid) g.totalSpent += total;
-          if (!g.lastPurchaseDate || new Date(order.created_at) > new Date(g.lastPurchaseDate)) {
-            g.lastPurchaseDate = order.created_at;
-          }
-        }
-      });
-
-      setCrmCustomers(Object.values(crmMap));
+      const { data, error } = await supabase.rpc('admin_crm_customers');
+      if (error) throw error;
+      setCrmCustomers(((data || []) as any[]).map(customer => ({
+        ...customer,
+        userId: customer.user_id,
+        birthDate: customer.birth_date || 'N/A',
+        ordersCount: Number(customer.orders_count) || 0,
+        paidOrdersCount: Number(customer.paid_orders_count) || 0,
+        totalSpent: Number(customer.total_spent) || 0,
+        averageTicket: Number(customer.average_ticket) || 0,
+        lastPurchaseDate: customer.last_purchase_date,
+        createdAt: customer.created_at,
+        phone: customer.phone || 'N/A',
+        cpf: customer.cpf || 'N/A',
+      })));
     } catch (e) {
       console.error(e);
       setSectionErrors(previous => ({ ...previous, customers: 'Não foi possível carregar os clientes.' }));
@@ -476,6 +423,7 @@ export function AdminDashboard() {
               <AdminAbandonedCarts
                 abandonedCarts={abandonedCarts}
                 loadingAbandoned={loadingAbandoned && abandonedCarts.length === 0}
+                refreshCarts={fetchAbandonedCarts}
               />
             )}
 

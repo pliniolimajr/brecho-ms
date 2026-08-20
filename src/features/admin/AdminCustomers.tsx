@@ -8,18 +8,24 @@ interface AdminCustomersProps {
 
 export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps) {
   const [customerSearch, setCustomerSearch] = useState('');
+  const [segmentFilter, setSegmentFilter] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return crmCustomers.filter(c => {
       const s = customerSearch.toLowerCase();
-      return (
+      return (segmentFilter === 'all' || c.segment === segmentFilter) && (
         c.name.toLowerCase().includes(s) ||
+        (c.email || '').toLowerCase().includes(s) ||
         c.phone.toLowerCase().includes(s) ||
         (c.cpf && c.cpf.toLowerCase().includes(s))
       );
     });
-  }, [crmCustomers, customerSearch]);
+  }, [crmCustomers, customerSearch, segmentFilter]);
+
+  const segmentLabels: Record<string, string> = {
+    vip: 'VIP', recurring: 'Recorrente', new_customer: 'Novo cliente', inactive: 'Inativo', lead: 'Lead',
+  };
 
   return (
     <div className="space-y-6">
@@ -34,14 +40,18 @@ export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Customer List Column */}
         <div className="lg:col-span-2 bg-white rounded shadow-sm border border-[#C06A35]/20 overflow-hidden">
-          <div className="p-4 border-b border-[#C06A35]/20 bg-[#FDF6F0]/50">
+          <div className="flex flex-col gap-3 p-4 border-b border-[#C06A35]/20 bg-[#FDF6F0]/50 sm:flex-row">
             <input
               type="text"
-              placeholder="Buscar por nome, telefone ou CPF..."
+              placeholder="Buscar por nome, e-mail, telefone ou CPF..."
               value={customerSearch}
               onChange={e => setCustomerSearch(e.target.value)}
-              className="w-full pl-4 pr-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#C06A35]"
+              className="min-w-0 flex-1 pl-4 pr-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#C06A35]"
             />
+            <select value={segmentFilter} onChange={event => setSegmentFilter(event.target.value)} className="border border-gray-300 bg-white px-3 py-2 text-sm">
+              <option value="all">Todos os segmentos</option>
+              {Object.entries(segmentLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
           </div>
 
           {loadingCRM ? (
@@ -71,11 +81,12 @@ export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps
                       <td className="p-3">
                         <span className="font-serif font-bold text-[#1A332B] block text-sm">{customer.name}</span>
                         <span className="text-[10px] uppercase font-semibold text-gray-400">
-                          {customer.type === 'customer' ? 'Cadastrado' : 'Visitante'}
+                          {customer.type === 'customer' ? 'Cadastrado' : 'Visitante'} · {segmentLabels[customer.segment] || customer.segment}
                         </span>
                       </td>
                       <td className="p-3 text-xs text-[#423226]">
                         <div>{customer.phone}</div>
+                        {customer.email && <div className="text-gray-400">{customer.email}</div>}
                         {customer.cpf && customer.cpf !== 'N/A' && <div className="text-gray-400">CPF: {customer.cpf}</div>}
                       </td>
                       <td className="p-3 text-center font-bold text-sm text-[#1A332B]">{customer.ordersCount}</td>
@@ -108,11 +119,14 @@ export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps
                 </span>
                 <h3 className="text-xl font-serif text-[#1A332B]">{selectedCustomer.name}</h3>
                 <span className="text-xs text-gray-500 block mt-1">
-                  Tipo: {selectedCustomer.type === 'customer' ? 'Usuário Registrado' : 'Visitante (Guest)'}
+                  {selectedCustomer.type === 'customer' ? 'Usuário registrado' : 'Visitante'} · {segmentLabels[selectedCustomer.segment] || selectedCustomer.segment}
                 </span>
               </div>
 
               <div className="space-y-3 text-sm">
+                {selectedCustomer.email && (
+                  <div><span className="text-xs font-bold uppercase text-gray-400 block">E-mail</span><span className="font-medium text-[#1A332B]">{selectedCustomer.email}</span></div>
+                )}
                 <div>
                   <span className="text-xs font-bold uppercase text-gray-400 block">Telefone / WhatsApp</span>
                   <span className="font-medium text-[#1A332B]">{selectedCustomer.phone}</span>
@@ -142,6 +156,11 @@ export function AdminCustomers({ crmCustomers, loadingCRM }: AdminCustomersProps
                   <span className="font-bold text-[#C06A35] text-xl">
                     R$ {Number(selectedCustomer.totalSpent).toFixed(2).replace('.', ',')}
                   </span>
+                </div>
+
+                <div>
+                  <span className="text-xs font-bold uppercase text-gray-400 block">Ticket médio</span>
+                  <span className="font-medium text-[#1A332B]">R$ {Number(selectedCustomer.averageTicket).toFixed(2).replace('.', ',')}</span>
                 </div>
 
                 {selectedCustomer.lastPurchaseDate && (

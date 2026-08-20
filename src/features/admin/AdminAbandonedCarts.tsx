@@ -1,13 +1,35 @@
 import { useMemo, useState } from 'react';
 import { TableSkeleton } from '../../components/LoadingStates';
+import { supabase } from '../../services/supabaseClient';
+import { useToast } from '../../components/Toast';
 
 interface AdminAbandonedCartsProps {
   abandonedCarts: any[];
   loadingAbandoned: boolean;
+  refreshCarts: () => Promise<void>;
 }
 
-export function AdminAbandonedCarts({ abandonedCarts, loadingAbandoned }: AdminAbandonedCartsProps) {
+export function AdminAbandonedCarts({ abandonedCarts, loadingAbandoned, refreshCarts }: AdminAbandonedCartsProps) {
+  const { showToast } = useToast();
   const [abandonedSearch, setAbandonedSearch] = useState('');
+  const [busyCartId, setBusyCartId] = useState<string | null>(null);
+
+  const markContacted = async (cartId: string) => {
+    setBusyCartId(cartId);
+    const { error } = await supabase.rpc('admin_mark_cart_contacted', { p_cart_id: cartId, p_note: 'Contato via WhatsApp' });
+    if (error) showToast(error.message || 'Não foi possível registrar o contato.', 'error');
+    else { showToast('Contato registrado no histórico.', 'success'); await refreshCarts(); }
+    setBusyCartId(null);
+  };
+
+  const closeCart = async (cartId: string, status: 'recovered' | 'dismissed') => {
+    if (!confirm(status === 'recovered' ? 'Marcar este carrinho como venda recuperada?' : 'Descartar este carrinho da fila de recuperação?')) return;
+    setBusyCartId(cartId);
+    const { error } = await supabase.rpc('admin_close_abandoned_cart', { p_cart_id: cartId, p_status: status, p_note: null });
+    if (error) showToast(error.message || 'Não foi possível encerrar o carrinho.', 'error');
+    else { showToast(status === 'recovered' ? 'Carrinho marcado como recuperado.' : 'Carrinho retirado da fila.', 'success'); await refreshCarts(); }
+    setBusyCartId(null);
+  };
 
   const filteredAbandonedCarts = useMemo(() => {
     return abandonedCarts.filter(c => {
@@ -91,20 +113,22 @@ export function AdminAbandonedCarts({ abandonedCarts, loadingAbandoned }: AdminA
                       </td>
                       <td className="p-4 text-center text-xs text-gray-500">
                         {new Date(cart.updated_at).toLocaleString('pt-BR')}
+                        <span className="mt-1 block text-[10px]">{cart.recovery_attempts || 0} contato(s)</span>
+                        {cart.last_contacted_at && <span className="block text-[10px]">Último: {new Date(cart.last_contacted_at).toLocaleString('pt-BR')}</span>}
                       </td>
                       <td className="p-4 text-center">
                         {phoneClean ? (
-                          <a
-                            href={`https://wa.me/55${phoneClean}?text=${whatsappMessage}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-800 transition-colors"
-                          >
-                            Recuperar via WhatsApp
-                          </a>
+                          <div className="flex flex-col gap-2">
+                            <a href={`https://wa.me/55${phoneClean}?text=${whatsappMessage}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1 bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-emerald-800 transition-colors">Abrir WhatsApp</a>
+                            <button disabled={busyCartId === cart.id} onClick={() => void markContacted(cart.id)} className="border border-[#1A332B] px-3 py-1.5 text-[10px] font-bold uppercase disabled:opacity-40">Registrar contato</button>
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-400">Sem telefone</span>
                         )}
+                        <div className="mt-2 flex justify-center gap-2">
+                          <button disabled={busyCartId === cart.id} onClick={() => void closeCart(cart.id, 'recovered')} className="text-[10px] font-semibold text-emerald-800 underline">Recuperado</button>
+                          <button disabled={busyCartId === cart.id} onClick={() => void closeCart(cart.id, 'dismissed')} className="text-[10px] font-semibold text-gray-500 underline">Descartar</button>
+                        </div>
                       </td>
                     </tr>
                   );

@@ -268,12 +268,12 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     if (!items || items.length === 0) return;
 
     let sessionCartId = localStorage.getItem('littlepalm_cart_session_id');
-    if (!sessionCartId) {
-      sessionCartId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
+    let sessionEditToken = localStorage.getItem('littlepalm_cart_edit_token');
+    if (!sessionCartId || !sessionEditToken) {
+      sessionCartId = crypto.randomUUID();
+      sessionEditToken = crypto.randomUUID();
       localStorage.setItem('littlepalm_cart_session_id', sessionCartId);
+      localStorage.setItem('littlepalm_cart_edit_token', sessionEditToken);
     }
 
     const cartItems = items.map(item => ({
@@ -302,14 +302,14 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
     };
 
     try {
-      await supabase.from('abandoned_carts').upsert({
-        id: sessionCartId,
-        user_id: user?.id || null,
-        cart_items: cartItems,
-        customer_info: customerInfo,
-        total_amount: total,
-        status: 'abandoned'
+      const { error } = await supabase.rpc('save_abandoned_cart', {
+        p_cart_id: sessionCartId,
+        p_edit_token: sessionEditToken,
+        p_cart_items: cartItems,
+        p_customer_info: customerInfo,
+        p_total_amount: total,
       });
+      if (error) throw error;
     } catch (err) {
       console.error('Erro ao sincronizar carrinho abandonado:', err);
     }
@@ -581,15 +581,16 @@ const Checkout: React.FC<CheckoutProps> = ({ items, onBack }) => {
          // Marcar carrinho abandonado correspondente como recuperado
          try {
            const sessionCartId = localStorage.getItem('littlepalm_cart_session_id');
-           if (sessionCartId) {
-             await supabase
-               .from('abandoned_carts')
-               .update({
-                 status: 'recovered',
-                 order_id: orderData.id
-               })
-               .eq('id', sessionCartId);
-             localStorage.removeItem('littlepalm_cart_session_id');
+            const sessionEditToken = localStorage.getItem('littlepalm_cart_edit_token');
+            if (sessionCartId && sessionEditToken) {
+              const { error: recoveryError } = await supabase.rpc('recover_abandoned_cart', {
+                p_cart_id: sessionCartId,
+                p_edit_token: sessionEditToken,
+                p_order_id: orderData.id,
+              });
+              if (recoveryError) throw recoveryError;
+              localStorage.removeItem('littlepalm_cart_session_id');
+              localStorage.removeItem('littlepalm_cart_edit_token');
            }
          } catch (err) {
            console.error('Erro ao recuperar carrinho:', err);
