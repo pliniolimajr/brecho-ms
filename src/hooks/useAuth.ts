@@ -10,7 +10,7 @@ export function useAuth() {
   const [adminLoading, setAdminLoading] = useState(true);
 
   useEffect(() => {
-    async function checkAdmin(u: User | null, s: Session | null) {
+    async function checkAdmin(u: User | null) {
       if (!u) {
         setIsAdmin(false);
         setAdminLoading(false);
@@ -18,23 +18,10 @@ export function useAuth() {
       }
       setAdminLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('admin_users')
-          .select('id')
-          .eq('user_id', u.id)
-          .abortSignal(AbortSignal.timeout(8000))
-          .maybeSingle();
-
-        if (error) {
-          // Fallback to metadata
-          const metaRole = u.user_metadata?.role || u.app_metadata?.role || s?.user?.user_metadata?.role;
-          setIsAdmin(metaRole === 'admin');
-        } else {
-          setIsAdmin(!!data);
-        }
+        const { data, error } = await supabase.rpc('is_admin').abortSignal(AbortSignal.timeout(8000));
+        setIsAdmin(error ? false : data === true);
       } catch {
-        const metaRole = u.user_metadata?.role || u.app_metadata?.role || s?.user?.user_metadata?.role;
-        setIsAdmin(metaRole === 'admin');
+        setIsAdmin(false);
       } finally {
         setAdminLoading(false);
       }
@@ -47,7 +34,7 @@ export function useAuth() {
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-        void checkAdmin(currentUser, session);
+        void checkAdmin(currentUser);
       } catch {
         setSession(null);
         setUser(null);
@@ -66,7 +53,7 @@ export function useAuth() {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setLoading(false);
-      void checkAdmin(currentUser, session);
+      void checkAdmin(currentUser);
     });
 
     return () => subscription.unsubscribe();

@@ -51,10 +51,12 @@ serve(async req => {
 
     const { data: adminRow } = await adminClient
       .from('admin_users')
-      .select('id')
+      .select('id, role, is_active')
       .eq('user_id', userData.user.id)
       .maybeSingle()
-    if (!adminRow) throw new HttpError('Acesso restrito ao administrador.', 403, 'FORBIDDEN')
+    if (!adminRow?.is_active || !['owner', 'finance'].includes(adminRow.role)) {
+      throw new HttpError('Somente proprietario ou financeiro pode realizar reembolsos.', 403, 'FORBIDDEN')
+    }
 
     const payload = await req.json() as {
       orderId?: string

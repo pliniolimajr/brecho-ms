@@ -12,12 +12,14 @@ import { AdminAbandonedCarts } from '../features/admin/AdminAbandonedCarts';
 import { AdminMetrics } from '../features/admin/AdminMetrics';
 import { AdminOperationalHealth } from '../features/admin/AdminOperationalHealth';
 import { AdminOverview } from '../features/admin/AdminOverview';
+import { AdminTeam } from '../features/admin/AdminTeam';
 
-type AdminSection = 'overview' | 'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health';
-const ADMIN_SECTIONS: AdminSection[] = ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health'];
+type AdminSection = 'overview' | 'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health' | 'team';
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health', 'team'];
 
 export function AdminDashboard() {
   const { showToast } = useToast();
+  const [adminRole, setAdminRole] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedSection = searchParams.get('section') as AdminSection | null;
   const activeTab: AdminSection = requestedSection && ADMIN_SECTIONS.includes(requestedSection) ? requestedSection : 'overview';
@@ -25,15 +27,19 @@ export function AdminDashboard() {
     setSearchParams(section === 'overview' ? {} : { section });
   };
 
+  const roleLabels: Record<string, string> = { owner: 'Proprietário', operations: 'Operação', support: 'Atendimento', finance: 'Financeiro' };
+  const visibleSections: Record<string, AdminSection[]> = {
+    owner: ADMIN_SECTIONS,
+    operations: ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health'],
+    support: ['overview', 'orders', 'customers', 'abandoned'],
+    finance: ['overview', 'orders', 'metrics', 'health'],
+  };
   const adminTabs = [
-    { id: 'overview', label: 'Visão Geral' },
-    { id: 'inventory', label: 'Estoque' },
-    { id: 'orders', label: 'Pedidos' },
-    { id: 'customers', label: 'Clientes' },
-    { id: 'abandoned', label: 'Carrinhos' },
-    { id: 'metrics', label: 'Métricas' },
-    { id: 'health', label: 'Saúde' },
-  ];
+    { id: 'overview', label: 'Visão Geral' }, { id: 'inventory', label: 'Estoque' },
+    { id: 'orders', label: 'Pedidos' }, { id: 'customers', label: 'Clientes' },
+    { id: 'abandoned', label: 'Carrinhos' }, { id: 'metrics', label: 'Métricas' },
+    { id: 'health', label: 'Saúde' }, { id: 'team', label: 'Equipe e Acessos' },
+  ].filter(tab => !adminRole || (visibleSections[adminRole] || ['overview']).includes(tab.id as AdminSection));
 
   // Store Info & Shared Data
   const { storeInfo } = useStoreSettings();
@@ -67,6 +73,10 @@ export function AdminDashboard() {
     discountValue: 0,
     minPurchaseAmount: 0
   });
+
+  useEffect(() => {
+    void supabase.rpc('current_admin_role').then(({ data }) => setAdminRole(data || null));
+  }, []);
 
   const fetchAdminProducts = async () => {
     setLoadingProducts(true);
@@ -321,7 +331,7 @@ export function AdminDashboard() {
           <div>
             <h1 className="text-4xl font-serif text-[#1A332B] mb-1">Painel de Controle</h1>
             <p className="text-xs text-[#423226] opacity-70 uppercase tracking-widest font-sans">
-              Admin Palm CO.
+              Admin Palm CO. {adminRole ? `· ${roleLabels[adminRole] || adminRole}` : ''}
             </p>
           </div>
         </header>
@@ -428,6 +438,7 @@ export function AdminDashboard() {
             )}
 
             {activeTab === 'health' && <AdminOperationalHealth />}
+            {activeTab === 'team' && adminRole === 'owner' && <AdminTeam />}
           </main>
         </div>
       </div>
