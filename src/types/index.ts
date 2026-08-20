@@ -19,6 +19,10 @@ export interface Product {
   features: string[];
   isSold?: boolean;
   archivedAt?: string;
+  sku?: string;
+  acquisitionCost?: number;
+  source?: string;
+  acquiredAt?: string;
   brand?: string;
   color?: string[];
   material?: string;

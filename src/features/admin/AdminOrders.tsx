@@ -44,6 +44,10 @@ export function AdminOrders({
   const [creatingLabelId, setCreatingLabelId] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [savingTrackingId, setSavingTrackingId] = useState<string | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [internalNotes, setInternalNotes] = useState<Record<string, string>>({});
+  const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
 
   // Filtros de Data
   const [startDate, setStartDate] = useState<string>('');
@@ -55,6 +59,14 @@ export function AdminOrders({
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  const selectedOrders = adminOrders.filter(order => selectedOrderIds.includes(order.id));
+  const bulkTarget = selectedOrders.length > 0 && selectedOrders.every(order => order.status === selectedOrders[0].status)
+    ? ({ pending: 'cancelled', paid: 'shipped', shipped: 'delivered' } as Record<string, string>)[selectedOrders[0].status]
+    : undefined;
+  const bulkActionLabels: Record<string, string> = {
+    cancelled: 'Cancelar selecionados', shipped: 'Marcar selecionados como enviados', delivered: 'Marcar selecionados como entregues',
+  };
 
   const allowedStatusOptions: Record<string, Array<{ value: string; label: string }>> = {
     pending: [
@@ -98,6 +110,41 @@ export function AdminOrders({
     if (error) showToast('Não foi possível carregar a linha do tempo do pedido.', 'error');
     else setOrderEvents(previous => ({ ...previous, [orderId]: data || [] }));
     setLoadingEventsId(null);
+  };
+
+  const handleBulkTransition = async () => {
+    if (!bulkTarget || !selectedOrderIds.length) return;
+    if (bulkTarget === 'cancelled' && !confirm(`Cancelar ${selectedOrderIds.length} pedido(s) pendente(s)?`)) return;
+    setBulkUpdating(true);
+    const { error } = await supabase.rpc('admin_bulk_transition_order_status', {
+      p_order_ids: selectedOrderIds,
+      p_new_status: bulkTarget,
+    });
+    if (error) showToast(error.message || 'Não foi possível atualizar os pedidos.', 'error');
+    else {
+      showToast(`${selectedOrderIds.length} pedido(s) atualizado(s).`, 'success');
+      setSelectedOrderIds([]);
+      await Promise.all([fetchAdminOrders(), fetchCRMData()]);
+    }
+    setBulkUpdating(false);
+  };
+
+  const handleAddInternalNote = async (orderId: string) => {
+    const note = internalNotes[orderId]?.trim();
+    if (!note) return;
+    setSavingNoteId(orderId);
+    const { error } = await supabase.rpc('admin_add_order_event', {
+      p_order_id: orderId, p_event_type: 'internal_note', p_title: 'Nota interna',
+      p_details: { description: note },
+    });
+    if (error) showToast(error.message || 'Não foi possível salvar a nota.', 'error');
+    else {
+      setInternalNotes(previous => ({ ...previous, [orderId]: '' }));
+      const { data } = await supabase.rpc('admin_get_order_events', { p_order_id: orderId });
+      setOrderEvents(previous => ({ ...previous, [orderId]: data || [] }));
+      showToast('Nota adicionada à linha do tempo.', 'success');
+    }
+    setSavingNoteId(null);
   };
 
   const paymentStatusLabels: Record<string, string> = {
@@ -213,6 +260,11 @@ export function AdminOrders({
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, startDate, endDate, minValue, maxValue, paymentMethod, debouncedSearch]);
+
+  useEffect(() => {
+    const visibleIds = new Set(adminOrders.map(order => order.id));
+    setSelectedOrderIds(previous => previous.filter(id => visibleIds.has(id)));
+  }, [adminOrders]);
 
   useEffect(() => {
     void fetchAdminOrders({
@@ -366,9 +418,22 @@ export function AdminOrders({
         </div>
       </div>
 
+      {selectedOrderIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-[#C06A35]/30 bg-[#FFF8F1] p-4">
+          <p className="text-sm font-semibold text-[#1A332B]">{selectedOrderIds.length} pedido(s) selecionado(s)</p>
+          <div className="flex items-center gap-3">
+            {!bulkTarget && <span className="text-xs text-amber-800">Selecione pedidos que estejam no mesmo status.</span>}
+            <button type="button" onClick={() => setSelectedOrderIds([])} className="text-xs font-bold uppercase underline">Limpar</button>
+            <button type="button" disabled={!bulkTarget || bulkUpdating} onClick={() => void handleBulkTransition()} className="bg-[#1A332B] px-4 py-2 text-xs font-bold uppercase text-white disabled:opacity-40">
+              {bulkUpdating ? 'Atualizando...' : bulkTarget ? bulkActionLabels[bulkTarget] : 'Ação indisponível'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded shadow-sm border border-[#C06A35]/20 overflow-hidden">
         {loading ? (
-          <TableSkeleton rows={6} columns={7} label="Carregando pedidos" />
+          <TableSkeleton rows={6} columns={8} label="Carregando pedidos" />
         ) : adminOrders.length === 0 ? (
           <div className="p-8 text-center text-gray-500">Nenhum pedido encontrado.</div>
         ) : (
@@ -376,6 +441,9 @@ export function AdminOrders({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#FDF6F0] border-b border-[#C06A35]/20 text-[#1A332B] font-medium text-sm">
+                  <th className="p-4">
+                    <input type="checkbox" aria-label="Selecionar pedidos desta página" checked={adminOrders.length > 0 && adminOrders.every(order => selectedOrderIds.includes(order.id))} onChange={event => setSelectedOrderIds(event.target.checked ? adminOrders.map(order => order.id) : [])} />
+                  </th>
                   <th className="p-4">Pedido / Data</th>
                   <th className="p-4">Cliente</th>
                   <th className="p-4">Itens</th>
@@ -399,6 +467,7 @@ export function AdminOrders({
                   return (
                     <React.Fragment key={order.id}>
                       <tr className="border-b border-[#C06A35]/10 hover:bg-[#FDF6F0]/50 transition-colors">
+                        <td className="p-4"><input type="checkbox" aria-label={`Selecionar pedido ${order.id}`} checked={selectedOrderIds.includes(order.id)} onChange={event => setSelectedOrderIds(previous => event.target.checked ? [...previous, order.id] : previous.filter(id => id !== order.id))} /></td>
                         <td 
                           className="p-4 cursor-pointer hover:underline"
                           onClick={() => void toggleOrderDetails(order.id)}
@@ -528,7 +597,7 @@ export function AdminOrders({
 
                       {expandedOrderId === order.id && (
                         <tr className="bg-[#FDF6F0]/40 border-b border-[#C06A35]/15">
-                          <td colSpan={7} className="p-6">
+                          <td colSpan={8} className="p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
                                 <h4 className="text-xs uppercase tracking-wider font-bold text-[#1A332B] mb-2">Endereço de Entrega</h4>
@@ -569,6 +638,12 @@ export function AdminOrders({
                                       ))}
                                     </div>
                                   )}
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                  <input value={internalNotes[order.id] || ''} onChange={event => setInternalNotes(previous => ({ ...previous, [order.id]: event.target.value }))} maxLength={500} placeholder="Adicionar nota interna..." className="min-w-0 flex-1 border border-gray-300 bg-white px-3 py-2 text-xs" />
+                                  <button type="button" disabled={savingNoteId === order.id || !internalNotes[order.id]?.trim()} onClick={() => void handleAddInternalNote(order.id)} className="bg-[#1A332B] px-3 py-2 text-[10px] font-bold uppercase text-white disabled:opacity-40">
+                                    {savingNoteId === order.id ? 'Salvando...' : 'Adicionar'}
+                                  </button>
                                 </div>
                               </div>
                             </div>

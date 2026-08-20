@@ -5,19 +5,18 @@ import { useStore } from '../../store/useStore';
 import type { Product } from '../../types';
 import { useToast } from '../../components/Toast';
 import { prepareProductImage, validateImageFile } from '../../utils/imageUpload';
+import { AdminCsvImport } from './AdminCsvImport';
 
 interface AdminInventoryProps {
   adminProducts: Product[];
   loading: boolean;
   fetchAdminProducts: () => Promise<void>;
-  handleCSVImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export function AdminInventory({
   adminProducts,
   loading,
-  fetchAdminProducts,
-  handleCSVImport
+  fetchAdminProducts
 }: AdminInventoryProps) {
   const { fetchProducts } = useStore();
   const { showToast } = useToast();
@@ -25,19 +24,28 @@ export function AdminInventory({
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
+  const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
+  const [adjustmentQuantity, setAdjustmentQuantity] = useState(0);
+  const [adjustmentReason, setAdjustmentReason] = useState('physical_count');
+  const [adjustmentNote, setAdjustmentNote] = useState('');
+  const [savingAdjustment, setSavingAdjustment] = useState(false);
+  const [showMovementHistory, setShowMovementHistory] = useState(false);
+  const [inventoryMovements, setInventoryMovements] = useState<any[]>([]);
+  const [loadingMovements, setLoadingMovements] = useState(false);
 
   // Inventory Filtering & Sorting & Pagination States
   const [inventorySearch, setInventorySearch] = useState('');
   const [inventorySort, setInventorySort] = useState<string>('newest');
   const [inventoryPage, setInventoryPage] = useState(1);
+  const [inventoryScope, setInventoryScope] = useState<'active' | 'archived'>('active');
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     setInventoryPage(1);
-  }, [inventorySearch, inventorySort]);
+  }, [inventorySearch, inventorySort, inventoryScope]);
 
   const filteredAndSortedProducts = React.useMemo(() => {
-    let result = [...adminProducts];
+    let result = adminProducts.filter(product => inventoryScope === 'archived' ? !!product.archivedAt : !product.archivedAt);
     if (inventorySearch.trim()) {
       const q = inventorySearch.toLowerCase();
       result = result.filter(p => 
@@ -57,7 +65,7 @@ export function AdminInventory({
     });
 
     return result;
-  }, [adminProducts, inventorySearch, inventorySort]);
+  }, [adminProducts, inventorySearch, inventorySort, inventoryScope]);
 
   const totalInventoryPages = Math.ceil(filteredAndSortedProducts.length / ITEMS_PER_PAGE) || 1;
   
@@ -80,18 +88,53 @@ export function AdminInventory({
     await Promise.all([fetchAdminProducts(), fetchProducts()]);
   };
 
-  const handleMarkAsSold = async (id: string, currentStatus: boolean) => {
-    const newQuantity = currentStatus ? 1 : 0;
-    const { error } = await supabase
-      .from('products')
-      .update({ stock_quantity: newQuantity })
-      .eq('id', id);
+  const handleRestore = async (id: string) => {
+    const { error } = await supabase.from('products').update({ archived_at: null }).eq('id', id);
     if (error) {
-      showToast(`Não foi possível atualizar o estoque. ${error.message}`, 'error');
+      showToast(`Não foi possível restaurar o produto. ${error.message}`, 'error');
       return;
     }
-    showToast(currentStatus ? 'Produto disponibilizado.' : 'Produto marcado como vendido.', 'success');
+    showToast('Produto restaurado e devolvido ao estoque.', 'success');
     await Promise.all([fetchAdminProducts(), fetchProducts()]);
+  };
+
+  const openInventoryAdjustment = (product: Product) => {
+    setAdjustingProduct(product);
+    setAdjustmentQuantity(product.stockQuantity ?? 0);
+    setAdjustmentReason('physical_count');
+    setAdjustmentNote('');
+  };
+
+  const handleInventoryAdjustment = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!adjustingProduct) return;
+    setSavingAdjustment(true);
+    const { error } = await supabase.rpc('admin_adjust_inventory', {
+      p_product_id: adjustingProduct.id,
+      p_new_quantity: adjustmentQuantity,
+      p_reason: adjustmentReason,
+      p_note: adjustmentNote.trim() || null,
+    });
+    if (error) {
+      showToast(`Não foi possível ajustar o estoque. ${error.message}`, 'error');
+    } else {
+      showToast('Estoque ajustado e registrado no histórico.', 'success');
+      setAdjustingProduct(null);
+      await Promise.all([fetchAdminProducts(), fetchProducts()]);
+    }
+    setSavingAdjustment(false);
+  };
+
+  const loadMovementHistory = async () => {
+    setShowMovementHistory(true);
+    setLoadingMovements(true);
+    const { data, error } = await supabase.rpc('admin_list_inventory_movements', {
+      p_product_id: null,
+      p_limit: 100,
+    });
+    if (error) showToast(`Não foi possível carregar o histórico. ${error.message}`, 'error');
+    else setInventoryMovements(data || []);
+    setLoadingMovements(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -119,6 +162,10 @@ export function AdminInventory({
       stock_quantity: editingProduct.stockQuantity ?? 1,
       condition: editingProduct.condition || null,
       condition_notes: editingProduct.conditionNotes?.trim() || null,
+      sku: editingProduct.sku?.trim().toUpperCase() || null,
+      acquisition_cost: editingProduct.acquisitionCost ?? null,
+      source: editingProduct.source?.trim() || null,
+      acquired_at: editingProduct.acquiredAt || null,
     };
 
     setSavingProduct(true);
@@ -226,15 +273,10 @@ export function AdminInventory({
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="border border-[#1A332B] text-[#1A332B] px-5 py-2.5 rounded-none text-xs font-semibold uppercase tracking-widest hover:bg-[#1A332B] hover:text-white cursor-pointer transition-colors inline-block">
-            Importar CSV
-            <input 
-              type="file" 
-              accept=".csv" 
-              onChange={handleCSVImport} 
-              className="hidden" 
-            />
-          </label>
+          <button type="button" onClick={() => void loadMovementHistory()} className="border border-[#C06A35] px-5 py-2.5 text-xs font-semibold uppercase tracking-widest text-[#9A4D24] hover:bg-[#FDF6F0]">
+            Histórico
+          </button>
+          <AdminCsvImport fetchAdminProducts={fetchAdminProducts} />
           <button 
             onClick={() => { setEditingProduct({ category: 'Outros', features: [] }); setIsEditing(true); }}
             className="bg-[#1A332B] text-[#FDF6F0] border border-[#1A332B] px-5 py-2.5 rounded-none text-xs font-semibold uppercase tracking-widest hover:bg-[#433E38] hover:border-[#433E38] transition-colors"
@@ -283,6 +325,13 @@ export function AdminInventory({
             <input placeholder="Marca" className="border p-2" value={editingProduct.brand || ''} onChange={e => setEditingProduct({...editingProduct, brand: e.target.value})} />
             <input placeholder="Cores (ex: Preto, Branco, Cinza)" className="border p-2" value={editingProduct.color?.join(', ') || ''} onChange={e => setEditingProduct({...editingProduct, color: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} />
             <input placeholder="Material (ex: Algodão, Linho)" className="border p-2" value={editingProduct.material || ''} onChange={e => setEditingProduct({...editingProduct, material: e.target.value})} />
+            <input placeholder="SKU interno (ex: PALM-0001)" className="border p-2 uppercase" value={editingProduct.sku || ''} onChange={e => setEditingProduct({...editingProduct, sku: e.target.value})} />
+            <input placeholder="Custo de aquisição" type="number" min="0" step="0.01" className="border p-2" value={editingProduct.acquisitionCost ?? ''} onChange={e => setEditingProduct({...editingProduct, acquisitionCost: e.target.value === '' ? undefined : Number(e.target.value)})} />
+            <input placeholder="Origem / fornecedor" className="border p-2" value={editingProduct.source || ''} onChange={e => setEditingProduct({...editingProduct, source: e.target.value})} />
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wider text-[#423226]">
+              Data de aquisição
+              <input aria-label="Data de aquisição" type="date" className="border p-2 text-sm font-normal normal-case" value={editingProduct.acquiredAt || ''} onChange={e => setEditingProduct({...editingProduct, acquiredAt: e.target.value})} />
+            </label>
             <input placeholder="Estoque" type="number" min="0" className="border p-2" value={editingProduct.stockQuantity ?? 1} onChange={e => setEditingProduct({...editingProduct, stockQuantity: Number(e.target.value)})} />
             <select aria-label="Estado de conservação" className="border p-2" value={editingProduct.condition || ''} onChange={e => setEditingProduct({...editingProduct, condition: (e.target.value || undefined) as Product['condition']})}>
               <option value="">Estado de conservação</option>
@@ -396,6 +445,10 @@ export function AdminInventory({
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+              <div className="flex border border-gray-300 bg-white p-1 text-xs">
+                <button type="button" onClick={() => setInventoryScope('active')} className={`px-3 py-1.5 ${inventoryScope === 'active' ? 'bg-[#1A332B] text-white' : ''}`}>Ativos</button>
+                <button type="button" onClick={() => setInventoryScope('archived')} className={`px-3 py-1.5 ${inventoryScope === 'archived' ? 'bg-[#1A332B] text-white' : ''}`}>Arquivados</button>
+              </div>
               <label htmlFor="inventory-sort" className="text-xs font-semibold uppercase tracking-wider text-[#423226]">Ordenar por:</label>
               <select
                 id="inventory-sort"
@@ -439,10 +492,18 @@ export function AdminInventory({
                           <div>
                             <span className="font-serif font-bold text-[#1A332B] block">{product.name}</span>
                             {product.brand && <span className="text-xs text-gray-500">{product.brand}</span>}
+                            {product.sku && <span className="block font-mono text-[10px] text-gray-400">{product.sku}</span>}
                           </div>
                         </td>
                         <td className="p-4 text-sm text-[#423226]">{product.category}</td>
-                        <td className="p-4 text-sm font-semibold text-[#1A332B]">R$ {product.price.toFixed(2).replace('.', ',')}</td>
+                        <td className="p-4 text-sm font-semibold text-[#1A332B]">
+                          R$ {product.price.toFixed(2).replace('.', ',')}
+                          {product.acquisitionCost !== undefined && (
+                            <span className="block text-[10px] font-normal text-gray-500">
+                              Margem bruta: {product.price > 0 ? (((product.price - product.acquisitionCost) / product.price) * 100).toFixed(0) : 0}%
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4 text-sm">
                           <span className={`px-2 py-1 rounded text-xs font-semibold ${product.stockQuantity === 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
                             {product.stockQuantity ?? 1} un
@@ -454,24 +515,15 @@ export function AdminInventory({
                           </span>
                         </td>
                         <td className="p-4 text-sm space-x-3">
-                          <button 
-                            onClick={() => { setEditingProduct(product); setIsEditing(true); }}
-                            className="text-blue-600 hover:underline"
-                          >
-                            Editar
-                          </button>
-                          <button 
-                            onClick={() => handleMarkAsSold(product.id, !!product.isSold)}
-                            className="text-orange-800 hover:underline"
-                          >
-                            {product.isSold ? 'Marcar Disponível' : 'Marcar Vendido'}
-                          </button>
-                          <button 
-                            onClick={() => handleArchive(product.id)}
-                            className="text-red-600 hover:underline"
-                          >
-                            Arquivar
-                          </button>
+                          {product.archivedAt ? (
+                            <button onClick={() => handleRestore(product.id)} className="text-green-700 hover:underline">Restaurar</button>
+                          ) : (
+                            <>
+                              <button onClick={() => { setEditingProduct(product); setIsEditing(true); }} className="text-blue-600 hover:underline">Editar</button>
+                              <button onClick={() => openInventoryAdjustment(product)} className="text-orange-800 hover:underline">Ajustar estoque</button>
+                              <button onClick={() => handleArchive(product.id)} className="text-red-600 hover:underline">Arquivar</button>
+                            </>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -508,6 +560,64 @@ export function AdminInventory({
               )}
             </>
           )}
+        </div>
+      )}
+
+      {adjustingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="inventory-adjustment-title">
+          <form onSubmit={handleInventoryAdjustment} className="w-full max-w-lg border border-[#EAD8CC] bg-white p-6 shadow-xl">
+            <h3 id="inventory-adjustment-title" className="font-serif text-2xl text-[#1A332B]">Ajustar estoque</h3>
+            <p className="mt-1 text-sm text-gray-600">{adjustingProduct.name} · atual: {adjustingProduct.stockQuantity ?? 0}</p>
+            <div className="mt-5 space-y-4">
+              <label className="block text-xs font-semibold uppercase tracking-wider">Nova quantidade
+                <input required min="0" type="number" value={adjustmentQuantity} onChange={event => setAdjustmentQuantity(Math.max(0, Number(event.target.value)))} className="mt-1 w-full border p-3 text-base font-normal" />
+              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wider">Motivo
+                <select required value={adjustmentReason} onChange={event => setAdjustmentReason(event.target.value)} className="mt-1 w-full border p-3 text-sm font-normal normal-case">
+                  <option value="physical_count">Contagem física</option>
+                  <option value="acquisition">Nova aquisição</option>
+                  <option value="manual_correction">Correção de cadastro</option>
+                  <option value="damage_or_loss">Avaria ou perda</option>
+                  <option value="customer_return">Devolução do cliente</option>
+                  <option value="order_cancellation">Cancelamento de pedido</option>
+                </select>
+              </label>
+              <label className="block text-xs font-semibold uppercase tracking-wider">Observação opcional
+                <textarea maxLength={500} rows={3} value={adjustmentNote} onChange={event => setAdjustmentNote(event.target.value)} className="mt-1 w-full border p-3 text-sm font-normal normal-case" placeholder="Explique o ajuste quando necessário" />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" disabled={savingAdjustment} onClick={() => setAdjustingProduct(null)} className="border px-5 py-2 text-xs font-bold uppercase">Cancelar</button>
+              <button type="submit" disabled={savingAdjustment} className="bg-[#1A332B] px-5 py-2 text-xs font-bold uppercase text-white disabled:opacity-50">{savingAdjustment ? 'Salvando...' : 'Confirmar ajuste'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showMovementHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-labelledby="inventory-history-title">
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-hidden border border-[#EAD8CC] bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b p-5">
+              <div><h3 id="inventory-history-title" className="font-serif text-2xl text-[#1A332B]">Histórico de estoque</h3><p className="text-xs text-gray-500">Últimas 100 movimentações</p></div>
+              <button type="button" onClick={() => setShowMovementHistory(false)} className="p-2 text-xl" aria-label="Fechar histórico">×</button>
+            </div>
+            <div className="max-h-[65vh] overflow-auto">
+              {loadingMovements ? <p className="p-8 text-center text-sm">Carregando movimentações...</p> : inventoryMovements.length === 0 ? <p className="p-8 text-center text-sm text-gray-500">Nenhuma movimentação registrada.</p> : (
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 bg-[#FDF6F0]"><tr><th className="p-3">Data</th><th className="p-3">Produto</th><th className="p-3">Alteração</th><th className="p-3">Motivo</th><th className="p-3">Responsável</th></tr></thead>
+                  <tbody>{inventoryMovements.map(movement => (
+                    <tr key={movement.id} className="border-t align-top">
+                      <td className="p-3 whitespace-nowrap text-xs">{new Date(movement.created_at).toLocaleString('pt-BR')}</td>
+                      <td className="p-3"><strong>{movement.product_name}</strong>{movement.sku && <span className="block font-mono text-[10px] text-gray-500">{movement.sku}</span>}</td>
+                      <td className="p-3 font-semibold">{movement.previous_quantity} → {movement.new_quantity} <span className={movement.delta > 0 ? 'text-green-700' : 'text-red-700'}>({movement.delta > 0 ? '+' : ''}{movement.delta})</span></td>
+                      <td className="p-3">{movement.reason}{movement.note && <span className="block text-xs text-gray-500">{movement.note}</span>}</td>
+                      <td className="p-3 text-xs">{movement.changed_by_email || 'sistema'}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

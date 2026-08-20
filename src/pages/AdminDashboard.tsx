@@ -3,7 +3,7 @@ import { supabase } from '../services/supabaseClient';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import type { Product } from '../types';
 import { useToast } from '../components/Toast';
-import { useStore } from '../store/useStore';
+import { useSearchParams } from 'react-router-dom';
 
 import { AdminInventory } from '../features/admin/AdminInventory';
 import { AdminOrders, type AdminOrderQuery } from '../features/admin/AdminOrders';
@@ -11,12 +11,22 @@ import { AdminCustomers } from '../features/admin/AdminCustomers';
 import { AdminAbandonedCarts } from '../features/admin/AdminAbandonedCarts';
 import { AdminMetrics } from '../features/admin/AdminMetrics';
 import { AdminOperationalHealth } from '../features/admin/AdminOperationalHealth';
+import { AdminOverview } from '../features/admin/AdminOverview';
+
+type AdminSection = 'overview' | 'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health';
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health'];
 
 export function AdminDashboard() {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health'>('inventory');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section') as AdminSection | null;
+  const activeTab: AdminSection = requestedSection && ADMIN_SECTIONS.includes(requestedSection) ? requestedSection : 'overview';
+  const setActiveTab = (section: AdminSection) => {
+    setSearchParams(section === 'overview' ? {} : { section });
+  };
 
   const adminTabs = [
+    { id: 'overview', label: 'Visão Geral' },
     { id: 'inventory', label: 'Estoque' },
     { id: 'orders', label: 'Pedidos' },
     { id: 'customers', label: 'Clientes' },
@@ -65,7 +75,6 @@ export function AdminDashboard() {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .is('archived_at', null)
       .order('created_at', { ascending: false });
     if (error) {
       setSectionErrors(previous => ({ ...previous, inventory: 'Não foi possível carregar o estoque.' }));
@@ -83,6 +92,10 @@ export function AdminDashboard() {
         features: row.features,
         isSold: row.is_sold,
         archivedAt: row.archived_at,
+        sku: row.sku,
+        acquisitionCost: row.acquisition_cost === null ? undefined : Number(row.acquisition_cost),
+        source: row.source,
+        acquiredAt: row.acquired_at,
         brand: row.brand,
         color: row.color,
         material: row.material,
@@ -309,108 +322,6 @@ export function AdminDashboard() {
     document.body.removeChild(link);
   };
 
-  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-
-      try {
-        const lines: string[][] = [];
-        let currentLine: string[] = [];
-        let currentWord = '';
-        let insideQuote = false;
-
-        for (let i = 0; i < text.length; i++) {
-          const char = text[i];
-          const nextChar = text[i + 1];
-
-          if (char === '"') {
-            if (insideQuote && nextChar === '"') {
-              currentWord += '"';
-              i++;
-            } else {
-              insideQuote = !insideQuote;
-            }
-          } else if ((char === ',' || char === ';') && !insideQuote) {
-            currentLine.push(currentWord.trim());
-            currentWord = '';
-          } else if ((char === '\r' || char === '\n') && !insideQuote) {
-            if (char === '\r' && nextChar === '\n') i++;
-            currentLine.push(currentWord.trim());
-            lines.push(currentLine);
-            currentLine = [];
-            currentWord = '';
-          } else {
-            currentWord += char;
-          }
-        }
-        if (currentWord || currentLine.length > 0) {
-          currentLine.push(currentWord.trim());
-          lines.push(currentLine);
-        }
-
-        if (lines.length <= 1) {
-          showToast('CSV vazio ou inválido. A primeira linha deve conter os cabeçalhos.', 'warning');
-          return;
-        }
-
-        const headers = lines[0].map(h => h.toLowerCase().trim());
-        const productsToInsert = [];
-
-        for (let idx = 1; idx < lines.length; idx++) {
-          const row = lines[idx];
-          if (row.length < headers.length || row.every(cell => cell === '')) continue;
-
-          const item: Record<string, any> = {};
-          headers.forEach((header, colIdx) => {
-            item[header] = row[colIdx];
-          });
-
-          productsToInsert.push({
-            name: item.name || 'Produto Sem Nome',
-            tagline: item.tagline || null,
-            description: item.description || '',
-            long_description: item.long_description || item.description || '',
-            price: Number(item.price) || 0,
-            category: item.category || 'Outros',
-            size: item.size || 'ÚNICO',
-            image_url: item.image_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=800',
-            brand: item.brand || null,
-            material: item.material || null,
-            color: item.color ? item.color.split(',').map((c: string) => c.trim()) : [],
-            features: item.features ? item.features.split(',').map((f: string) => f.trim()) : [],
-            stock_quantity: item.stock_quantity === undefined || item.stock_quantity === ''
-              ? 1
-              : Math.max(0, Number(item.stock_quantity) || 0),
-            is_sold: false
-          });
-        }
-
-        if (productsToInsert.length === 0) {
-          showToast('Nenhum produto válido encontrado no CSV.', 'warning');
-          return;
-        }
-
-        const { error } = await supabase.from('products').insert(productsToInsert);
-        if (error) {
-          showToast('Erro ao importar produtos: ' + error.message, 'error');
-        } else {
-          showToast(`${productsToInsert.length} produtos importados com sucesso!`, 'success');
-          await Promise.all([fetchAdminProducts(), useStore.getState().fetchProducts(true)]);
-        }
-      } catch (err: any) {
-        showToast('Erro ao processar arquivo: ' + err.message, 'error');
-      }
-    };
-
-    reader.readAsText(file, 'UTF-8');
-    e.target.value = '';
-  };
-
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     const normalizedCode = newCoupon.code.trim().toUpperCase();
@@ -490,7 +401,7 @@ export function AdminDashboard() {
               {adminTabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as AdminSection)}
                   className={`text-left px-4 py-3 text-sm font-medium transition-colors border-l-2 ${activeTab === tab.id
                       ? 'border-[#C06A35] text-[#1A332B] bg-white font-semibold shadow-sm'
                       : 'border-transparent text-gray-500 hover:text-[#1A332B] hover:bg-white/50'
@@ -533,12 +444,12 @@ export function AdminDashboard() {
                 </button>
               </div>
             )}
+            {activeTab === 'overview' && <AdminOverview onNavigate={setActiveTab} />}
             {activeTab === 'inventory' && (
               <AdminInventory
                 adminProducts={adminProducts}
                 loading={loadingProducts && adminProducts.length === 0}
                 fetchAdminProducts={fetchAdminProducts}
-                handleCSVImport={handleCSVImport}
               />
             )}
 
