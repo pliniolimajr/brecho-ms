@@ -40,7 +40,6 @@ export function AdminDashboard() {
   const [adminProducts, setAdminProducts] = useState<Product[]>([]);
   const [adminOrders, setAdminOrders] = useState<any[]>([]);
   const [totalAdminOrders, setTotalAdminOrders] = useState(0);
-  const [metricsOrders, setMetricsOrders] = useState<any[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string | null>>({});
@@ -138,18 +137,6 @@ export function AdminDashboard() {
     setLoadingOrders(false);
   }, []);
 
-  const fetchMetricsOrders = async () => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*, products(name, size))')
-      .order('created_at', { ascending: false });
-    if (error) {
-      setSectionErrors(previous => ({ ...previous, metrics: 'Não foi possível carregar as métricas e cupons.' }));
-    } else {
-      setMetricsOrders(data || []);
-    }
-  };
-
   const fetchCRMData = async () => {
     setLoadingCRM(true);
     setSectionErrors(previous => ({ ...previous, customers: null }));
@@ -221,7 +208,6 @@ export function AdminDashboard() {
     if (activeTab === 'abandoned') void fetchAbandonedCarts();
     if (activeTab === 'metrics') {
       void fetchCoupons();
-      void fetchMetricsOrders();
     }
   }, [activeTab]);
 
@@ -232,7 +218,6 @@ export function AdminDashboard() {
     if (activeTab === 'abandoned') void fetchAbandonedCarts();
     if (activeTab === 'metrics') {
       void fetchCoupons();
-      void fetchMetricsOrders();
     }
   };
 
@@ -429,7 +414,6 @@ export function AdminDashboard() {
 
             {activeTab === 'metrics' && (
               <AdminMetrics
-                adminOrders={metricsOrders}
                 coupons={coupons}
                 loadingCoupons={loadingCoupons && coupons.length === 0}
                 fetchCoupons={fetchCoupons}
