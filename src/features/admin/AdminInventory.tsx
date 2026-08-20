@@ -24,6 +24,7 @@ export function AdminInventory({
   const [isEditing, setIsEditing] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
 
   // Inventory Filtering & Sorting & Pagination States
   const [inventorySearch, setInventorySearch] = useState('');
@@ -65,21 +66,41 @@ export function AdminInventory({
     return filteredAndSortedProducts.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredAndSortedProducts, inventoryPage]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja apagar esse produto?')) return;
-    await supabase.from('products').delete().eq('id', id);
-    fetchAdminProducts();
-    fetchProducts();
+  const handleArchive = async (id: string) => {
+    if (!confirm('Arquivar este produto? Ele sairá da loja, mas o histórico será preservado.')) return;
+    const { error } = await supabase
+      .from('products')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) {
+      showToast(`Não foi possível arquivar o produto. ${error.message}`, 'error');
+      return;
+    }
+    showToast('Produto arquivado com sucesso.', 'success');
+    await Promise.all([fetchAdminProducts(), fetchProducts()]);
   };
 
   const handleMarkAsSold = async (id: string, currentStatus: boolean) => {
-    await supabase.from('products').update({ is_sold: !currentStatus }).eq('id', id);
-    fetchAdminProducts();
-    fetchProducts();
+    const newQuantity = currentStatus ? 1 : 0;
+    const { error } = await supabase
+      .from('products')
+      .update({ stock_quantity: newQuantity })
+      .eq('id', id);
+    if (error) {
+      showToast(`Não foi possível atualizar o estoque. ${error.message}`, 'error');
+      return;
+    }
+    showToast(currentStatus ? 'Produto disponibilizado.' : 'Produto marcado como vendido.', 'success');
+    await Promise.all([fetchAdminProducts(), fetchProducts()]);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingProduct.imageUrl?.trim()) {
+      showToast('Adicione a imagem principal antes de salvar o produto.', 'warning');
+      return;
+    }
+
     const payload = {
       name: editingProduct.name,
       tagline: editingProduct.tagline,
@@ -88,7 +109,7 @@ export function AdminInventory({
       price: editingProduct.price,
       category: editingProduct.category || 'Outros',
       size: editingProduct.size || 'ÚNICO',
-      image_url: editingProduct.imageUrl,
+      image_url: editingProduct.imageUrl.trim(),
       gallery: editingProduct.gallery || [],
       features: editingProduct.features || [],
       brand: editingProduct.brand || null,
@@ -100,16 +121,27 @@ export function AdminInventory({
       condition_notes: editingProduct.conditionNotes?.trim() || null,
     };
 
-    if (editingProduct.id) {
-      await supabase.from('products').update(payload).eq('id', editingProduct.id);
-    } else {
-      await supabase.from('products').insert(payload);
-    }
+    setSavingProduct(true);
+    try {
+      const { error } = editingProduct.id
+        ? await supabase.from('products').update(payload).eq('id', editingProduct.id)
+        : await supabase.from('products').insert(payload);
 
-    setIsEditing(false);
-    setEditingProduct({});
-    fetchAdminProducts();
-    fetchProducts();
+      if (error) throw error;
+
+      showToast(editingProduct.id ? 'Produto atualizado com sucesso.' : 'Produto adicionado com sucesso.', 'success');
+      setIsEditing(false);
+      setEditingProduct({});
+      await Promise.all([fetchAdminProducts(), fetchProducts()]);
+    } catch (error) {
+      console.error('Falha ao salvar produto.', error);
+      const message = typeof error === 'object' && error && 'message' in error
+        ? String(error.message)
+        : 'Erro desconhecido.';
+      showToast(`Não foi possível salvar o produto. ${message}`, 'error');
+    } finally {
+      setSavingProduct(false);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,6 +325,7 @@ export function AdminInventory({
               <label className="text-sm font-semibold text-[#1A332B]">Imagem Principal</label>
               <div className="flex items-center gap-4">
                 <input 
+                  required
                   placeholder="URL da Imagem Principal" 
                   className="border p-2 flex-1 text-sm" 
                   value={editingProduct.imageUrl || ''} 
@@ -342,8 +375,10 @@ export function AdminInventory({
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button type="submit" className="bg-[#1A332B] text-white px-6 py-2 rounded text-sm uppercase tracking-widest hover:bg-[#433E38]">Salvar</button>
-            <button type="button" onClick={() => setIsEditing(false)} className="border border-gray-300 px-6 py-2 rounded text-sm uppercase tracking-widest">Cancelar</button>
+            <button type="submit" disabled={savingProduct || uploadingImage} className="bg-[#1A332B] text-white px-6 py-2 rounded text-sm uppercase tracking-widest hover:bg-[#433E38] disabled:cursor-not-allowed disabled:opacity-50">
+              {savingProduct ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button type="button" disabled={savingProduct} onClick={() => setIsEditing(false)} className="border border-gray-300 px-6 py-2 rounded text-sm uppercase tracking-widest disabled:cursor-not-allowed disabled:opacity-50">Cancelar</button>
           </div>
         </form>
       ) : (
@@ -432,10 +467,10 @@ export function AdminInventory({
                             {product.isSold ? 'Marcar Disponível' : 'Marcar Vendido'}
                           </button>
                           <button 
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleArchive(product.id)}
                             className="text-red-600 hover:underline"
                           >
-                            Excluir
+                            Arquivar
                           </button>
                         </td>
                       </tr>

@@ -39,7 +39,11 @@ export function AdminOrders({
   const [editingTrackingId, setEditingTrackingId] = useState<string | null>(null);
   const [tempTrackingCode, setTempTrackingCode] = useState<string>('');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [orderEvents, setOrderEvents] = useState<Record<string, any[]>>({});
+  const [loadingEventsId, setLoadingEventsId] = useState<string | null>(null);
   const [creatingLabelId, setCreatingLabelId] = useState<string | null>(null);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [savingTrackingId, setSavingTrackingId] = useState<string | null>(null);
 
   // Filtros de Data
   const [startDate, setStartDate] = useState<string>('');
@@ -52,54 +56,58 @@ export function AdminOrders({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
+  const allowedStatusOptions: Record<string, Array<{ value: string; label: string }>> = {
+    pending: [
+      { value: 'pending', label: 'Pendente' },
+      { value: 'cancelled', label: 'Cancelar pedido' },
+    ],
+    paid: [
+      { value: 'paid', label: 'Pago / em separação' },
+      { value: 'shipped', label: 'Marcar como enviado' },
+    ],
+    shipped: [
+      { value: 'shipped', label: 'Enviado' },
+      { value: 'delivered', label: 'Marcar como entregue' },
+    ],
+    delivered: [{ value: 'delivered', label: 'Entregue' }],
+    cancelled: [{ value: 'cancelled', label: 'Cancelado' }],
+  };
+
   const logStatusHistory = async (orderId: string, action: string, details?: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const changedBy = session?.user?.email || 'admin';
-
-      const { data: order } = await supabase
-        .from('orders')
-        .select('status_history, shipping_address')
-        .eq('id', orderId)
-        .single();
-
-      if (!order) return;
-
-      const history = Array.isArray(order.status_history)
-        ? order.status_history
-        : (order.shipping_address && Array.isArray(order.shipping_address.statusHistory))
-        ? order.shipping_address.statusHistory
-        : [];
-
-      const newEntry = {
-        timestamp: new Date().toISOString(),
-        action,
-        changed_by: changedBy,
-        details: details || ''
-      };
-
-      const updatedHistory = [...history, newEntry];
-
-      // Tenta atualizar a coluna status_history dedicada
-      const { error: colError } = await supabase
-        .from('orders')
-        .update({ status_history: updatedHistory })
-        .eq('id', orderId);
-
-      // Fallback para shipping_address caso a coluna não exista
-      if (colError) {
-        const updatedAddress = {
-          ...order.shipping_address,
-          statusHistory: updatedHistory
-        };
-        await supabase
-          .from('orders')
-          .update({ shipping_address: updatedAddress })
-          .eq('id', orderId);
-      }
+      const { error } = await supabase.rpc('admin_add_order_event', {
+        p_order_id: orderId,
+        p_event_type: 'admin_action',
+        p_title: action,
+        p_details: details ? { description: details } : {},
+      });
+      if (error) throw error;
     } catch (e) {
       console.warn('Falha ao registrar histórico de status:', e);
     }
+  };
+
+  const toggleOrderDetails = async (orderId: string) => {
+    if (expandedOrderId === orderId) {
+      setExpandedOrderId(null);
+      return;
+    }
+    setExpandedOrderId(orderId);
+    setLoadingEventsId(orderId);
+    const { data, error } = await supabase.rpc('admin_get_order_events', { p_order_id: orderId });
+    if (error) showToast('Não foi possível carregar a linha do tempo do pedido.', 'error');
+    else setOrderEvents(previous => ({ ...previous, [orderId]: data || [] }));
+    setLoadingEventsId(null);
+  };
+
+  const paymentStatusLabels: Record<string, string> = {
+    pending: 'Pagamento pendente', in_process: 'Em análise', paid: 'Pagamento aprovado',
+    rejected: 'Pagamento recusado', cancelled: 'Pagamento cancelado', refunded: 'Reembolsado',
+    partially_refunded: 'Reembolso parcial', charged_back: 'Contestado',
+  };
+  const fulfillmentStatusLabels: Record<string, string> = {
+    unfulfilled: 'Não separado', processing: 'Em separação', ready_to_ship: 'Pronto para envio',
+    shipped: 'Enviado', delivered: 'Entregue', not_required: 'Envio dispensado',
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -112,31 +120,50 @@ export function AdminOrders({
     };
     const friendlyStatus = statusNames[newStatus] || newStatus;
 
-    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-    if (error) {
-      showToast('Erro ao atualizar status do pedido. Verifique se você tem permissão de Admin.', 'error');
-    } else {
-      await logStatusHistory(orderId, `Status alterado para "${friendlyStatus}"`);
-      fetchAdminOrders();
-      fetchCRMData();
+    setUpdatingStatusId(orderId);
+    try {
+      const { error } = await supabase.rpc('admin_transition_order_status', {
+        p_order_id: orderId,
+        p_new_status: newStatus,
+      });
+      if (error) throw error;
+      showToast(`Pedido atualizado para ${friendlyStatus}.`, 'success');
+      await Promise.all([fetchAdminOrders(), fetchCRMData()]);
+      setOrderEvents(previous => {
+        const next = { ...previous };
+        delete next[orderId];
+        return next;
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Erro ao atualizar status do pedido.', 'error');
+    } finally {
+      setUpdatingStatusId(null);
     }
   };
 
   const handleSaveTrackingCode = async (orderId: string, code: string) => {
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) {
+      showToast('Informe um código de rastreio.', 'warning');
+      return;
+    }
+    setSavingTrackingId(orderId);
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ tracking_code: code })
+        .update({ tracking_code: normalizedCode })
         .eq('id', orderId);
       if (error) throw error;
 
-      await logStatusHistory(orderId, `Código de rastreio atualizado`, `Código: ${code}`);
-      fetchAdminOrders();
+      await logStatusHistory(orderId, `Código de rastreio atualizado`, `Código: ${normalizedCode}`);
+      await fetchAdminOrders();
       setEditingTrackingId(null);
       showToast('Código de rastreio atualizado com sucesso!', 'success');
-    } catch (err: any) {
-      console.error(err);
-      showToast('Erro ao salvar código de rastreio.', 'error');
+    } catch (error) {
+      console.error(error);
+      showToast(error instanceof Error ? error.message : 'Erro ao salvar código de rastreio.', 'error');
+    } finally {
+      setSavingTrackingId(null);
     }
   };
 
@@ -362,18 +389,19 @@ export function AdminOrders({
                 {adminOrders.map(order => {
                   const clientName = `${order.shipping_address?.firstName || ''} ${order.shipping_address?.lastName || ''}`.trim() || 'Cliente';
                   const dateStr = new Date(order.created_at).toLocaleDateString('pt-BR');
-                  const history = Array.isArray(order.status_history)
+                  const legacyHistory = Array.isArray(order.status_history)
                     ? order.status_history
                     : (order.shipping_address && Array.isArray(order.shipping_address.statusHistory))
                     ? order.shipping_address.statusHistory
                     : [];
+                  const history = orderEvents[order.id] || legacyHistory;
 
                   return (
                     <React.Fragment key={order.id}>
                       <tr className="border-b border-[#C06A35]/10 hover:bg-[#FDF6F0]/50 transition-colors">
                         <td 
                           className="p-4 cursor-pointer hover:underline"
-                          onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                          onClick={() => void toggleOrderDetails(order.id)}
                         >
                           <span className="font-mono text-xs font-bold text-[#1A332B] block flex items-center gap-1">
                             #{order.id.split('-')[0].toUpperCase()}
@@ -398,16 +426,23 @@ export function AdminOrders({
                           R$ {Number(order.total_amount).toFixed(2).replace('.', ',')}
                         </td>
                         <td className="p-4">
+                          <div className="mb-2 space-y-1">
+                            <span className={`block w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold ${order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : order.payment_status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>
+                              {paymentStatusLabels[order.payment_status] || order.payment_status || 'Pagamento não informado'}
+                            </span>
+                            <span className="block w-fit rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+                              {fulfillmentStatusLabels[order.fulfillment_status] || order.fulfillment_status || 'Envio não informado'}
+                            </span>
+                          </div>
                           <select
                             value={order.status}
+                            disabled={updatingStatusId === order.id}
                             onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white font-semibold"
+                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white font-semibold disabled:cursor-wait disabled:opacity-50"
                           >
-                            <option value="pending">Pendente</option>
-                            <option value="paid">Pago</option>
-                            <option value="shipped">Enviado</option>
-                            <option value="delivered">Entregue</option>
-                            <option value="cancelled">Cancelado</option>
+                            {(allowedStatusOptions[order.status] || [{ value: order.status, label: order.status }]).map(option => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
                           </select>
                         </td>
                         <td className="p-4 text-xs">
@@ -422,9 +457,10 @@ export function AdminOrders({
                               />
                               <button
                                 onClick={() => handleSaveTrackingCode(order.id, tempTrackingCode)}
-                                className="bg-green-700 text-white text-xs px-2 py-1 rounded"
+                                disabled={savingTrackingId === order.id}
+                                className="bg-green-700 text-white text-xs px-2 py-1 rounded disabled:cursor-wait disabled:opacity-50"
                               >
-                                OK
+                                {savingTrackingId === order.id ? '...' : 'OK'}
                               </button>
                               <button
                                 onClick={() => setEditingTrackingId(null)}
@@ -511,7 +547,9 @@ export function AdminOrders({
                               <div>
                                 <h4 className="text-xs uppercase tracking-wider font-bold text-[#1A332B] mb-2">Rastreabilidade & Histórico</h4>
                                 <div className="bg-white p-3 rounded border border-gray-200 shadow-sm space-y-3 max-h-48 overflow-y-auto">
-                                  {history.length === 0 ? (
+                                  {loadingEventsId === order.id ? (
+                                    <p className="text-xs text-gray-400 italic">Carregando linha do tempo...</p>
+                                  ) : history.length === 0 ? (
                                     <p className="text-xs text-gray-400 italic">Nenhum evento registrado no histórico.</p>
                                   ) : (
                                     <div className="relative border-l border-gray-200 pl-4 ml-1.5 space-y-3 text-left">
@@ -519,11 +557,13 @@ export function AdminOrders({
                                         <div key={idx} className="relative">
                                           <div className="absolute -left-[21px] mt-1 w-2.5 h-2.5 rounded-full bg-[#C06A35] border border-white" />
                                           <div className="text-xs">
-                                            <span className="font-semibold text-[#1A332B] block">{h.action}</span>
+                                            <span className="font-semibold text-[#1A332B] block">{h.title || h.action}</span>
                                             <span className="text-[10px] text-gray-500 block">
-                                              {new Date(h.timestamp).toLocaleString('pt-BR')} • por {h.changed_by}
+                                              {new Date(h.created_at || h.timestamp).toLocaleString('pt-BR')} • por {h.actor_email || h.changed_by || 'sistema'}
                                             </span>
-                                            {h.details && <p className="text-[10px] text-gray-400 mt-0.5">{h.details}</p>}
+                                            {(h.details?.description || (typeof h.details === 'string' && h.details)) && (
+                                              <p className="text-[10px] text-gray-400 mt-0.5">{h.details?.description || h.details}</p>
+                                            )}
                                           </div>
                                         </div>
                                       ))}

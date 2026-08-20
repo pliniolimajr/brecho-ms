@@ -3,6 +3,7 @@ import { supabase } from '../services/supabaseClient';
 import { useStoreSettings } from '../hooks/useStoreSettings';
 import type { Product } from '../types';
 import { useToast } from '../components/Toast';
+import { useStore } from '../store/useStore';
 
 import { AdminInventory } from '../features/admin/AdminInventory';
 import { AdminOrders, type AdminOrderQuery } from '../features/admin/AdminOrders';
@@ -61,7 +62,11 @@ export function AdminDashboard() {
   const fetchAdminProducts = async () => {
     setLoadingProducts(true);
     setSectionErrors(previous => ({ ...previous, inventory: null }));
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .is('archived_at', null)
+      .order('created_at', { ascending: false });
     if (error) {
       setSectionErrors(previous => ({ ...previous, inventory: 'Não foi possível carregar o estoque.' }));
     } else if (data) {
@@ -77,6 +82,7 @@ export function AdminDashboard() {
         gallery: row.gallery,
         features: row.features,
         isSold: row.is_sold,
+        archivedAt: row.archived_at,
         brand: row.brand,
         color: row.color,
         material: row.material,
@@ -120,7 +126,10 @@ export function AdminDashboard() {
   }, []);
 
   const fetchMetricsOrders = async () => {
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, order_items(*, products(name, size))')
+      .order('created_at', { ascending: false });
     if (error) {
       setSectionErrors(previous => ({ ...previous, metrics: 'Não foi possível carregar as métricas e cupons.' }));
     } else {
@@ -135,8 +144,8 @@ export function AdminDashboard() {
       const { data: customerRows, error: customerError } = await supabase.from('customers').select('*');
       const { data: orderRows, error: orderError } = await supabase.from('orders').select('*');
 
-      if (customerError) console.error(customerError);
-      if (orderError) console.error(orderError);
+      if (customerError) throw customerError;
+      if (orderError) throw orderError;
 
       const orders = orderRows || [];
       const profiles = customerRows || [];
@@ -160,13 +169,15 @@ export function AdminDashboard() {
       });
 
       orders.forEach(order => {
-        const isCancelled = order.status === 'cancelled';
+        const isPaid = order.payment_status
+          ? ['paid', 'partially_refunded'].includes(order.payment_status)
+          : ['paid', 'shipped', 'delivered'].includes(order.status);
         const total = Number(order.total_amount) || 0;
 
         if (order.user_id && crmMap[order.user_id]) {
           const c = crmMap[order.user_id];
           c.ordersCount += 1;
-          if (!isCancelled) c.totalSpent += total;
+          if (isPaid) c.totalSpent += total;
           if (!c.lastPurchaseDate || new Date(order.created_at) > new Date(c.lastPurchaseDate)) {
             c.lastPurchaseDate = order.created_at;
           }
@@ -190,7 +201,7 @@ export function AdminDashboard() {
           }
           const g = crmMap[guestKey];
           g.ordersCount += 1;
-          if (!isCancelled) g.totalSpent += total;
+          if (isPaid) g.totalSpent += total;
           if (!g.lastPurchaseDate || new Date(order.created_at) > new Date(g.lastPurchaseDate)) {
             g.lastPurchaseDate = order.created_at;
           }
@@ -372,7 +383,9 @@ export function AdminDashboard() {
             material: item.material || null,
             color: item.color ? item.color.split(',').map((c: string) => c.trim()) : [],
             features: item.features ? item.features.split(',').map((f: string) => f.trim()) : [],
-            stock_quantity: Number(item.stock_quantity) || 1,
+            stock_quantity: item.stock_quantity === undefined || item.stock_quantity === ''
+              ? 1
+              : Math.max(0, Number(item.stock_quantity) || 0),
             is_sold: false
           });
         }
@@ -387,7 +400,7 @@ export function AdminDashboard() {
           showToast('Erro ao importar produtos: ' + error.message, 'error');
         } else {
           showToast(`${productsToInsert.length} produtos importados com sucesso!`, 'success');
-          fetchAdminProducts();
+          await Promise.all([fetchAdminProducts(), useStore.getState().fetchProducts(true)]);
         }
       } catch (err: any) {
         showToast('Erro ao processar arquivo: ' + err.message, 'error');
@@ -400,10 +413,23 @@ export function AdminDashboard() {
 
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedCode = newCoupon.code.trim().toUpperCase();
+    if (!normalizedCode) {
+      showToast('Informe o código do cupom.', 'warning');
+      return;
+    }
+    if (newCoupon.discountValue <= 0) {
+      showToast('O desconto precisa ser maior que zero.', 'warning');
+      return;
+    }
+    if (newCoupon.discountType === 'percentage' && newCoupon.discountValue > 100) {
+      showToast('O desconto percentual não pode ultrapassar 100%.', 'warning');
+      return;
+    }
     const { error } = await supabase
       .from('coupons')
       .insert({
-        code: newCoupon.code,
+        code: normalizedCode,
         discount_type: newCoupon.discountType,
         discount_value: newCoupon.discountValue,
         min_purchase_amount: newCoupon.minPurchaseAmount
@@ -414,7 +440,7 @@ export function AdminDashboard() {
       showToast('Cupom criado com sucesso!', 'success');
       setNewCoupon({ code: '', discountType: 'percentage', discountValue: 0, minPurchaseAmount: 0 });
       setShowNewCouponForm(false);
-      fetchCoupons();
+      await fetchCoupons();
     }
   };
 
@@ -427,7 +453,7 @@ export function AdminDashboard() {
       showToast('Erro ao atualizar cupom: ' + error.message, 'error');
     } else {
       showToast('Status do cupom atualizado!', 'success');
-      fetchCoupons();
+      await fetchCoupons();
     }
   };
 
@@ -441,7 +467,7 @@ export function AdminDashboard() {
       showToast('Erro ao deletar cupom: ' + error.message, 'error');
     } else {
       showToast('Cupom excluído com sucesso.', 'success');
-      fetchCoupons();
+      await fetchCoupons();
     }
   };
 

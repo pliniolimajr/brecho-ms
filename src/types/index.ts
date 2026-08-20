@@ -18,6 +18,7 @@ export interface Product {
   gallery?: string[];
   features: string[];
   isSold?: boolean;
+  archivedAt?: string;
   brand?: string;
   color?: string[];
   material?: string;

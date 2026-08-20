@@ -58,7 +58,11 @@ export function AdminMetrics({
       return true;
     });
 
-    const paidOrDelivered = filteredOrders.filter(o => o.status === 'paid' || o.status === 'delivered');
+    const paidOrDelivered = filteredOrders.filter(o =>
+      o.payment_status
+        ? ['paid', 'partially_refunded'].includes(o.payment_status)
+        : ['paid', 'shipped', 'delivered'].includes(o.status)
+    );
     const totalSales = paidOrDelivered.reduce((sum, o) => sum + Number(o.total_amount), 0);
     const totalOrders = filteredOrders.length;
     const completedOrdersCount = paidOrDelivered.length;
@@ -176,7 +180,7 @@ export function AdminMetrics({
           <span className="text-2xl font-serif text-[#1A332B] font-bold">
             {metrics.completedOrdersCount} / {metrics.totalOrders}
           </span>
-          <span className="text-xs text-gray-400 block mt-2">Taxa de conversão de pedidos</span>
+          <span className="text-xs text-gray-400 block mt-2">Pedidos com pagamento confirmado</span>
         </div>
 
         <div className="bg-white p-6 rounded shadow-sm border border-[#C06A35]/20">
