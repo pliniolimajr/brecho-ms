@@ -6,7 +6,10 @@ interface OverviewData {
   orders: { pending_payment: number; to_process: number; ready_to_ship: number; shipped: number };
   sales: { last_7_days: number; paid_last_7_days: number };
   inventory: { available: number; out_of_stock: number; archived: number };
-  alerts: { email_failures: number; shipping_failures: number; stale_payments: number };
+  alerts: {
+    email_failures: number; shipping_failures: number; stale_payments: number;
+    chargebacks: number; refund_failures: number; pending_returns: number;
+  };
 }
 
 interface AdminOverviewProps {
@@ -31,6 +34,7 @@ export function AdminOverview({ onNavigate }: AdminOverviewProps) {
 
   const alertCount = useMemo(() => data
     ? data.alerts.email_failures + data.alerts.shipping_failures + data.alerts.stale_payments
+      + data.alerts.chargebacks + data.alerts.refund_failures + data.alerts.pending_returns
     : 0, [data]);
 
   if (loading && !data) return <div className="border border-[#EAD8CC] bg-white p-10 text-center text-sm">Montando seu resumo operacional...</div>;

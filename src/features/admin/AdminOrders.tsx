@@ -60,8 +60,9 @@ export function AdminOrders({
   const [minValue, setMinValue] = useState<string>('');
   const [maxValue, setMaxValue] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const initialOrderSearch = new URLSearchParams(window.location.search).get('order') || '';
+  const [searchQuery, setSearchQuery] = useState<string>(initialOrderSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialOrderSearch);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
