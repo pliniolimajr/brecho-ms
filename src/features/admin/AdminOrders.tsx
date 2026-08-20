@@ -48,6 +48,11 @@ export function AdminOrders({
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [internalNotes, setInternalNotes] = useState<Record<string, string>>({});
   const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
+  const [postSaleData, setPostSaleData] = useState<Record<string, any>>({});
+  const [returnReasons, setReturnReasons] = useState<Record<string, string>>({});
+  const [returnItemIds, setReturnItemIds] = useState<Record<string, string[]>>({});
+  const [refundAmounts, setRefundAmounts] = useState<Record<string, string>>({});
+  const [postSaleBusyId, setPostSaleBusyId] = useState<string | null>(null);
 
   // Filtros de Data
   const [startDate, setStartDate] = useState<string>('');
@@ -106,10 +111,191 @@ export function AdminOrders({
     }
     setExpandedOrderId(orderId);
     setLoadingEventsId(orderId);
-    const { data, error } = await supabase.rpc('admin_get_order_events', { p_order_id: orderId });
-    if (error) showToast('Não foi possível carregar a linha do tempo do pedido.', 'error');
-    else setOrderEvents(previous => ({ ...previous, [orderId]: data || [] }));
+    const [eventsResult, postSaleResult] = await Promise.all([
+      supabase.rpc('admin_get_order_events', { p_order_id: orderId }),
+      supabase.rpc('admin_get_order_post_sale', { p_order_id: orderId }),
+    ]);
+    if (eventsResult.error || postSaleResult.error) showToast('Não foi possível carregar todos os dados do pedido.', 'error');
+    if (!eventsResult.error) setOrderEvents(previous => ({ ...previous, [orderId]: eventsResult.data || [] }));
+    if (!postSaleResult.error) setPostSaleData(previous => ({ ...previous, [orderId]: postSaleResult.data || {} }));
     setLoadingEventsId(null);
+  };
+
+  const refreshOrderDetails = async (orderId: string) => {
+    const [eventsResult, postSaleResult] = await Promise.all([
+      supabase.rpc('admin_get_order_events', { p_order_id: orderId }),
+      supabase.rpc('admin_get_order_post_sale', { p_order_id: orderId }),
+    ]);
+    if (!eventsResult.error) setOrderEvents(previous => ({ ...previous, [orderId]: eventsResult.data || [] }));
+    if (!postSaleResult.error) setPostSaleData(previous => ({ ...previous, [orderId]: postSaleResult.data || {} }));
+  };
+
+  const handleCreateReturn = async (order: any) => {
+    const selectedItems = returnItemIds[order.id] || [];
+    const reason = returnReasons[order.id]?.trim();
+    if (!reason || selectedItems.length === 0) {
+      showToast('Selecione ao menos um item e informe o motivo.', 'warning');
+      return;
+    }
+    setPostSaleBusyId(order.id);
+    const { error } = await supabase.rpc('admin_create_order_return', {
+      p_order_id: order.id, p_reason: reason, p_order_item_ids: selectedItems, p_internal_note: null,
+    });
+    if (error) showToast(error.message || 'Não foi possível registrar a devolução.', 'error');
+    else {
+      setReturnReasons(previous => ({ ...previous, [order.id]: '' }));
+      setReturnItemIds(previous => ({ ...previous, [order.id]: [] }));
+      await Promise.all([refreshOrderDetails(order.id), fetchAdminOrders()]);
+      showToast('Devolução registrada.', 'success');
+    }
+    setPostSaleBusyId(null);
+  };
+
+  const handleReturnTransition = async (orderId: string, returnId: string, status: string, restock = false) => {
+    const action = restock ? 'confirmar o recebimento e repor os itens no estoque' : `alterar a devolução para ${status}`;
+    if (!confirm(`Deseja realmente ${action}?`)) return;
+    setPostSaleBusyId(orderId);
+    const { error } = await supabase.rpc('admin_transition_order_return', {
+      p_return_id: returnId, p_new_status: status, p_restock: restock, p_internal_note: null,
+    });
+    if (error) showToast(error.message || 'Não foi possível atualizar a devolução.', 'error');
+    else {
+      await Promise.all([refreshOrderDetails(orderId), fetchAdminOrders(), fetchCRMData()]);
+      showToast(restock ? 'Recebimento confirmado e estoque reposto.' : 'Devolução atualizada.', 'success');
+    }
+    setPostSaleBusyId(null);
+  };
+
+  const handleRefund = async (order: any) => {
+    const amount = Number(String(refundAmounts[order.id] || '').replace(',', '.'));
+    const refundable = Number(postSaleData[order.id]?.refundable_amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0 || amount > refundable) {
+      showToast(`Informe um valor entre R$ 0,01 e R$ ${refundable.toFixed(2).replace('.', ',')}.`, 'warning');
+      return;
+    }
+    const isFull = Math.abs(amount - refundable) < 0.001;
+    if (!confirm(`${isFull ? 'Reembolsar integralmente' : 'Reembolsar parcialmente'} R$ ${amount.toFixed(2).replace('.', ',')} pelo Mercado Pago? Esta ação movimenta dinheiro e não pode ser desfeita.`)) return;
+
+    setPostSaleBusyId(order.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Sessão administrativa expirada.');
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/refund-payment`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ orderId: order.id, amount, idempotencyKey: crypto.randomUUID() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível realizar o reembolso.');
+      setRefundAmounts(previous => ({ ...previous, [order.id]: '' }));
+      await Promise.all([refreshOrderDetails(order.id), fetchAdminOrders(), fetchCRMData()]);
+      showToast(isFull ? 'Reembolso total aprovado.' : 'Reembolso parcial aprovado.', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Erro ao processar reembolso.', 'error');
+    } finally {
+      setPostSaleBusyId(null);
+    }
+  };
+
+  const renderPostSale = (order: any) => {
+    const data = postSaleData[order.id] || {};
+    const returns = Array.isArray(data.returns) ? data.returns : [];
+    const refunds = Array.isArray(data.refunds) ? data.refunds : [];
+    const refundable = Number(data.refundable_amount || 0);
+    const selectedItems = returnItemIds[order.id] || [];
+    const busy = postSaleBusyId === order.id;
+    const canRefund = ['paid', 'partially_refunded'].includes(order.payment_status) && refundable > 0;
+    const returnStatusLabels: Record<string, string> = {
+      requested: 'Solicitada', approved: 'Aprovada', received: 'Recebida', completed: 'Concluída',
+      rejected: 'Recusada', cancelled: 'Cancelada',
+    };
+
+    return (
+      <section className="mt-6 border-t border-[#C06A35]/25 pt-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-[#1A332B]">Pós-venda</h4>
+            <p className="mt-1 text-[11px] text-gray-500">Devolução física e reembolso financeiro são controlados separadamente.</p>
+          </div>
+          <span className="text-xs font-semibold text-[#1A332B]">Disponível para reembolso: R$ {refundable.toFixed(2).replace('.', ',')}</span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="border border-gray-200 bg-white p-4">
+            <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#1A332B]">Registrar devolução</h5>
+            <div className="space-y-2">
+              {(order.order_items || []).map((item: any) => (
+                <label key={item.id} className="flex cursor-pointer items-center gap-2 text-xs text-[#423226]">
+                  <input
+                    type="checkbox"
+                    checked={selectedItems.includes(item.id)}
+                    onChange={event => setReturnItemIds(previous => ({
+                      ...previous,
+                      [order.id]: event.target.checked
+                        ? [...(previous[order.id] || []), item.id]
+                        : (previous[order.id] || []).filter(id => id !== item.id),
+                    }))}
+                  />
+                  {item.products?.name || 'Item'} · R$ {Number(item.price).toFixed(2).replace('.', ',')}
+                </label>
+              ))}
+              <textarea
+                value={returnReasons[order.id] || ''}
+                onChange={event => setReturnReasons(previous => ({ ...previous, [order.id]: event.target.value }))}
+                maxLength={500}
+                rows={2}
+                placeholder="Motivo da devolução"
+                className="mt-2 w-full resize-none border border-gray-300 px-3 py-2 text-xs"
+              />
+              <button type="button" disabled={busy} onClick={() => void handleCreateReturn(order)} className="bg-[#1A332B] px-4 py-2 text-[10px] font-bold uppercase text-white disabled:opacity-40">
+                Registrar devolução
+              </button>
+            </div>
+          </div>
+
+          <div className="border border-gray-200 bg-white p-4">
+            <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#1A332B]">Reembolso Mercado Pago</h5>
+            {canRefund ? (
+              <>
+                <div className="flex gap-2">
+                  <input type="text" inputMode="decimal" value={refundAmounts[order.id] || ''} onChange={event => setRefundAmounts(previous => ({ ...previous, [order.id]: event.target.value }))} placeholder={`Até R$ ${refundable.toFixed(2).replace('.', ',')}`} className="min-w-0 flex-1 border border-gray-300 px-3 py-2 text-xs" />
+                  <button type="button" onClick={() => setRefundAmounts(previous => ({ ...previous, [order.id]: refundable.toFixed(2) }))} className="border border-[#1A332B] px-3 py-2 text-[10px] font-bold uppercase text-[#1A332B]">Valor total</button>
+                </div>
+                <button type="button" disabled={busy} onClick={() => void handleRefund(order)} className="mt-2 bg-[#8B1E1E] px-4 py-2 text-[10px] font-bold uppercase text-white disabled:opacity-40">
+                  {busy ? 'Processando...' : 'Confirmar reembolso'}
+                </button>
+                <p className="mt-2 text-[10px] text-amber-800">A reposição de estoque não acontece automaticamente.</p>
+              </>
+            ) : <p className="text-xs text-gray-500">Este pedido não possui saldo financeiro reembolsável.</p>}
+          </div>
+        </div>
+
+        {returns.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <h5 className="text-[10px] font-bold uppercase tracking-wider text-[#1A332B]">Devoluções registradas</h5>
+            {returns.map((item: any) => (
+              <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border border-gray-200 bg-white p-3 text-xs">
+                <div>
+                  <strong>{returnStatusLabels[item.status] || item.status}</strong> · {item.reason}
+                  <p className="mt-1 text-[10px] text-gray-500">{(item.items || []).map((returned: any) => returned.product_name || 'Item').join(', ')}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {item.status === 'requested' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'approved')} className="border border-[#1A332B] px-3 py-1 font-semibold">Aprovar</button>}
+                  {item.status === 'requested' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'rejected')} className="border border-red-700 px-3 py-1 font-semibold text-red-700">Recusar</button>}
+                  {item.status === 'approved' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'received', true)} className="bg-[#1A332B] px-3 py-1 font-semibold text-white">Confirmar recebimento + estoque</button>}
+                  {item.status === 'received' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'completed')} className="bg-[#1A332B] px-3 py-1 font-semibold text-white">Concluir</button>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {refunds.length > 0 && (
+          <div className="mt-4 text-[11px] text-gray-600">
+            <strong>Reembolsos:</strong> {refunds.map((refund: any) => `R$ ${Number(refund.amount).toFixed(2).replace('.', ',')} (${refund.status})`).join(' · ')}
+          </div>
+        )}
+      </section>
+    );
   };
 
   const handleBulkTransition = async () => {
@@ -647,6 +833,7 @@ export function AdminOrders({
                                 </div>
                               </div>
                             </div>
+                            {renderPostSale(order)}
                           </td>
                         </tr>
                       )}
