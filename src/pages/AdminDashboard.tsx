@@ -397,6 +397,7 @@ export function AdminDashboard() {
 
             {activeTab === 'orders' && (
               <AdminOrders
+                adminRole={adminRole}
                 adminOrders={adminOrders}
                 totalOrders={totalAdminOrders}
                 loading={loadingOrders && adminOrders.length === 0}

@@ -4,6 +4,7 @@ import { useToast } from '../../components/Toast';
 import { TableSkeleton } from '../../components/LoadingStates';
 
 interface AdminOrdersProps {
+  adminRole: string | null;
   adminOrders: any[];
   totalOrders: number;
   loading: boolean;
@@ -26,6 +27,7 @@ export interface AdminOrderQuery {
 }
 
 export function AdminOrders({
+  adminRole,
   adminOrders,
   totalOrders,
   loading,
@@ -65,6 +67,10 @@ export function AdminOrders({
   const [debouncedSearch, setDebouncedSearch] = useState(initialOrderSearch);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+  const canManageOrders = adminRole === 'owner' || adminRole === 'operations' || adminRole === 'support';
+  const canManageShipping = adminRole === 'owner' || adminRole === 'operations';
+  const canManageReturns = adminRole === 'owner' || adminRole === 'operations' || adminRole === 'support';
+  const canManageRefunds = adminRole === 'owner' || adminRole === 'finance';
 
   const selectedOrders = adminOrders.filter(order => selectedOrderIds.includes(order.id));
   const bulkTarget = selectedOrders.length > 0 && selectedOrders.every(order => order.status === selectedOrders[0].status)
@@ -204,7 +210,7 @@ export function AdminOrders({
     const refundable = Number(data.refundable_amount || 0);
     const selectedItems = returnItemIds[order.id] || [];
     const busy = postSaleBusyId === order.id;
-    const canRefund = ['paid', 'partially_refunded'].includes(order.payment_status) && refundable > 0;
+    const hasRefundableBalance = ['paid', 'partially_refunded'].includes(order.payment_status) && refundable > 0;
     const returnStatusLabels: Record<string, string> = {
       requested: 'Solicitada', approved: 'Aprovada', received: 'Recebida', completed: 'Concluída',
       rejected: 'Recusada', cancelled: 'Cancelada',
@@ -221,7 +227,7 @@ export function AdminOrders({
         </div>
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="border border-gray-200 bg-white p-4">
+          {canManageReturns && <div className="border border-gray-200 bg-white p-4">
             <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#1A332B]">Registrar devolução</h5>
             <div className="space-y-2">
               {(order.order_items || []).map((item: any) => (
@@ -251,11 +257,11 @@ export function AdminOrders({
                 Registrar devolução
               </button>
             </div>
-          </div>
+          </div>}
 
-          <div className="border border-gray-200 bg-white p-4">
+          {canManageRefunds && <div className="border border-gray-200 bg-white p-4">
             <h5 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#1A332B]">Reembolso Mercado Pago</h5>
-            {canRefund ? (
+            {hasRefundableBalance ? (
               <>
                 <div className="flex gap-2">
                   <input type="text" inputMode="decimal" value={refundAmounts[order.id] || ''} onChange={event => setRefundAmounts(previous => ({ ...previous, [order.id]: event.target.value }))} placeholder={`Até R$ ${refundable.toFixed(2).replace('.', ',')}`} className="min-w-0 flex-1 border border-gray-300 px-3 py-2 text-xs" />
@@ -267,7 +273,7 @@ export function AdminOrders({
                 <p className="mt-2 text-[10px] text-amber-800">A reposição de estoque não acontece automaticamente.</p>
               </>
             ) : <p className="text-xs text-gray-500">Este pedido não possui saldo financeiro reembolsável.</p>}
-          </div>
+          </div>}
         </div>
 
         {returns.length > 0 && (
@@ -279,12 +285,12 @@ export function AdminOrders({
                   <strong>{returnStatusLabels[item.status] || item.status}</strong> · {item.reason}
                   <p className="mt-1 text-[10px] text-gray-500">{(item.items || []).map((returned: any) => returned.product_name || 'Item').join(', ')}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                {canManageReturns && <div className="flex flex-wrap gap-2">
                   {item.status === 'requested' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'approved')} className="border border-[#1A332B] px-3 py-1 font-semibold">Aprovar</button>}
                   {item.status === 'requested' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'rejected')} className="border border-red-700 px-3 py-1 font-semibold text-red-700">Recusar</button>}
                   {item.status === 'approved' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'received', true)} className="bg-[#1A332B] px-3 py-1 font-semibold text-white">Confirmar recebimento + estoque</button>}
                   {item.status === 'received' && <button disabled={busy} onClick={() => void handleReturnTransition(order.id, item.id, 'completed')} className="bg-[#1A332B] px-3 py-1 font-semibold text-white">Concluir</button>}
-                </div>
+                </div>}
               </div>
             ))}
           </div>
@@ -383,13 +389,11 @@ export function AdminOrders({
     }
     setSavingTrackingId(orderId);
     try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ tracking_code: normalizedCode })
-        .eq('id', orderId);
+      const { error } = await supabase.rpc('admin_update_order_tracking', {
+        p_order_id: orderId,
+        p_tracking_code: normalizedCode,
+      });
       if (error) throw error;
-
-      await logStatusHistory(orderId, `Código de rastreio atualizado`, `Código: ${normalizedCode}`);
       await fetchAdminOrders();
       setEditingTrackingId(null);
       showToast('Código de rastreio atualizado com sucesso!', 'success');
@@ -605,7 +609,7 @@ export function AdminOrders({
         </div>
       </div>
 
-      {selectedOrderIds.length > 0 && (
+      {canManageOrders && selectedOrderIds.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 border border-[#C06A35]/30 bg-[#FFF8F1] p-4">
           <p className="text-sm font-semibold text-[#1A332B]">{selectedOrderIds.length} pedido(s) selecionado(s)</p>
           <div className="flex items-center gap-3">
@@ -629,7 +633,9 @@ export function AdminOrders({
               <thead>
                 <tr className="bg-[#FDF6F0] border-b border-[#C06A35]/20 text-[#1A332B] font-medium text-sm">
                   <th className="p-4">
+                    {canManageOrders && (
                     <input type="checkbox" aria-label="Selecionar pedidos desta página" checked={adminOrders.length > 0 && adminOrders.every(order => selectedOrderIds.includes(order.id))} onChange={event => setSelectedOrderIds(event.target.checked ? adminOrders.map(order => order.id) : [])} />
+                    )}
                   </th>
                   <th className="p-4">Pedido / Data</th>
                   <th className="p-4">Cliente</th>
@@ -654,7 +660,7 @@ export function AdminOrders({
                   return (
                     <React.Fragment key={order.id}>
                       <tr className="border-b border-[#C06A35]/10 hover:bg-[#FDF6F0]/50 transition-colors">
-                        <td className="p-4"><input type="checkbox" aria-label={`Selecionar pedido ${order.id}`} checked={selectedOrderIds.includes(order.id)} onChange={event => setSelectedOrderIds(previous => event.target.checked ? [...previous, order.id] : previous.filter(id => id !== order.id))} /></td>
+                        <td className="p-4">{canManageOrders && <input type="checkbox" aria-label={`Selecionar pedido ${order.id}`} checked={selectedOrderIds.includes(order.id)} onChange={event => setSelectedOrderIds(previous => event.target.checked ? [...previous, order.id] : previous.filter(id => id !== order.id))} />}</td>
                         <td 
                           className="p-4 cursor-pointer hover:underline"
                           onClick={() => void toggleOrderDetails(order.id)}
@@ -692,7 +698,7 @@ export function AdminOrders({
                           </div>
                           <select
                             value={order.status}
-                            disabled={updatingStatusId === order.id}
+                            disabled={!canManageOrders || updatingStatusId === order.id}
                             onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
                             className="text-xs border border-gray-300 rounded px-2 py-1 bg-white font-semibold disabled:cursor-wait disabled:opacity-50"
                           >
@@ -702,7 +708,7 @@ export function AdminOrders({
                           </select>
                         </td>
                         <td className="p-4 text-xs">
-                          {editingTrackingId === order.id ? (
+                          {canManageShipping ? (editingTrackingId === order.id ? (
                             <div className="flex gap-1 items-center">
                               <input
                                 type="text"
@@ -764,6 +770,10 @@ export function AdminOrders({
                                 </button>
                               </div>
                             </div>
+                          )) : (
+                            order.tracking_code
+                              ? <span className="font-mono text-xs text-blue-700">{order.tracking_code}</span>
+                              : <span className="text-xs text-gray-500">Sem rastreio</span>
                           )}
                         </td>
                         <td className="p-4 text-xs space-y-1">
@@ -826,12 +836,12 @@ export function AdminOrders({
                                     </div>
                                   )}
                                 </div>
-                                <div className="mt-3 flex gap-2">
+                                {canManageOrders && <div className="mt-3 flex gap-2">
                                   <input value={internalNotes[order.id] || ''} onChange={event => setInternalNotes(previous => ({ ...previous, [order.id]: event.target.value }))} maxLength={500} placeholder="Adicionar nota interna..." className="min-w-0 flex-1 border border-gray-300 bg-white px-3 py-2 text-xs" />
                                   <button type="button" disabled={savingNoteId === order.id || !internalNotes[order.id]?.trim()} onClick={() => void handleAddInternalNote(order.id)} className="bg-[#1A332B] px-3 py-2 text-[10px] font-bold uppercase text-white disabled:opacity-40">
                                     {savingNoteId === order.id ? 'Salvando...' : 'Adicionar'}
                                   </button>
-                                </div>
+                                </div>}
                               </div>
                             </div>
                             {renderPostSale(order)}
