@@ -13,9 +13,10 @@ import { AdminMetrics } from '../features/admin/AdminMetrics';
 import { AdminOperationalHealth } from '../features/admin/AdminOperationalHealth';
 import { AdminOverview } from '../features/admin/AdminOverview';
 import { AdminTeam } from '../features/admin/AdminTeam';
+import { AdminActionCenter } from '../features/admin/AdminActionCenter';
 
-type AdminSection = 'overview' | 'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health' | 'team';
-const ADMIN_SECTIONS: AdminSection[] = ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health', 'team'];
+type AdminSection = 'overview' | 'actions' | 'inventory' | 'orders' | 'customers' | 'abandoned' | 'metrics' | 'health' | 'team';
+const ADMIN_SECTIONS: AdminSection[] = ['overview', 'actions', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health', 'team'];
 
 export function AdminDashboard() {
   const { showToast } = useToast();
@@ -30,12 +31,12 @@ export function AdminDashboard() {
   const roleLabels: Record<string, string> = { owner: 'Proprietário', operations: 'Operação', support: 'Atendimento', finance: 'Financeiro' };
   const visibleSections: Record<string, AdminSection[]> = {
     owner: ADMIN_SECTIONS,
-    operations: ['overview', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health'],
-    support: ['overview', 'orders', 'customers', 'abandoned'],
-    finance: ['overview', 'orders', 'metrics', 'health'],
+    operations: ['overview', 'actions', 'inventory', 'orders', 'customers', 'abandoned', 'metrics', 'health'],
+    support: ['overview', 'actions', 'orders', 'customers', 'abandoned'],
+    finance: ['overview', 'actions', 'orders', 'metrics', 'health'],
   };
   const adminTabs = [
-    { id: 'overview', label: 'Visão Geral' }, { id: 'inventory', label: 'Estoque' },
+    { id: 'overview', label: 'Visão Geral' }, { id: 'actions', label: 'Central de Ação' }, { id: 'inventory', label: 'Estoque' },
     { id: 'orders', label: 'Pedidos' }, { id: 'customers', label: 'Clientes' },
     { id: 'abandoned', label: 'Carrinhos' }, { id: 'metrics', label: 'Métricas' },
     { id: 'health', label: 'Saúde' }, { id: 'team', label: 'Equipe e Acessos' },
@@ -387,6 +388,13 @@ export function AdminDashboard() {
               </div>
             )}
             {activeTab === 'overview' && <AdminOverview onNavigate={setActiveTab} />}
+            {activeTab === 'actions' && (
+              <AdminActionCenter
+                onNavigate={(section, resourceId) => setSearchParams(resourceId
+                  ? { section, order: resourceId }
+                  : { section })}
+              />
+            )}
             {activeTab === 'inventory' && (
               <AdminInventory
                 adminProducts={adminProducts}

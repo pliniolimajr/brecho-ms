@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { useToast } from '../../components/Toast';
+import { AdminAuditLog } from './AdminAuditLog';
+import { AdminOperationalPreferences } from './AdminOperationalPreferences';
 
 const roleLabels: Record<string, string> = {
   owner: 'Proprietário', operations: 'Operação', support: 'Atendimento', finance: 'Financeiro',
@@ -9,7 +11,6 @@ const roleLabels: Record<string, string> = {
 export function AdminTeam() {
   const { showToast } = useToast();
   const [members, setMembers] = useState<any[]>([]);
-  const [audit, setAudit] = useState<any[]>([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('operations');
   const [loading, setLoading] = useState(true);
@@ -17,13 +18,9 @@ export function AdminTeam() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [teamResult, auditResult] = await Promise.all([
-      supabase.rpc('admin_list_team'),
-      supabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(30),
-    ]);
+    const teamResult = await supabase.rpc('admin_list_team');
     if (teamResult.error) showToast(teamResult.error.message || 'Não foi possível carregar a equipe.', 'error');
     else setMembers(teamResult.data || []);
-    if (!auditResult.error) setAudit(auditResult.data || []);
     setLoading(false);
   }, [showToast]);
 
@@ -80,12 +77,8 @@ export function AdminTeam() {
         </table>
       </div>
 
-      <div className="border border-[#EAD8CC] bg-white p-5">
-        <h3 className="font-serif text-xl text-[#1A332B]">Atividades de segurança recentes</h3>
-        {audit.length === 0 ? <p className="mt-4 text-sm text-gray-500">Nenhuma alteração de equipe registrada.</p> : (
-          <div className="mt-4 space-y-2">{audit.map(item => <div key={item.id} className="flex flex-wrap justify-between gap-2 border-b border-gray-100 py-2 text-xs"><span><strong>{item.action}</strong> · {item.resource_type}</span><span className="text-gray-500">{new Date(item.created_at).toLocaleString('pt-BR')}</span></div>)}</div>
-        )}
-      </div>
+      <AdminAuditLog />
+      <AdminOperationalPreferences />
     </section>
   );
 }
